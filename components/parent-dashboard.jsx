@@ -1514,6 +1514,7 @@ export default function ParentDashboard() {
         }}
         onAdd={handleAddHomework}
         initialData={editingHomework}
+        childrenList={childrenList}
       />
 
       <AddTaskDialog
