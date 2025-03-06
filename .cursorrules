@@ -29,29 +29,5 @@
 
 - Node.js（推荐v18+）
 - pnpm
-
-### 安装步骤
-
-1. 克隆仓库
-```bash
-git clone https://github.com/gaoconghello/kids.git
-cd kids
-```
-
-2. 安装依赖
-```bash
-pnpm install
-```
-
-3. 启动开发服务器
-```bash
-pnpm dev
-```
-
-4. 在浏览器中打开 `http://localhost:3000`
-
-## 📄 许可证
-
-[MIT](LICENSE) 
-
-在回答时候尽量使用中文回复
+- 在回答时候尽量使用中文回复
+- 再回复问题时候，无需使用pnpm dev重新运行项目，我自己来重启
