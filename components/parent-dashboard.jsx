@@ -35,6 +35,7 @@ import { Progress } from "@/components/ui/progress"
 import { TaskCalendar } from "./task-calendar"
 import { HomeworkStatistics } from "./homework-statistics"
 import { DeadlineSettingsDialog } from "./deadline-settings-settings-dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function ParentDashboard() {
   const [points, setPoints] = useState(350)
@@ -204,6 +205,15 @@ export default function ParentDashboard() {
   ])
   const [selectedTaskDate, setSelectedTaskDate] = useState(new Date())
   const [showTaskCalendar, setShowTaskCalendar] = useState(false)
+  const [selectedChildForHomework, setSelectedChildForHomework] = useState("小明")
+  const [childrenList, setChildrenList] = useState([
+    { id: 1, name: "小明" },
+    { id: 2, name: "小红" },
+    { id: 3, name: "小华" },
+  ])
+
+  const [selectedChildForTasks, setSelectedChildForTasks] = useState("小明")
+  const [selectedChildForHistory, setSelectedChildForHistory] = useState("小明")
 
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false)
   const [approvalItem, setApprovalItem] = useState(null)
@@ -520,59 +530,59 @@ export default function ParentDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 p-3 sm:p-4 md:p-8">
-      <div className="mx-auto max-w-5xl">
-        <header className="mb-4 sm:mb-6 flex flex-col gap-3 sm:gap-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 rounded-2xl bg-white/90 backdrop-blur-sm p-3 sm:p-4 shadow-lg border-2 border-white/50">
+    <div className="min-h-screen p-3 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 sm:p-4 md:p-8">
+      <div className="max-w-5xl mx-auto">
+        <header className="flex flex-col gap-3 mb-4 sm:mb-6 sm:gap-4">
+          <div className="flex flex-col items-start justify-between gap-3 p-3 border-2 shadow-lg sm:flex-row sm:items-center sm:gap-0 rounded-2xl bg-white/90 backdrop-blur-sm sm:p-4 border-white/50">
             <div className="flex items-center gap-3">
               <div className="relative">
                 <div className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 animate-pulse blur"></div>
-                <Avatar className="relative h-12 w-12 border-2 border-white">
+                <Avatar className="relative w-12 h-12 border-2 border-white">
                   <AvatarImage src="/placeholder.svg?height=40&width=40" />
-                  <AvatarFallback className="bg-gradient-to-r from-blue-400 to-purple-400 text-white">
+                  <AvatarFallback className="text-white bg-gradient-to-r from-blue-400 to-purple-400">
                     家长
                   </AvatarFallback>
                 </Avatar>
               </div>
               <div>
-                <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <h2 className="text-xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text">
                   你好，家长！
                 </h2>
                 <p className="text-gray-600">欢迎使用家长管理界面</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-400/10 to-purple-400/10 border border-blue-400/20">
-                <User className="h-6 w-6 text-blue-500" />
+              <div className="flex items-center gap-2 px-4 py-2 border rounded-full bg-gradient-to-r from-blue-400/10 to-purple-400/10 border-blue-400/20">
+                <User className="w-6 h-6 text-blue-500" />
                 <span className="text-lg font-bold text-blue-600">家长模式</span>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full hover:bg-blue-100 hover:text-blue-600 transition-colors"
+                className="transition-colors rounded-full hover:bg-blue-100 hover:text-blue-600"
                 onClick={() => setIsChangePasswordOpen(true)}
               >
-                <Settings className="h-5 w-5" />
+                <Settings className="w-5 h-5" />
                 <span className="sr-only">修改密码</span>
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full hover:bg-red-100 hover:text-red-600 transition-colors"
+                className="transition-colors rounded-full hover:bg-red-100 hover:text-red-600"
                 onClick={() => (window.location.href = "/login")}
               >
-                <LogOut className="h-5 w-5" />
+                <LogOut className="w-5 h-5" />
                 <span className="sr-only">退出登录</span>
               </Button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-            <div className="rounded-2xl bg-gradient-to-br from-green-400/90 to-teal-500/90 p-4 shadow-lg border-2 border-white/50">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4 sm:gap-4">
+            <div className="p-4 border-2 shadow-lg rounded-2xl bg-gradient-to-br from-green-400/90 to-teal-500/90 border-white/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                    <Clock className="h-6 w-6 text-white" />
+                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm">
+                    <Clock className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-white/80">作业截止时间</p>
@@ -592,61 +602,61 @@ export default function ParentDashboard() {
               </div>
             </div>
 
-            <div className="rounded-2xl bg-gradient-to-br from-yellow-400/90 to-amber-500/90 p-4 shadow-lg border-2 border-white/50">
+            <div className="p-4 border-2 shadow-lg rounded-2xl bg-gradient-to-br from-yellow-400/90 to-amber-500/90 border-white/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                    <Star className="h-6 w-6 text-white" />
+                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm">
+                    <Star className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-white/80">小明的总积分</p>
                     <h3 className="text-2xl font-bold text-white">{childPoints.total}</h3>
                   </div>
                 </div>
-                <Award className="h-12 w-12 text-white/20" />
+                <Award className="w-12 h-12 text-white/20" />
               </div>
             </div>
 
-            <div className="rounded-2xl bg-gradient-to-br from-blue-400/90 to-cyan-500/90 p-4 shadow-lg border-2 border-white/50">
+            <div className="p-4 border-2 shadow-lg rounded-2xl bg-gradient-to-br from-blue-400/90 to-cyan-500/90 border-white/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                    <Calendar className="h-6 w-6 text-white" />
+                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm">
+                    <Calendar className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-white/80">本周获得积分</p>
                     <h3 className="text-2xl font-bold text-white">{childPoints.thisWeek}</h3>
                   </div>
                 </div>
-                <Star className="h-12 w-12 text-white/20" />
+                <Star className="w-12 h-12 text-white/20" />
               </div>
             </div>
 
-            <div className="rounded-2xl bg-gradient-to-br from-purple-400/90 to-pink-500/90 p-4 shadow-lg border-2 border-white/50">
+            <div className="p-4 border-2 shadow-lg rounded-2xl bg-gradient-to-br from-purple-400/90 to-pink-500/90 border-white/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                    <History className="h-6 w-6 text-white" />
+                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm">
+                    <History className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-white/80">本周消耗积分</p>
                     <h3 className="text-2xl font-bold text-white">{childPoints.thisWeekSpent}</h3>
                   </div>
                 </div>
-                <Gift className="h-12 w-12 text-white/20" />
+                <Gift className="w-12 h-12 text-white/20" />
               </div>
             </div>
           </div>
         </header>
 
         <Tabs defaultValue="homework" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 rounded-xl bg-white/80 p-1 text-xs sm:text-sm md:text-lg shadow-xl">
+          <TabsList className="grid w-full grid-cols-4 p-1 text-xs shadow-xl rounded-xl bg-white/80 sm:text-sm md:text-lg">
             <TabsTrigger
               value="homework"
               className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
             >
               <div className="flex items-center">
-                <PenLine className="mr-2 h-5 w-5" />
+                <PenLine className="w-5 h-5 mr-2" />
                 <span>作业</span>
                 {pendingHomework.length > 0 && (
                   <span className="ml-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
@@ -660,7 +670,7 @@ export default function ParentDashboard() {
               className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
             >
               <div className="flex items-center">
-                <BookOpen className="mr-2 h-5 w-5" />
+                <BookOpen className="w-5 h-5 mr-2" />
                 <span>任务</span>
                 {pendingTasks.length > 0 && (
                   <span className="ml-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
@@ -674,7 +684,7 @@ export default function ParentDashboard() {
               className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
             >
               <div className="flex items-center">
-                <Gift className="mr-2 h-5 w-5" />
+                <Gift className="w-5 h-5 mr-2" />
                 <span>兑奖</span>
                 {pendingRewards.length > 0 && (
                   <span className="ml-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
@@ -688,18 +698,18 @@ export default function ParentDashboard() {
               className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
             >
               <div className="flex items-center">
-                <History className="mr-2 h-5 w-5" />
+                <History className="w-5 h-5 mr-2" />
                 <span>记录</span>
               </div>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="homework" className="space-y-4">
-            <Card className="overflow-hidden rounded-2xl border-2 border-primary/20 bg-white">
+            <Card className="overflow-hidden bg-white border-2 rounded-2xl border-primary/20">
               <CardHeader className="bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
-                    <BookOpen className="mr-2 h-6 w-6 text-primary" />
+                    <BookOpen className="w-6 h-6 mr-2 text-primary" />
                     {selectedHomeworkDate.toLocaleDateString("zh-CN", { month: "long", day: "numeric" })}作业管理
                   </CardTitle>
                   <div className="flex items-center gap-4">
@@ -708,7 +718,7 @@ export default function ParentDashboard() {
                       className="rounded-full bg-gradient-to-r from-primary to-purple-600"
                       size="sm"
                     >
-                      <Plus className="mr-2 h-4 w-4" />
+                      <Plus className="w-4 h-4 mr-2" />
                       添加作业
                     </Button>
                     <Button
@@ -717,15 +727,15 @@ export default function ParentDashboard() {
                       className="rounded-full"
                       onClick={() => setShowHomeworkCalendar(!showHomeworkCalendar)}
                     >
-                      <Calendar className="mr-2 h-4 w-4" />
+                      <Calendar className="w-4 h-4 mr-2" />
                       {showHomeworkCalendar ? "隐藏日历" : "查看日历"}
                     </Button>
                     <Button
                       size="sm"
-                      className="rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:from-teal-600 hover:to-cyan-600"
+                      className="text-white rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600"
                       onClick={() => setShowStatistics(!showStatistics)}
                     >
-                      <BarChart3 className="mr-2 h-4 w-4" />
+                      <BarChart3 className="w-4 h-4 mr-2" />
                       {showStatistics ? "隐藏统计" : "查看统计"}
                     </Button>
                   </div>
@@ -739,11 +749,11 @@ export default function ParentDashboard() {
                   </div>
                 )}
                 {showStatistics && (
-                  <div className="mb-6 mt-4">
-                    <div className="rounded-xl border-2 border-purple-100 bg-purple-50 p-4">
-                      <div className="mb-4 flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100">
-                          <BarChart3 className="h-5 w-5 text-purple-600" />
+                  <div className="mt-4 mb-6">
+                    <div className="p-4 border-2 border-purple-100 rounded-xl bg-purple-50">
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="flex items-center justify-center w-8 h-8 bg-purple-100 rounded-lg">
+                          <BarChart3 className="w-5 h-5 text-purple-600" />
                         </div>
                         <h3 className="text-lg font-semibold text-purple-700">作业统计分析</h3>
                       </div>
@@ -757,10 +767,10 @@ export default function ParentDashboard() {
                   </div>
                 )}
                 <div className="space-y-6">
-                  <div className="rounded-xl border-2 border-amber-100 bg-amber-50 p-4">
-                    <div className="mb-4 flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100">
-                        <ClipboardCheck className="h-5 w-5 text-amber-600" />
+                  <div className="p-4 border-2 rounded-xl border-amber-100 bg-amber-50">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100">
+                        <ClipboardCheck className="w-5 h-5 text-amber-600" />
                       </div>
                       <h3 className="text-lg font-semibold text-amber-700">待审批新增作业</h3>
                     </div>
@@ -770,25 +780,25 @@ export default function ParentDashboard() {
                         {pendingHomework.map((item) => (
                           <div
                             key={item.id}
-                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border border-amber-200 bg-white p-3 hover:border-amber-300 hover:bg-amber-50"
+                            className="flex flex-col p-3 bg-white border rounded-lg sm:flex-row sm:items-center sm:justify-between border-amber-200 hover:border-amber-300 hover:bg-amber-50"
                           >
                             <div className="flex items-center gap-4 mb-3 sm:mb-0">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
-                                <AlertCircle className="h-5 w-5 text-amber-600" />
+                              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-100">
+                                <AlertCircle className="w-5 h-5 text-amber-600" />
                               </div>
                               <div>
                                 <h4 className="font-medium">{item.title}</h4>
                                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                   <span className="flex items-center gap-1">
-                                    <User className="h-4 w-4" />
+                                    <User className="w-4 h-4" />
                                     {item.childName}
                                   </span>
                                   <span className="flex items-center gap-1">
-                                    <BookOpen className="h-4 w-4" />
+                                    <BookOpen className="w-4 h-4" />
                                     {item.subject}
                                   </span>
                                   <span className="flex items-center gap-1">
-                                    <Clock className="h-4 w-4" />
+                                    <Clock className="w-4 h-4" />
                                     {item.duration}
                                   </span>
                                 </div>
@@ -799,12 +809,12 @@ export default function ParentDashboard() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleEditHomework(item)}
-                                className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                                className="text-blue-600 border-blue-200 hover:bg-blue-50"
                               >
                                 修改
                               </Button>
                               <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
-                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                 <span>{item.points}</span>
                               </Badge>
                               <Button
@@ -819,16 +829,16 @@ export default function ParentDashboard() {
                         ))}
                       </div>
                     ) : (
-                      <div className="rounded-lg border border-dashed border-amber-200 bg-white p-6 text-center">
+                      <div className="p-6 text-center bg-white border border-dashed rounded-lg border-amber-200">
                         <p className="text-muted-foreground">暂无待审批作业</p>
                       </div>
                     )}
                   </div>
 
-                  <div className="rounded-xl border-2 border-green-100 bg-green-50 p-4">
-                    <div className="mb-4 flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
-                        <ShieldCheck className="h-5 w-5 text-green-600" />
+                  <div className="p-4 border-2 border-green-100 rounded-xl bg-green-50">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg">
+                        <ShieldCheck className="w-5 h-5 text-green-600" />
                       </div>
                       <h3 className="text-lg font-semibold text-green-700">待审批完成作业</h3>
                     </div>
@@ -838,25 +848,25 @@ export default function ParentDashboard() {
                         {completedHomework.map((item) => (
                           <div
                             key={item.id}
-                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border border-green-200 bg-white p-3 hover:border-green-300 hover:bg-green-50"
+                            className="flex flex-col p-3 bg-white border border-green-200 rounded-lg sm:flex-row sm:items-center sm:justify-between hover:border-green-300 hover:bg-green-50"
                           >
                             <div className="flex items-center gap-4 mb-3 sm:mb-0">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
-                                <Check className="h-5 w-5 text-green-600" />
+                              <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-full">
+                                <Check className="w-5 h-5 text-green-600" />
                               </div>
                               <div>
                                 <h4 className="font-medium">{item.title}</h4>
                                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                   <span className="flex items-center gap-1">
-                                    <User className="h-4 w-4" />
+                                    <User className="w-4 h-4" />
                                     {item.childName}
                                   </span>
                                   <span className="flex items-center gap-1">
-                                    <BookOpen className="h-4 w-4" />
+                                    <BookOpen className="w-4 h-4" />
                                     {item.subject}
                                   </span>
                                   <span className="flex items-center gap-1">
-                                    <Clock className="h-4 w-4" />
+                                    <Clock className="w-4 h-4" />
                                     {item.duration}
                                   </span>
                                 </div>
@@ -864,7 +874,7 @@ export default function ParentDashboard() {
                             </div>
                             <div className="flex items-center gap-3 ml-14 sm:ml-0">
                               <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
-                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                 <span>{item.points}</span>
                               </Badge>
                               <Button
@@ -879,25 +889,42 @@ export default function ParentDashboard() {
                         ))}
                       </div>
                     ) : (
-                      <div className="rounded-lg border border-dashed border-green-200 bg-white p-6 text-center">
+                      <div className="p-6 text-center bg-white border border-green-200 border-dashed rounded-lg">
                         <p className="text-muted-foreground">暂无待审批完成作业</p>
                       </div>
                     )}
                   </div>
-                  <div className="rounded-xl border-2 border-blue-100 bg-blue-50 p-4 mt-6">
-                    <div className="mb-4 flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
-                        <BookOpen className="h-5 w-5 text-blue-600" />
+                  <div className="p-4 mt-6 border-2 border-blue-100 rounded-xl bg-blue-50">
+                    <div className="flex flex-col items-start justify-between gap-2 mb-4 sm:flex-row sm:items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                          <BookOpen className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-blue-700">{selectedChildForHomework}的作业列表</h3>
                       </div>
-                      <h3 className="text-lg font-semibold text-blue-700">小朋友的作业列表</h3>
+                      <div className="flex items-center gap-2">
+                        <User className="w-5 h-5 text-blue-600" />
+                        <Select value={selectedChildForHomework} onValueChange={setSelectedChildForHomework}>
+                          <SelectTrigger className="w-[120px]">
+                            <SelectValue placeholder="选择孩子" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {childrenList.map((child) => (
+                              <SelectItem key={child.id} value={child.name}>
+                                {child.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
 
                     <div className="space-y-6">
                       {childHomework.map((subject) => (
-                        <div key={subject.id} className="rounded-xl border-2 border-primary/10 p-4">
-                          <div className="mb-4 flex items-center gap-2">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                              <BookOpen className="h-5 w-5 text-primary" />
+                        <div key={subject.id} className="p-4 border-2 rounded-xl border-primary/10">
+                          <div className="flex items-center gap-2 mb-4">
+                            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
+                              <BookOpen className="w-5 h-5 text-primary" />
                             </div>
                             <h3 className="text-lg font-semibold text-primary">{subject.subject}</h3>
                           </div>
@@ -918,25 +945,25 @@ export default function ParentDashboard() {
                                     }`}
                                   >
                                     {task.completed ? (
-                                      <Check className="h-6 w-6 text-white" />
+                                      <Check className="w-6 h-6 text-white" />
                                     ) : (
-                                      <PenLine className="h-5 w-5 text-primary" />
+                                      <PenLine className="w-5 h-5 text-primary" />
                                     )}
                                   </div>
                                   <div>
                                     <h4 className="font-medium">{task.title}</h4>
                                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                       <span className="flex items-center gap-1">
-                                        <Clock className="h-4 w-4" />
+                                        <Clock className="w-4 h-4" />
                                         {task.duration}
                                       </span>
                                       <span className="flex items-center gap-1">
-                                        <Calendar className="h-4 w-4" />
+                                        <Calendar className="w-4 h-4" />
                                         截止 {task.deadline}
                                       </span>
                                       {task.completed && task.wrongAnswers !== undefined && (
                                         <span className="flex items-center gap-1">
-                                          <AlertCircle className="h-4 w-4 text-amber-500" />
+                                          <AlertCircle className="w-4 h-4 text-amber-500" />
                                           <span className={task.wrongAnswers > 0 ? "text-amber-600" : "text-green-600"}>
                                             错题: {task.wrongAnswers}
                                           </span>
@@ -947,7 +974,7 @@ export default function ParentDashboard() {
                                 </div>
                                 <div className="flex items-center gap-3 ml-14 sm:ml-0">
                                   <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
-                                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                     <span>{task.points}</span>
                                   </Badge>
                                   <div className="flex gap-2"></div>
@@ -960,10 +987,10 @@ export default function ParentDashboard() {
                     </div>
                   </div>
 
-                  <div className="rounded-xl border-2 border-green-100 bg-green-50 p-4 mt-6">
-                    <div className="mb-4 flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
-                        <Award className="h-5 w-5 text-green-600" />
+                  <div className="p-4 mt-6 border-2 border-green-100 rounded-xl bg-green-50">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg">
+                        <Award className="w-5 h-5 text-green-600" />
                       </div>
                       <h3 className="text-lg font-semibold text-green-700">作业完成进度</h3>
                     </div>
@@ -998,11 +1025,11 @@ export default function ParentDashboard() {
           </TabsContent>
 
           <TabsContent value="tasks" className="space-y-4">
-            <Card className="overflow-hidden rounded-2xl border-2 border-primary/20 bg-white">
+            <Card className="overflow-hidden bg-white border-2 rounded-2xl border-primary/20">
               <CardHeader className="bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
-                    <BookOpen className="mr-2 h-6 w-6 text-primary" />
+                    <BookOpen className="w-6 h-6 mr-2 text-primary" />
                     {selectedTaskDate.toLocaleDateString("zh-CN", { month: "long", day: "numeric" })}任务管理
                   </CardTitle>
                   <div className="flex items-center gap-4">
@@ -1011,7 +1038,7 @@ export default function ParentDashboard() {
                       className="rounded-full bg-gradient-to-r from-primary to-purple-600"
                       size="sm"
                     >
-                      <Plus className="mr-2 h-4 w-4" />
+                      <Plus className="w-4 h-4 mr-2" />
                       添加任务
                     </Button>
                     <Button
@@ -1020,11 +1047,11 @@ export default function ParentDashboard() {
                       className="rounded-full"
                       onClick={() => setShowTaskCalendar(!showTaskCalendar)}
                     >
-                      <Calendar className="mr-2 h-4 w-4" />
+                      <Calendar className="w-4 h-4 mr-2" />
                       {showTaskCalendar ? "隐藏日历" : "查看日历"}
                     </Button>
                     <div className="flex items-center gap-2">
-                      <Clock className="h-5 w-5 text-primary" />
+                      <Clock className="w-5 h-5 text-primary" />
                       <span className="text-sm text-muted-foreground">
                         {new Date().toLocaleDateString("zh-CN", { weekday: "long", month: "long", day: "numeric" })}
                       </span>
@@ -1040,10 +1067,10 @@ export default function ParentDashboard() {
                   </div>
                 )}
                 <div className="space-y-6">
-                  <div className="rounded-xl border-2 border-amber-100 bg-amber-50 p-4">
-                    <div className="mb-4 flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100">
-                        <ClipboardCheck className="h-5 w-5 text-amber-600" />
+                  <div className="p-4 border-2 rounded-xl border-amber-100 bg-amber-50">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100">
+                        <ClipboardCheck className="w-5 h-5 text-amber-600" />
                       </div>
                       <h3 className="text-lg font-semibold text-amber-700">待审批新增任务</h3>
                     </div>
@@ -1053,21 +1080,21 @@ export default function ParentDashboard() {
                         {pendingTasks.map((item) => (
                           <div
                             key={item.id}
-                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border border-amber-200 bg-white p-3 hover:border-amber-300 hover:bg-amber-50"
+                            className="flex flex-col p-3 bg-white border rounded-lg sm:flex-row sm:items-center sm:justify-between border-amber-200 hover:border-amber-300 hover:bg-amber-50"
                           >
                             <div className="flex items-center gap-4 mb-3 sm:mb-0">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
-                                <AlertCircle className="h-5 w-5 text-amber-600" />
+                              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-100">
+                                <AlertCircle className="w-5 h-5 text-amber-600" />
                               </div>
                               <div>
                                 <h4 className="font-medium">{item.title}</h4>
                                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                   <span className="flex items-center gap-1">
-                                    <User className="h-4 w-4" />
+                                    <User className="w-4 h-4" />
                                     {item.childName}
                                   </span>
                                   <span className="flex items-center gap-1">
-                                    <Clock className="h-4 w-4" />
+                                    <Clock className="w-4 h-4" />
                                     {item.createdAt}
                                   </span>
                                 </div>
@@ -1078,12 +1105,12 @@ export default function ParentDashboard() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleEditTask(item)}
-                                className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                                className="text-blue-600 border-blue-200 hover:bg-blue-50"
                               >
                                 修改
                               </Button>
                               <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
-                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                 <span>{item.points}</span>
                               </Badge>
                               <Button
@@ -1098,16 +1125,16 @@ export default function ParentDashboard() {
                         ))}
                       </div>
                     ) : (
-                      <div className="rounded-lg border border-dashed border-amber-200 bg-white p-6 text-center">
+                      <div className="p-6 text-center bg-white border border-dashed rounded-lg border-amber-200">
                         <p className="text-muted-foreground">暂无待审批任务</p>
                       </div>
                     )}
                   </div>
 
-                  <div className="rounded-xl border-2 border-green-100 bg-green-50 p-4">
-                    <div className="mb-4 flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
-                        <ShieldCheck className="h-5 w-5 text-green-600" />
+                  <div className="p-4 border-2 border-green-100 rounded-xl bg-green-50">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg">
+                        <ShieldCheck className="w-5 h-5 text-green-600" />
                       </div>
                       <h3 className="text-lg font-semibold text-green-700">待审批完成任务</h3>
                     </div>
@@ -1117,21 +1144,21 @@ export default function ParentDashboard() {
                         {completedTasks.map((item) => (
                           <div
                             key={item.id}
-                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border border-green-200 bg-white p-3 hover:border-green-300 hover:bg-green-50"
+                            className="flex flex-col p-3 bg-white border border-green-200 rounded-lg sm:flex-row sm:items-center sm:justify-between hover:border-green-300 hover:bg-green-50"
                           >
                             <div className="flex items-center gap-4 mb-3 sm:mb-0">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
-                                <Check className="h-5 w-5 text-green-600" />
+                              <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-full">
+                                <Check className="w-5 h-5 text-green-600" />
                               </div>
                               <div>
                                 <h4 className="font-medium">{item.title}</h4>
                                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                   <span className="flex items-center gap-1">
-                                    <User className="h-4 w-4" />
+                                    <User className="w-4 h-4" />
                                     {item.childName}
                                   </span>
                                   <span className="flex items-center gap-1">
-                                    <Clock className="h-4 w-4" />
+                                    <Clock className="w-4 h-4" />
                                     {item.completedAt}
                                   </span>
                                 </div>
@@ -1139,7 +1166,7 @@ export default function ParentDashboard() {
                             </div>
                             <div className="flex items-center gap-3 ml-14 sm:ml-0">
                               <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
-                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                 <span>{item.points}</span>
                               </Badge>
                               <Button
@@ -1154,17 +1181,35 @@ export default function ParentDashboard() {
                         ))}
                       </div>
                     ) : (
-                      <div className="rounded-lg border border-dashed border-green-200 bg-white p-6 text-center">
+                      <div className="p-6 text-center bg-white border border-green-200 border-dashed rounded-lg">
                         <p className="text-muted-foreground">暂无待审批完成任务</p>
                       </div>
                     )}
                   </div>
-                  <div className="rounded-xl border-2 border-blue-100 bg-blue-50 p-4 mt-6">
-                    <div className="mb-4 flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
-                        <BookOpen className="h-5 w-5 text-blue-600" />
+
+                  <div className="p-4 mt-6 border-2 border-blue-100 rounded-xl bg-blue-50">
+                    <div className="flex flex-col items-start justify-between gap-2 mb-4 sm:flex-row sm:items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                          <BookOpen className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-blue-700">{selectedChildForTasks}的任务列表</h3>
                       </div>
-                      <h3 className="text-lg font-semibold text-blue-700">小朋友的任务列表</h3>
+                      <div className="flex items-center gap-2">
+                        <User className="w-5 h-5 text-blue-600" />
+                        <Select value={selectedChildForTasks} onValueChange={setSelectedChildForTasks}>
+                          <SelectTrigger className="w-[120px]">
+                            <SelectValue placeholder="选择孩子" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {childrenList.map((child) => (
+                              <SelectItem key={child.id} value={child.name}>
+                                {child.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
 
                     <div className="space-y-4">
@@ -1184,7 +1229,7 @@ export default function ParentDashboard() {
                               }`}
                             >
                               {task.completed ? (
-                                <Check className="h-6 w-6 text-white" />
+                                <Check className="w-6 h-6 text-white" />
                               ) : (
                                 <span className="text-lg font-bold text-primary">{task.id}</span>
                               )}
@@ -1196,7 +1241,7 @@ export default function ParentDashboard() {
                           </div>
                           <div className="flex items-center gap-3 ml-14 sm:ml-0">
                             <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
-                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                              <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                               <span>{task.points}</span>
                             </Badge>
                           </div>
@@ -1205,10 +1250,10 @@ export default function ParentDashboard() {
                     </div>
                   </div>
 
-                  <div className="rounded-xl border-2 border-green-100 bg-green-50 p-4 mt-6">
-                    <div className="mb-4 flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
-                        <Award className="h-5 w-5 text-green-600" />
+                  <div className="p-4 mt-6 border-2 border-green-100 rounded-xl bg-green-50">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg">
+                        <Award className="w-5 h-5 text-green-600" />
                       </div>
                       <h3 className="text-lg font-semibold text-green-700">小朋友的成就进度</h3>
                     </div>
@@ -1247,11 +1292,11 @@ export default function ParentDashboard() {
           </TabsContent>
 
           <TabsContent value="rewards" className="space-y-4">
-            <Card className="overflow-hidden rounded-2xl border-2 border-primary/20 bg-white">
+            <Card className="overflow-hidden bg-white border-2 rounded-2xl border-primary/20">
               <CardHeader className="bg-gradient-to-r from-pink-400/20 via-orange-400/20 to-yellow-400/20">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
-                    <Gift className="mr-2 h-6 w-6 text-primary" />
+                    <Gift className="w-6 h-6 mr-2 text-primary" />
                     奖励管理
                   </CardTitle>
                   <div className="flex items-center gap-4">
@@ -1260,7 +1305,7 @@ export default function ParentDashboard() {
                       className="rounded-full bg-gradient-to-r from-primary to-purple-600"
                       size="sm"
                     >
-                      <Plus className="mr-2 h-4 w-4" />
+                      <Plus className="w-4 h-4 mr-2" />
                       添加奖励
                     </Button>
                   </div>
@@ -1269,10 +1314,10 @@ export default function ParentDashboard() {
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-6">
-                  <div className="rounded-xl border-2 border-amber-100 bg-amber-50 p-4">
-                    <div className="mb-4 flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100">
-                        <ClipboardCheck className="h-5 w-5 text-amber-600" />
+                  <div className="p-4 border-2 rounded-xl border-amber-100 bg-amber-50">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100">
+                        <ClipboardCheck className="w-5 h-5 text-amber-600" />
                       </div>
                       <h3 className="text-lg font-semibold text-amber-700">待审批兑换</h3>
                     </div>
@@ -1282,21 +1327,21 @@ export default function ParentDashboard() {
                         {pendingRewards.map((item) => (
                           <div
                             key={item.id}
-                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border border-amber-200 bg-white p-3 hover:border-amber-300 hover:bg-amber-50"
+                            className="flex flex-col p-3 bg-white border rounded-lg sm:flex-row sm:items-center sm:justify-between border-amber-200 hover:border-amber-300 hover:bg-amber-50"
                           >
                             <div className="flex items-center gap-4 mb-3 sm:mb-0">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
-                                <Gift className="h-5 w-5 text-amber-600" />
+                              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-100">
+                                <Gift className="w-5 h-5 text-amber-600" />
                               </div>
                               <div>
                                 <h4 className="font-medium">{item.rewardTitle}</h4>
                                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                   <span className="flex items-center gap-1">
-                                    <User className="h-4 w-4" />
+                                    <User className="w-4 h-4" />
                                     {item.childName}
                                   </span>
                                   <span className="flex items-center gap-1">
-                                    <Clock className="h-4 w-4" />
+                                    <Clock className="w-4 h-4" />
                                     {item.requestedAt}
                                   </span>
                                 </div>
@@ -1304,7 +1349,7 @@ export default function ParentDashboard() {
                             </div>
                             <div className="flex items-center gap-3 ml-14 sm:ml-0">
                               <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
-                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                 <span>{item.points}</span>
                               </Badge>
                               <Button
@@ -1319,16 +1364,16 @@ export default function ParentDashboard() {
                         ))}
                       </div>
                     ) : (
-                      <div className="rounded-lg border border-dashed border-amber-200 bg-white p-6 text-center">
+                      <div className="p-6 text-center bg-white border border-dashed rounded-lg border-amber-200">
                         <p className="text-muted-foreground">暂无待审批兑换</p>
                       </div>
                     )}
                   </div>
 
-                  <div className="rounded-xl border-2 border-blue-100 bg-blue-50 p-4">
-                    <div className="mb-4 flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
-                        <Gift className="h-5 w-5 text-blue-600" />
+                  <div className="p-4 border-2 border-blue-100 rounded-xl bg-blue-50">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                        <Gift className="w-5 h-5 text-blue-600" />
                       </div>
                       <h3 className="text-lg font-semibold text-blue-700">当前奖励列表</h3>
                     </div>
@@ -1337,20 +1382,20 @@ export default function ParentDashboard() {
                       {rewards.map((reward) => (
                         <div
                           key={reward.id}
-                          className="flex flex-col overflow-hidden rounded-xl border-2 border-primary/20 bg-gradient-to-br from-white to-purple-50 transition-all hover:border-primary/50 hover:shadow-xl"
+                          className="flex flex-col overflow-hidden transition-all border-2 rounded-xl border-primary/20 bg-gradient-to-br from-white to-purple-50 hover:border-primary/50 hover:shadow-xl"
                         >
                           <div className="flex items-center gap-4 p-4">
-                            <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-primary/10">
+                            <div className="flex items-center justify-center w-20 h-20 rounded-xl bg-primary/10">
                               <img
                                 src={reward.image || "/placeholder.svg"}
                                 alt={reward.title}
-                                className="h-16 w-16 object-contain"
+                                className="object-contain w-16 h-16"
                               />
                             </div>
                             <div className="flex-1">
                               <h3 className="font-semibold">{reward.title}</h3>
-                              <div className="mt-1 flex items-center gap-1">
-                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                              <div className="flex items-center gap-1 mt-1">
+                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                 <span className="font-bold text-primary">{reward.points}</span>
                                 <span className="text-sm text-muted-foreground">积分</span>
                               </div>
@@ -1366,23 +1411,38 @@ export default function ParentDashboard() {
           </TabsContent>
 
           <TabsContent value="history" className="space-y-4">
-            <Card className="overflow-hidden rounded-2xl border-2 border-primary/20 bg-gradient-to-br from-blue-50 to-green-50">
+            <Card className="overflow-hidden border-2 rounded-2xl border-primary/20 bg-gradient-to-br from-blue-50 to-green-50">
               <CardHeader className="bg-gradient-to-r from-blue-400/20 via-teal-400/20 to-green-400/20">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
-                    <History className="mr-2 h-6 w-6 text-primary" />
+                    <History className="w-6 h-6 mr-2 text-primary" />
                     积分记录
                   </CardTitle>
-                  <CardDescription>查看小朋友的积分获取和使用历史</CardDescription>
+                  <div className="flex items-center gap-2">
+                    <User className="w-5 h-5 text-primary" />
+                    <Select value={selectedChildForHistory} onValueChange={setSelectedChildForHistory}>
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue placeholder="选择孩子" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {childrenList.map((child) => (
+                          <SelectItem key={child.id} value={child.name}>
+                            {child.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+                <CardDescription>查看{selectedChildForHistory}的积分获取和使用历史</CardDescription>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-4">
-                  <div className="transition-all duration-300 ease-in-out space-y-3">
+                  <div className="space-y-3 transition-all duration-300 ease-in-out">
                     {history.slice(0, showAllRecords ? history.length : 4).map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between rounded-xl border-2 border-primary/20 bg-white p-4"
+                        className="flex items-center justify-between p-4 bg-white border-2 rounded-xl border-primary/20"
                       >
                         <div className="flex items-center gap-3">
                           <div
@@ -1391,16 +1451,16 @@ export default function ParentDashboard() {
                             }`}
                           >
                             {item.type === "earn" ? (
-                              <Plus className="h-5 w-5 text-green-600" />
+                              <Plus className="w-5 h-5 text-green-600" />
                             ) : (
-                              <Gift className="h-5 w-5 text-red-600" />
+                              <Gift className="w-5 h-5 text-red-600" />
                             )}
                           </div>
                           <div>
                             <h3 className="font-semibold">{item.title}</h3>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                               <span className="flex items-center gap-1">
-                                <User className="h-4 w-4" />
+                                <User className="w-4 h-4" />
                                 {item.childName}
                               </span>
                               <span className="text-muted-foreground">|</span>
@@ -1429,7 +1489,7 @@ export default function ParentDashboard() {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="bg-primary/5 p-6">
+              <CardFooter className="p-6 bg-primary/5">
                 <Button
                   variant="outline"
                   className="w-full transition-all duration-300 hover:bg-primary/10"
