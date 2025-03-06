@@ -1,0 +1,1495 @@
+"use client"
+
+import { useState } from "react"
+import {
+  Star,
+  Gift,
+  BookOpen,
+  History,
+  ChevronRight,
+  Check,
+  Plus,
+  Clock,
+  PenLine,
+  User,
+  ClipboardCheck,
+  ShieldCheck,
+  AlertCircle,
+  Calendar,
+  Award,
+  LogOut,
+  Settings,
+  BarChart3,
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { AddHomeworkDialog } from "./add-homework-dialog"
+import { AddTaskDialog } from "./add-task-dialog"
+import { AddRewardDialog } from "./add-reward-dialog"
+import { ApprovalDialog } from "./approval-dialog"
+import { ChangePasswordDialog } from "./change-password-dialog"
+import { Progress } from "@/components/ui/progress"
+import { TaskCalendar } from "./task-calendar"
+import { HomeworkStatistics } from "./homework-statistics"
+import { DeadlineSettingsDialog } from "./deadline-settings-settings-dialog"
+
+export default function ParentDashboard() {
+  const [points, setPoints] = useState(350)
+  const [childPoints, setChildPoints] = useState({
+    total: 350,
+    thisWeek: 85,
+    thisMonth: 280,
+    thisWeekSpent: 30,
+  })
+  const [pendingHomework, setPendingHomework] = useState([
+    {
+      id: 1,
+      childName: "小明",
+      subject: "语文",
+      title: "阅读课文《春天》",
+      duration: "20分钟",
+      points: 15,
+      status: "pending",
+      createdAt: "2025-03-01 14:30",
+    },
+    {
+      id: 2,
+      childName: "小明",
+      subject: "数学",
+      title: "完成乘法练习",
+      duration: "25分钟",
+      points: 15,
+      status: "pending",
+      createdAt: "2025-03-01 15:45",
+    },
+  ])
+
+  const [completedHomework, setCompletedHomework] = useState([
+    {
+      id: 3,
+      childName: "小明",
+      subject: "英语",
+      title: "背诵单词列表",
+      duration: "15分钟",
+      points: 10,
+      status: "completed",
+      completedAt: "2025-03-01 16:30",
+    },
+  ])
+
+  const [pendingTasks, setPendingTasks] = useState([
+    {
+      id: 1,
+      childName: "小明",
+      title: "整理玩具",
+      points: 10,
+      status: "pending",
+      createdAt: "2025-03-01 10:15",
+    },
+    {
+      id: 2,
+      childName: "小明",
+      title: "帮妈妈洗碗",
+      points: 25,
+      status: "pending",
+      createdAt: "2025-03-01 11:30",
+    },
+  ])
+
+  const [completedTasks, setCompletedTasks] = useState([
+    {
+      id: 3,
+      childName: "小明",
+      title: "阅读30分钟",
+      points: 15,
+      status: "completed",
+      completedAt: "2025-03-01 09:45",
+    },
+  ])
+
+  const [rewards, setRewards] = useState([
+    { id: 1, title: "看30分钟动画片", points: 50, image: "/placeholder.svg?height=80&width=80" },
+    { id: 2, title: "冰淇淋一个", points: 100, image: "/placeholder.svg?height=80&width=80" },
+    { id: 3, title: "玩具小车", points: 200, image: "/placeholder.svg?height=80&width=80" },
+    { id: 4, title: "游乐场门票", points: 500, image: "/placeholder.svg?height=80&width=80" },
+  ])
+
+  const [pendingRewards, setPendingRewards] = useState([
+    {
+      id: 1,
+      childName: "小明",
+      rewardTitle: "看30分钟动画片",
+      points: 50,
+      status: "pending",
+      requestedAt: "2025-03-01 17:15",
+    },
+  ])
+
+  const [history, setHistory] = useState([
+    { id: 1, childName: "小明", title: "完成语文作业", points: 20, type: "earn", date: "2025-02-28" },
+    { id: 2, childName: "小明", title: "兑换冰淇淋", points: 100, type: "spend", date: "2025-02-27" },
+    { id: 3, childName: "小明", title: "帮爸爸整理书架", points: 30, type: "earn", date: "2025-02-26" },
+    { id: 4, childName: "小明", title: "完成英语作业", points: 20, type: "earn", date: "2025-02-25" },
+    { id: 5, childName: "小明", title: "完成数学练习", points: 25, type: "earn", date: "2025-02-24" },
+    { id: 6, childName: "小明", title: "兑换画画套装", points: 300, type: "spend", date: "2025-02-23" },
+    { id: 7, childName: "小明", title: "完成科学实验", points: 35, type: "earn", date: "2025-02-22" },
+    { id: 8, childName: "小明", title: "整理房间", points: 15, type: "earn", date: "2025-02-21" },
+    { id: 9, childName: "小明", title: "背诵古诗", points: 20, type: "earn", date: "2025-02-20" },
+    { id: 10, childName: "小明", title: "兑换故事书", points: 150, type: "spend", date: "2025-02-19" },
+  ])
+
+  const [childHomework, setChildHomework] = useState([
+    {
+      id: 1,
+      subject: "语文",
+      tasks: [
+        { id: 1, title: "阅读课文《春天》", duration: "20分钟", points: 15, completed: false, deadline: "15:30" },
+        {
+          id: 2,
+          title: "完成练习册第12页",
+          duration: "30分钟",
+          points: 20,
+          completed: true,
+          deadline: "16:00",
+          wrongAnswers: 2,
+        },
+      ],
+    },
+    {
+      id: 2,
+      subject: "数学",
+      tasks: [
+        { id: 3, title: "完成乘法练习", duration: "25分钟", points: 15, completed: false, deadline: "16:30" },
+        {
+          id: 4,
+          title: "解决应用题5道",
+          duration: "20分钟",
+          points: 15,
+          completed: true,
+          deadline: "17:00",
+          wrongAnswers: 1,
+        },
+      ],
+    },
+    {
+      id: 3,
+      subject: "英语",
+      tasks: [
+        { id: 5, title: "背诵单词列表", duration: "15分钟", points: 10, completed: false, deadline: "17:30" },
+        {
+          id: 6,
+          title: "完成听力练习",
+          duration: "20分钟",
+          points: 15,
+          completed: true,
+          deadline: "18:00",
+          wrongAnswers: 0,
+        },
+      ],
+    },
+  ])
+
+  const [isAddHomeworkOpen, setIsAddHomeworkOpen] = useState(false)
+  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
+  const [isAddRewardOpen, setIsAddRewardOpen] = useState(false)
+  const [showAllRecords, setShowAllRecords] = useState(false)
+  const [childTasks, setChildTasks] = useState([
+    { id: 1, title: "完成数学作业", points: 20, completed: false, time: "今天" },
+    { id: 2, title: "阅读30分钟", points: 15, completed: true, time: "今天" },
+    { id: 3, title: "整理玩具", points: 10, completed: false, time: "今天" },
+    { id: 4, title: "帮妈妈洗碗", points: 25, completed: true, time: "今天" },
+  ])
+  const [selectedTaskDate, setSelectedTaskDate] = useState(new Date())
+  const [showTaskCalendar, setShowTaskCalendar] = useState(false)
+
+  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false)
+  const [approvalItem, setApprovalItem] = useState(null)
+  const [approvalType, setApprovalType] = useState("") // homework, task, reward
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false)
+  const [isDeadlineSettingsOpen, setIsDeadlineSettingsOpen] = useState(false)
+  const [deadlineSettings, setDeadlineSettings] = useState({
+    enabled: true,
+    time: "20:00",
+    bonusPoints: 50,
+  })
+  const [showStatistics, setShowStatistics] = useState(false)
+  const [selectedHomeworkDate, setSelectedHomeworkDate] = useState(new Date())
+  const [showHomeworkCalendar, setShowHomeworkCalendar] = useState(false)
+  const [editingHomework, setEditingHomework] = useState(null)
+  const [editingTask, setEditingTask] = useState(null)
+
+  const handleAddHomework = (newHomework) => {
+    try {
+      if (editingHomework) {
+        console.log("修改作业:", newHomework)
+        setPendingHomework(
+          pendingHomework.map((item) => (item.id === editingHomework.id ? { ...item, ...newHomework } : item)),
+        )
+        setEditingHomework(null)
+      } else {
+        console.log("添加新作业:", newHomework)
+      }
+    } catch (error) {
+      alert("操作失败：" + error.message)
+    }
+  }
+
+  const handleEditHomework = (item) => {
+    setEditingHomework(item)
+    setIsAddHomeworkOpen(true)
+  }
+
+  const handleEditTask = (item) => {
+    setEditingTask(item)
+    setIsAddTaskOpen(true)
+  }
+
+  const handleAddTask = (newTask) => {
+    try {
+      if (editingTask) {
+        console.log("修改任务:", newTask)
+        setPendingTasks(pendingTasks.map((item) => (item.id === editingTask.id ? { ...item, ...newTask } : item)))
+        setEditingTask(null)
+      } else {
+        console.log("添加新任务:", newTask)
+        const nextId = pendingTasks.length > 0 ? Math.max(...pendingTasks.map((task) => task.id)) + 1 : 1
+        setPendingTasks([
+          ...pendingTasks,
+          {
+            ...newTask,
+            id: nextId,
+            childName: "小明",
+            createdAt: new Date().toISOString().slice(0, 16).replace("T", " "),
+          },
+        ])
+      }
+    } catch (error) {
+      alert("操作失败：" + error.message)
+    }
+  }
+
+  const handleAddReward = (newReward) => {
+    console.log("添加新奖励:", newReward)
+    const nextId = rewards.length > 0 ? Math.max(...rewards.map((r) => r.id)) + 1 : 1
+    setRewards([...rewards, { ...newReward, id: nextId }])
+    alert("奖励添加成功！")
+  }
+
+  const openApprovalDialog = (item, type) => {
+    setApprovalItem(item)
+    setApprovalType(type)
+    setApprovalDialogOpen(true)
+  }
+
+  const handleApproval = (approved, wrongAnswers = 0) => {
+    if (approvalType === "homework-add") {
+      if (approved) {
+        setPendingHomework(pendingHomework.filter((item) => item.id !== approvalItem.id))
+      }
+    } else if (approvalType === "homework-complete") {
+      if (approved) {
+        const updatedCompletedHomework = completedHomework.filter((item) => item.id !== approvalItem.id)
+        setCompletedHomework(updatedCompletedHomework)
+
+        setChildHomework(
+          childHomework.map((subject) => {
+            if (subject.subject === approvalItem.subject) {
+              return {
+                ...subject,
+                tasks: subject.tasks.map((task) => {
+                  if (task.title === approvalItem.title) {
+                    return { ...task, completed: true, wrongAnswers: wrongAnswers }
+                  }
+                  return task
+                }),
+              }
+            }
+            return subject
+          }),
+        )
+
+        console.log(`作业 ${approvalItem.title} 完成，错题数量: ${wrongAnswers}`)
+
+        setHistory([
+          {
+            id: Date.now(),
+            childName: approvalItem.childName,
+            title: `完成${approvalItem.subject}作业: ${approvalItem.title}`,
+            points: approvalItem.points,
+            type: "earn",
+            date: new Date().toISOString().split("T")[0],
+            wrongAnswers: wrongAnswers,
+          },
+          ...history,
+        ])
+
+        setChildPoints({
+          ...childPoints,
+          total: childPoints.total + approvalItem.points,
+          thisWeek: childPoints.thisWeek + approvalItem.points,
+          thisMonth: childPoints.thisMonth + approvalItem.points,
+        })
+      }
+    } else if (approvalType === "task-add") {
+      if (approved) {
+        setPendingTasks(pendingTasks.filter((item) => item.id !== approvalItem.id))
+      }
+    } else if (approvalType === "task-complete") {
+      if (approved) {
+        setCompletedTasks(completedTasks.filter((item) => item.id !== approvalItem.id))
+        setHistory([
+          {
+            id: Date.now(),
+            childName: approvalItem.childName,
+            title: `完成任务: ${approvalItem.title}`,
+            points: approvalItem.points,
+            type: "earn",
+            date: new Date().toISOString().split("T")[0],
+          },
+          ...history,
+        ])
+        setChildPoints({
+          ...childPoints,
+          total: childPoints.total + approvalItem.points,
+          thisWeek: childPoints.thisWeek + approvalItem.points,
+          thisMonth: childPoints.thisMonth + approvalItem.points,
+        })
+      }
+    } else if (approvalType === "reward-redeem") {
+      if (approved) {
+        setPendingRewards(pendingRewards.filter((item) => item.id !== approvalItem.id))
+        setHistory([
+          {
+            id: Date.now(),
+            childName: approvalItem.childName,
+            title: `兑换奖励: ${approvalItem.rewardTitle}`,
+            points: approvalItem.points,
+            type: "spend",
+            date: new Date().toISOString().split("T")[0],
+          },
+          ...history,
+        ])
+        setChildPoints({
+          ...childPoints,
+          total: childPoints.total - approvalItem.points,
+          thisWeekSpent: childPoints.thisWeekSpent + approvalItem.points,
+        })
+      }
+    }
+
+    setApprovalDialogOpen(false)
+    setApprovalItem(null)
+  }
+
+  const handleChangePassword = (passwordData) => {
+    console.log("修改密码:", passwordData)
+    alert("密码修改成功！")
+  }
+
+  const handleSaveDeadlineSettings = (settings) => {
+    console.log("保存截止时间设置:", settings)
+    setDeadlineSettings(settings)
+    alert("设置保存成功！")
+  }
+
+  const handleHomeworkDateSelect = (date) => {
+    setSelectedHomeworkDate(date)
+    console.log("选择的作业日期:", date.toISOString().split("T")[0])
+
+    const formattedDate = date.toISOString().split("T")[0]
+
+    if (formattedDate === new Date().toISOString().split("T")[0]) {
+      setChildHomework([
+        {
+          id: 1,
+          subject: "语文",
+          tasks: [
+            { id: 1, title: "阅读课文《春天》", duration: "20分钟", points: 15, completed: false, deadline: "15:30" },
+            {
+              id: 2,
+              title: "完成练习册第12页",
+              duration: "30分钟",
+              points: 20,
+              completed: true,
+              deadline: "16:00",
+              wrongAnswers: 2,
+            },
+          ],
+        },
+        {
+          id: 2,
+          subject: "数学",
+          tasks: [
+            { id: 3, title: "完成乘法练习", duration: "25分钟", points: 15, completed: false, deadline: "16:30" },
+            {
+              id: 4,
+              title: "解决应用题5道",
+              duration: "20分钟",
+              points: 15,
+              completed: true,
+              deadline: "17:00",
+              wrongAnswers: 1,
+            },
+          ],
+        },
+        {
+          id: 3,
+          subject: "英语",
+          tasks: [
+            { id: 5, title: "背诵单词列表", duration: "15分钟", points: 10, completed: false, deadline: "17:30" },
+            {
+              id: 6,
+              title: "完成听力练习",
+              duration: "20分钟",
+              points: 15,
+              completed: true,
+              deadline: "18:00",
+              wrongAnswers: 0,
+            },
+          ],
+        },
+      ])
+    } else {
+      setChildHomework([
+        {
+          id: 1,
+          subject: "语文",
+          tasks: [
+            {
+              id: 1,
+              title: `${date.getMonth() + 1}月${date.getDate()}日语文阅读`,
+              duration: "30分钟",
+              points: 20,
+              completed: false,
+              deadline: "16:00",
+            },
+          ],
+        },
+        {
+          id: 2,
+          subject: "数学",
+          tasks: [
+            {
+              id: 2,
+              title: `${date.getMonth() + 1}月${date.getDate()}日数学练习`,
+              duration: "25分钟",
+              points: 15,
+              completed: true,
+              deadline: "17:00",
+            },
+          ],
+        },
+      ])
+    }
+  }
+
+  const handleTaskDateSelect = (date) => {
+    setSelectedTaskDate(date)
+    console.log("选择的任务日期:", date.toISOString().split("T")[0])
+
+    const formattedDate = date.toISOString().split("T")[0]
+
+    if (formattedDate === new Date().toISOString().split("T")[0]) {
+      setChildTasks([
+        { id: 1, title: "完成数学作业", points: 20, completed: false, time: "今天" },
+        { id: 2, title: "阅读30分钟", points: 15, completed: true, time: "今天" },
+        { id: 3, title: "整理玩具", points: 10, completed: false, time: "今天" },
+        { id: 4, title: "帮妈妈洗碗", points: 25, completed: true, time: "今天" },
+      ])
+    } else {
+      setChildTasks([
+        {
+          id: 1,
+          title: `${date.getMonth() + 1}月${date.getDate()}日任务1`,
+          points: Math.floor(Math.random() * 20) + 10,
+          completed: false,
+          time: `${date.getMonth() + 1}月${date.getDate()}日`,
+        },
+        {
+          id: 2,
+          title: `${date.getMonth() + 1}月${date.getDate()}日任务2`,
+          points: Math.floor(Math.random() * 20) + 10,
+          completed: true,
+          time: `${date.getMonth() + 1}月${date.getDate()}日`,
+        },
+      ])
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 p-3 sm:p-4 md:p-8">
+      <div className="mx-auto max-w-5xl">
+        <header className="mb-4 sm:mb-6 flex flex-col gap-3 sm:gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 rounded-2xl bg-white/90 backdrop-blur-sm p-3 sm:p-4 shadow-lg border-2 border-white/50">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 animate-pulse blur"></div>
+                <Avatar className="relative h-12 w-12 border-2 border-white">
+                  <AvatarImage src="/placeholder.svg?height=40&width=40" />
+                  <AvatarFallback className="bg-gradient-to-r from-blue-400 to-purple-400 text-white">
+                    家长
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  你好，家长！
+                </h2>
+                <p className="text-gray-600">欢迎使用家长管理界面</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-400/10 to-purple-400/10 border border-blue-400/20">
+                <User className="h-6 w-6 text-blue-500" />
+                <span className="text-lg font-bold text-blue-600">家长模式</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full hover:bg-blue-100 hover:text-blue-600 transition-colors"
+                onClick={() => setIsChangePasswordOpen(true)}
+              >
+                <Settings className="h-5 w-5" />
+                <span className="sr-only">修改密码</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full hover:bg-red-100 hover:text-red-600 transition-colors"
+                onClick={() => (window.location.href = "/login")}
+              >
+                <LogOut className="h-5 w-5" />
+                <span className="sr-only">退出登录</span>
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            <div className="rounded-2xl bg-gradient-to-br from-green-400/90 to-teal-500/90 p-4 shadow-lg border-2 border-white/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                    <Clock className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white/80">作业截止时间</p>
+                    <h3 className="text-xl font-bold text-white">
+                      {deadlineSettings.enabled ? deadlineSettings.time : "未启用"}
+                    </h3>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white hover:bg-white/20"
+                  onClick={() => setIsDeadlineSettingsOpen(true)}
+                >
+                  设置
+                </Button>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-gradient-to-br from-yellow-400/90 to-amber-500/90 p-4 shadow-lg border-2 border-white/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                    <Star className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white/80">小明的总积分</p>
+                    <h3 className="text-2xl font-bold text-white">{childPoints.total}</h3>
+                  </div>
+                </div>
+                <Award className="h-12 w-12 text-white/20" />
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-gradient-to-br from-blue-400/90 to-cyan-500/90 p-4 shadow-lg border-2 border-white/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                    <Calendar className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white/80">本周获得积分</p>
+                    <h3 className="text-2xl font-bold text-white">{childPoints.thisWeek}</h3>
+                  </div>
+                </div>
+                <Star className="h-12 w-12 text-white/20" />
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-gradient-to-br from-purple-400/90 to-pink-500/90 p-4 shadow-lg border-2 border-white/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                    <History className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white/80">本周消耗积分</p>
+                    <h3 className="text-2xl font-bold text-white">{childPoints.thisWeekSpent}</h3>
+                  </div>
+                </div>
+                <Gift className="h-12 w-12 text-white/20" />
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <Tabs defaultValue="homework" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-4 rounded-xl bg-white/80 p-1 text-xs sm:text-sm md:text-lg shadow-xl">
+            <TabsTrigger
+              value="homework"
+              className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
+            >
+              <div className="flex items-center">
+                <PenLine className="mr-2 h-5 w-5" />
+                <span>作业</span>
+                {pendingHomework.length > 0 && (
+                  <span className="ml-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                    {pendingHomework.length}
+                  </span>
+                )}
+              </div>
+            </TabsTrigger>
+            <TabsTrigger
+              value="tasks"
+              className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
+            >
+              <div className="flex items-center">
+                <BookOpen className="mr-2 h-5 w-5" />
+                <span>任务</span>
+                {pendingTasks.length > 0 && (
+                  <span className="ml-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                    {pendingTasks.length}
+                  </span>
+                )}
+              </div>
+            </TabsTrigger>
+            <TabsTrigger
+              value="rewards"
+              className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
+            >
+              <div className="flex items-center">
+                <Gift className="mr-2 h-5 w-5" />
+                <span>兑奖</span>
+                {pendingRewards.length > 0 && (
+                  <span className="ml-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                    {pendingRewards.length}
+                  </span>
+                )}
+              </div>
+            </TabsTrigger>
+            <TabsTrigger
+              value="history"
+              className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
+            >
+              <div className="flex items-center">
+                <History className="mr-2 h-5 w-5" />
+                <span>记录</span>
+              </div>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="homework" className="space-y-4">
+            <Card className="overflow-hidden rounded-2xl border-2 border-primary/20 bg-white">
+              <CardHeader className="bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                  <CardTitle className="flex items-center text-2xl">
+                    <BookOpen className="mr-2 h-6 w-6 text-primary" />
+                    {selectedHomeworkDate.toLocaleDateString("zh-CN", { month: "long", day: "numeric" })}作业管理
+                  </CardTitle>
+                  <div className="flex items-center gap-4">
+                    <Button
+                      onClick={() => setIsAddHomeworkOpen(true)}
+                      className="rounded-full bg-gradient-to-r from-primary to-purple-600"
+                      size="sm"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      添加作业
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-full"
+                      onClick={() => setShowHomeworkCalendar(!showHomeworkCalendar)}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {showHomeworkCalendar ? "隐藏日历" : "查看日历"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:from-teal-600 hover:to-cyan-600"
+                      onClick={() => setShowStatistics(!showStatistics)}
+                    >
+                      <BarChart3 className="mr-2 h-4 w-4" />
+                      {showStatistics ? "隐藏统计" : "查看统计"}
+                    </Button>
+                  </div>
+                </div>
+                <CardDescription>管理小朋友的作业，审批作业添加和完成</CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                {showHomeworkCalendar && (
+                  <div className="mb-6">
+                    <TaskCalendar selectedDate={selectedHomeworkDate} onDateSelect={handleHomeworkDateSelect} />
+                  </div>
+                )}
+                {showStatistics && (
+                  <div className="mb-6 mt-4">
+                    <div className="rounded-xl border-2 border-purple-100 bg-purple-50 p-4">
+                      <div className="mb-4 flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100">
+                          <BarChart3 className="h-5 w-5 text-purple-600" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-purple-700">作业统计分析</h3>
+                      </div>
+                      <HomeworkStatistics>
+                        {[
+                          { id: 1, name: "小明" },
+                          { id: 2, name: "小红" },
+                        ]}
+                      </HomeworkStatistics>
+                    </div>
+                  </div>
+                )}
+                <div className="space-y-6">
+                  <div className="rounded-xl border-2 border-amber-100 bg-amber-50 p-4">
+                    <div className="mb-4 flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100">
+                        <ClipboardCheck className="h-5 w-5 text-amber-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-amber-700">待审批新增作业</h3>
+                    </div>
+
+                    {pendingHomework.length > 0 ? (
+                      <div className="space-y-3">
+                        {pendingHomework.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border border-amber-200 bg-white p-3 hover:border-amber-300 hover:bg-amber-50"
+                          >
+                            <div className="flex items-center gap-4 mb-3 sm:mb-0">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
+                                <AlertCircle className="h-5 w-5 text-amber-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-medium">{item.title}</h4>
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <User className="h-4 w-4" />
+                                    {item.childName}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <BookOpen className="h-4 w-4" />
+                                    {item.subject}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-4 w-4" />
+                                    {item.duration}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 ml-14 sm:ml-0">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditHomework(item)}
+                                className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                              >
+                                修改
+                              </Button>
+                              <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
+                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                                <span>{item.points}</span>
+                              </Badge>
+                              <Button
+                                size="sm"
+                                onClick={() => openApprovalDialog(item, "homework-add")}
+                                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                              >
+                                审批
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-amber-200 bg-white p-6 text-center">
+                        <p className="text-muted-foreground">暂无待审批作业</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="rounded-xl border-2 border-green-100 bg-green-50 p-4">
+                    <div className="mb-4 flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
+                        <ShieldCheck className="h-5 w-5 text-green-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-green-700">待审批完成作业</h3>
+                    </div>
+
+                    {completedHomework.length > 0 ? (
+                      <div className="space-y-3">
+                        {completedHomework.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border border-green-200 bg-white p-3 hover:border-green-300 hover:bg-green-50"
+                          >
+                            <div className="flex items-center gap-4 mb-3 sm:mb-0">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+                                <Check className="h-5 w-5 text-green-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-medium">{item.title}</h4>
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <User className="h-4 w-4" />
+                                    {item.childName}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <BookOpen className="h-4 w-4" />
+                                    {item.subject}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-4 w-4" />
+                                    {item.duration}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 ml-14 sm:ml-0">
+                              <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
+                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                                <span>{item.points}</span>
+                              </Badge>
+                              <Button
+                                size="sm"
+                                onClick={() => openApprovalDialog(item, "homework-complete")}
+                                className="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600"
+                              >
+                                审批完成
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-green-200 bg-white p-6 text-center">
+                        <p className="text-muted-foreground">暂无待审批完成作业</p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="rounded-xl border-2 border-blue-100 bg-blue-50 p-4 mt-6">
+                    <div className="mb-4 flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
+                        <BookOpen className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-blue-700">小朋友的作业列表</h3>
+                    </div>
+
+                    <div className="space-y-6">
+                      {childHomework.map((subject) => (
+                        <div key={subject.id} className="rounded-xl border-2 border-primary/10 p-4">
+                          <div className="mb-4 flex items-center gap-2">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                              <BookOpen className="h-5 w-5 text-primary" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-primary">{subject.subject}</h3>
+                          </div>
+                          <div className="space-y-3">
+                            {subject.tasks.map((task) => (
+                              <div
+                                key={task.id}
+                                className={`flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border p-3 transition-all ${
+                                  task.completed
+                                    ? "border-green-200 bg-green-50"
+                                    : "border-gray-200 bg-white hover:border-primary/30 hover:bg-blue-50"
+                                }`}
+                              >
+                                <div className="flex items-center gap-4 mb-3 sm:mb-0">
+                                  <div
+                                    className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                                      task.completed ? "bg-green-500" : "bg-primary/10"
+                                    }`}
+                                  >
+                                    {task.completed ? (
+                                      <Check className="h-6 w-6 text-white" />
+                                    ) : (
+                                      <PenLine className="h-5 w-5 text-primary" />
+                                    )}
+                                  </div>
+                                  <div>
+                                    <h4 className="font-medium">{task.title}</h4>
+                                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                      <span className="flex items-center gap-1">
+                                        <Clock className="h-4 w-4" />
+                                        {task.duration}
+                                      </span>
+                                      <span className="flex items-center gap-1">
+                                        <Calendar className="h-4 w-4" />
+                                        截止 {task.deadline}
+                                      </span>
+                                      {task.completed && task.wrongAnswers !== undefined && (
+                                        <span className="flex items-center gap-1">
+                                          <AlertCircle className="h-4 w-4 text-amber-500" />
+                                          <span className={task.wrongAnswers > 0 ? "text-amber-600" : "text-green-600"}>
+                                            错题: {task.wrongAnswers}
+                                          </span>
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3 ml-14 sm:ml-0">
+                                  <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
+                                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                                    <span>{task.points}</span>
+                                  </Badge>
+                                  <div className="flex gap-2"></div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border-2 border-green-100 bg-green-50 p-4 mt-6">
+                    <div className="mb-4 flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
+                        <Award className="h-5 w-5 text-green-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-green-700">作业完成进度</h3>
+                    </div>
+
+                    <div className="space-y-6">
+                      {childHomework.map((subject) => {
+                        const totalTasks = subject.tasks.length
+                        const completedTasks = subject.tasks.filter((t) => t.completed).length
+                        const progress = (completedTasks / totalTasks) * 100
+
+                        return (
+                          <div key={subject.id} className="space-y-2">
+                            <div className="flex justify-between">
+                              <span className="font-medium">{subject.subject}</span>
+                              <span className="text-sm text-muted-foreground">
+                                {completedTasks}/{totalTasks}
+                              </span>
+                            </div>
+                            <Progress
+                              value={progress}
+                              className="h-3 rounded-full bg-gradient-to-r from-blue-200 to-purple-200"
+                              indicatorClassName="bg-gradient-to-r from-blue-500 to-purple-500"
+                            />
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="tasks" className="space-y-4">
+            <Card className="overflow-hidden rounded-2xl border-2 border-primary/20 bg-white">
+              <CardHeader className="bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                  <CardTitle className="flex items-center text-2xl">
+                    <BookOpen className="mr-2 h-6 w-6 text-primary" />
+                    {selectedTaskDate.toLocaleDateString("zh-CN", { month: "long", day: "numeric" })}任务管理
+                  </CardTitle>
+                  <div className="flex items-center gap-4">
+                    <Button
+                      onClick={() => setIsAddTaskOpen(true)}
+                      className="rounded-full bg-gradient-to-r from-primary to-purple-600"
+                      size="sm"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      添加任务
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-full"
+                      onClick={() => setShowTaskCalendar(!showTaskCalendar)}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {showTaskCalendar ? "隐藏日历" : "查看日历"}
+                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-primary" />
+                      <span className="text-sm text-muted-foreground">
+                        {new Date().toLocaleDateString("zh-CN", { weekday: "long", month: "long", day: "numeric" })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <CardDescription>管理小朋友的日常任务，审批任务添加和完成</CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                {showTaskCalendar && (
+                  <div className="mb-6">
+                    <TaskCalendar selectedDate={selectedTaskDate} onDateSelect={handleTaskDateSelect} />
+                  </div>
+                )}
+                <div className="space-y-6">
+                  <div className="rounded-xl border-2 border-amber-100 bg-amber-50 p-4">
+                    <div className="mb-4 flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100">
+                        <ClipboardCheck className="h-5 w-5 text-amber-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-amber-700">待审批新增任务</h3>
+                    </div>
+
+                    {pendingTasks.length > 0 ? (
+                      <div className="space-y-3">
+                        {pendingTasks.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border border-amber-200 bg-white p-3 hover:border-amber-300 hover:bg-amber-50"
+                          >
+                            <div className="flex items-center gap-4 mb-3 sm:mb-0">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
+                                <AlertCircle className="h-5 w-5 text-amber-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-medium">{item.title}</h4>
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <User className="h-4 w-4" />
+                                    {item.childName}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-4 w-4" />
+                                    {item.createdAt}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 ml-14 sm:ml-0">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditTask(item)}
+                                className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                              >
+                                修改
+                              </Button>
+                              <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
+                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                                <span>{item.points}</span>
+                              </Badge>
+                              <Button
+                                size="sm"
+                                onClick={() => openApprovalDialog(item, "task-add")}
+                                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                              >
+                                审批
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-amber-200 bg-white p-6 text-center">
+                        <p className="text-muted-foreground">暂无待审批任务</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="rounded-xl border-2 border-green-100 bg-green-50 p-4">
+                    <div className="mb-4 flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
+                        <ShieldCheck className="h-5 w-5 text-green-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-green-700">待审批完成任务</h3>
+                    </div>
+
+                    {completedTasks.length > 0 ? (
+                      <div className="space-y-3">
+                        {completedTasks.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border border-green-200 bg-white p-3 hover:border-green-300 hover:bg-green-50"
+                          >
+                            <div className="flex items-center gap-4 mb-3 sm:mb-0">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+                                <Check className="h-5 w-5 text-green-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-medium">{item.title}</h4>
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <User className="h-4 w-4" />
+                                    {item.childName}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-4 w-4" />
+                                    {item.completedAt}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 ml-14 sm:ml-0">
+                              <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
+                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                                <span>{item.points}</span>
+                              </Badge>
+                              <Button
+                                size="sm"
+                                onClick={() => openApprovalDialog(item, "task-complete")}
+                                className="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600"
+                              >
+                                审批完成
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-green-200 bg-white p-6 text-center">
+                        <p className="text-muted-foreground">暂无待审批完成任务</p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="rounded-xl border-2 border-blue-100 bg-blue-50 p-4 mt-6">
+                    <div className="mb-4 flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
+                        <BookOpen className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-blue-700">小朋友的任务列表</h3>
+                    </div>
+
+                    <div className="space-y-4">
+                      {childTasks.map((task) => (
+                        <div
+                          key={task.id}
+                          className={`flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-xl border-2 p-4 transition-all ${
+                            task.completed
+                              ? "border-green-200 bg-gradient-to-r from-green-100 to-emerald-50"
+                              : "border-primary/20 bg-white hover:border-primary/50 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 mb-3 sm:mb-0">
+                            <div
+                              className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                                task.completed ? "bg-green-500" : "bg-primary/20"
+                              }`}
+                            >
+                              {task.completed ? (
+                                <Check className="h-6 w-6 text-white" />
+                              ) : (
+                                <span className="text-lg font-bold text-primary">{task.id}</span>
+                              )}
+                            </div>
+                            <div>
+                              <h3 className="font-semibold">{task.title}</h3>
+                              <p className="text-sm text-muted-foreground">{task.time}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 ml-14 sm:ml-0">
+                            <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
+                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                              <span>{task.points}</span>
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border-2 border-green-100 bg-green-50 p-4 mt-6">
+                    <div className="mb-4 flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
+                        <Award className="h-5 w-5 text-green-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-green-700">小朋友的成就进度</h3>
+                    </div>
+
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="font-medium">阅读小达人</span>
+                          <span className="text-sm text-muted-foreground">7/10</span>
+                        </div>
+                        <Progress
+                          value={70}
+                          className="h-3 rounded-full bg-gradient-to-r from-blue-200 to-purple-200"
+                          indicatorClassName="bg-gradient-to-r from-blue-500 to-purple-500"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="font-medium">数学小能手</span>
+                          <span className="text-sm text-muted-foreground">5/10</span>
+                        </div>
+                        <Progress value={50} className="h-3 rounded-full" />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="font-medium">整理小能手</span>
+                          <span className="text-sm text-muted-foreground">3/5</span>
+                        </div>
+                        <Progress value={60} className="h-3 rounded-full" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="rewards" className="space-y-4">
+            <Card className="overflow-hidden rounded-2xl border-2 border-primary/20 bg-white">
+              <CardHeader className="bg-gradient-to-r from-pink-400/20 via-orange-400/20 to-yellow-400/20">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                  <CardTitle className="flex items-center text-2xl">
+                    <Gift className="mr-2 h-6 w-6 text-primary" />
+                    奖励管理
+                  </CardTitle>
+                  <div className="flex items-center gap-4">
+                    <Button
+                      onClick={() => setIsAddRewardOpen(true)}
+                      className="rounded-full bg-gradient-to-r from-primary to-purple-600"
+                      size="sm"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      添加奖励
+                    </Button>
+                  </div>
+                </div>
+                <CardDescription>管理奖励项目，审批小朋友的兑换请求</CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-6">
+                  <div className="rounded-xl border-2 border-amber-100 bg-amber-50 p-4">
+                    <div className="mb-4 flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100">
+                        <ClipboardCheck className="h-5 w-5 text-amber-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-amber-700">待审批兑换</h3>
+                    </div>
+
+                    {pendingRewards.length > 0 ? (
+                      <div className="space-y-3">
+                        {pendingRewards.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border border-amber-200 bg-white p-3 hover:border-amber-300 hover:bg-amber-50"
+                          >
+                            <div className="flex items-center gap-4 mb-3 sm:mb-0">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
+                                <Gift className="h-5 w-5 text-amber-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-medium">{item.rewardTitle}</h4>
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <User className="h-4 w-4" />
+                                    {item.childName}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-4 w-4" />
+                                    {item.requestedAt}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 ml-14 sm:ml-0">
+                              <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
+                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                                <span>{item.points}</span>
+                              </Badge>
+                              <Button
+                                size="sm"
+                                onClick={() => openApprovalDialog(item, "reward-redeem")}
+                                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                              >
+                                审批兑换
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-amber-200 bg-white p-6 text-center">
+                        <p className="text-muted-foreground">暂无待审批兑换</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="rounded-xl border-2 border-blue-100 bg-blue-50 p-4">
+                    <div className="mb-4 flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
+                        <Gift className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-blue-700">当前奖励列表</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
+                      {rewards.map((reward) => (
+                        <div
+                          key={reward.id}
+                          className="flex flex-col overflow-hidden rounded-xl border-2 border-primary/20 bg-gradient-to-br from-white to-purple-50 transition-all hover:border-primary/50 hover:shadow-xl"
+                        >
+                          <div className="flex items-center gap-4 p-4">
+                            <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-primary/10">
+                              <img
+                                src={reward.image || "/placeholder.svg"}
+                                alt={reward.title}
+                                className="h-16 w-16 object-contain"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-semibold">{reward.title}</h3>
+                              <div className="mt-1 flex items-center gap-1">
+                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                                <span className="font-bold text-primary">{reward.points}</span>
+                                <span className="text-sm text-muted-foreground">积分</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="history" className="space-y-4">
+            <Card className="overflow-hidden rounded-2xl border-2 border-primary/20 bg-gradient-to-br from-blue-50 to-green-50">
+              <CardHeader className="bg-gradient-to-r from-blue-400/20 via-teal-400/20 to-green-400/20">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                  <CardTitle className="flex items-center text-2xl">
+                    <History className="mr-2 h-6 w-6 text-primary" />
+                    积分记录
+                  </CardTitle>
+                  <CardDescription>查看小朋友的积分获取和使用历史</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="transition-all duration-300 ease-in-out space-y-3">
+                    {history.slice(0, showAllRecords ? history.length : 4).map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between rounded-xl border-2 border-primary/20 bg-white p-4"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                              item.type === "earn" ? "bg-green-100" : "bg-red-100"
+                            }`}
+                          >
+                            {item.type === "earn" ? (
+                              <Plus className="h-5 w-5 text-green-600" />
+                            ) : (
+                              <Gift className="h-5 w-5 text-red-600" />
+                            )}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">{item.title}</h3>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <User className="h-4 w-4" />
+                                {item.childName}
+                              </span>
+                              <span className="text-muted-foreground">|</span>
+                              <span>{item.date}</span>
+                              {item.wrongAnswers !== undefined && (
+                                <>
+                                  <span className="text-muted-foreground">|</span>
+                                  <span className={item.wrongAnswers > 0 ? "text-amber-600" : "text-green-600"}>
+                                    错题: {item.wrongAnswers}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          className={`flex items-center gap-1 font-bold ${
+                            item.type === "earn" ? "text-green-600" : "text-red-600"
+                          }`}
+                        >
+                          {item.type === "earn" ? "+" : "-"}
+                          {item.points}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="bg-primary/5 p-6">
+                <Button
+                  variant="outline"
+                  className="w-full transition-all duration-300 hover:bg-primary/10"
+                  onClick={() => setShowAllRecords(!showAllRecords)}
+                >
+                  {showAllRecords ? "收起记录" : "查看更多记录"}
+                  <ChevronRight
+                    className={`ml-2 h-4 w-4 transition-transform duration-300 ${showAllRecords ? "rotate-90" : ""}`}
+                  />
+                </Button>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      <AddHomeworkDialog
+        isOpen={isAddHomeworkOpen}
+        onClose={() => {
+          setIsAddHomeworkOpen(false)
+          setEditingHomework(null)
+        }}
+        onAdd={handleAddHomework}
+        initialData={editingHomework}
+      />
+
+      <AddTaskDialog
+        isOpen={isAddTaskOpen}
+        onClose={() => {
+          setIsAddTaskOpen(false)
+          setEditingTask(null)
+        }}
+        onAdd={handleAddTask}
+        initialData={editingTask}
+      />
+
+      <AddRewardDialog isOpen={isAddRewardOpen} onClose={() => setIsAddRewardOpen(false)} onAdd={handleAddReward} />
+
+      <ApprovalDialog
+        isOpen={approvalDialogOpen}
+        onClose={() => setApprovalDialogOpen(false)}
+        onApprove={(wrongAnswers) => handleApproval(true, wrongAnswers)}
+        onReject={() => handleApproval(false)}
+        item={approvalItem}
+        type={approvalType}
+        showWrongAnswersHelp={true}
+      />
+      <ChangePasswordDialog
+        isOpen={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
+        onSubmit={handleChangePassword}
+        userType="parent"
+      />
+      <DeadlineSettingsDialog
+        isOpen={isDeadlineSettingsOpen}
+        onClose={() => setIsDeadlineSettingsOpen(false)}
+        onSave={handleSaveDeadlineSettings}
+        currentSettings={deadlineSettings}
+      />
+    </div>
+  )
+}
+
