@@ -1525,6 +1525,7 @@ export default function ParentDashboard() {
         }}
         onAdd={handleAddTask}
         initialData={editingTask}
+        childrenList={childrenList}
       />
 
       <AddRewardDialog isOpen={isAddRewardOpen} onClose={() => setIsAddRewardOpen(false)} onAdd={handleAddReward} />
