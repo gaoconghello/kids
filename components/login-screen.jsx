@@ -45,8 +45,9 @@ export default function LoginScreen() {
       // 保存用户信息到localStorage
       localStorage.setItem("userInfo", JSON.stringify(data.user));
 
-      router.push("/dashboard");
-      toast.success("登录成功");
+      // 跳转到仪表盘，使用 window.location.href 确保页面完全刷新
+      window.location.href = "/dashboard";
+      
     } catch (error) {
       console.error("登录错误:", error);
       toast.error(error.message || "登录失败，请重试");
