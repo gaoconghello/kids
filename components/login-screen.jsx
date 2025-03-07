@@ -1,29 +1,29 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Star, Award, Gift, Sparkles } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { toast } from "sonner"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Star, Award, Gift, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 export default function LoginScreen() {
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const handleLogin = async (e) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     if (!username || !password) {
-      toast.error("请输入用户名和密码")
-      return
+      toast.error("请输入用户名和密码");
+      return;
     }
-    
-    setIsLoading(true)
-    
+
+    setIsLoading(true);
+
     try {
       const response = await fetch("/api/login", {
         method: "POST",
@@ -31,45 +31,29 @@ export default function LoginScreen() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ username, password }),
-      })
-      
-      const data = await response.json()
-      
+      });
+
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error(data.error || "登录失败")
+        throw new Error(data.error || "登录失败");
       }
-      
+
       // 保存token到localStorage
-      localStorage.setItem("token", data.token)
-      
+      localStorage.setItem("token", data.token);
+
       // 保存用户信息到localStorage
-      localStorage.setItem("userInfo", JSON.stringify(data.user))
-      
-      // 根据用户角色跳转到不同的dashboard
-      switch (data.user.role) {
-        case "admin":
-          toast.success("管理员登录成功")
-          router.push("/admin")
-          break
-        case "parent":
-          toast.success("家长登录成功")
-          router.push("/parent")
-          break
-        case "child":
-          toast.success("小朋友登录成功")
-          router.push("/dashboard")
-          break
-        default:
-          toast.success("登录成功")
-          router.push("/dashboard")
-      }
+      localStorage.setItem("userInfo", JSON.stringify(data.user));
+
+      router.push("/dashboard");
+      toast.success("登录成功");
     } catch (error) {
-      console.error("登录错误:", error)
-      toast.error(error.message || "登录失败，请重试")
+      console.error("登录错误:", error);
+      toast.error(error.message || "登录失败，请重试");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen p-3 sm:p-4">
@@ -93,12 +77,18 @@ export default function LoginScreen() {
           <div className="flex justify-center mb-6">
             <div className="relative">
               <Award className="w-20 h-20 text-primary fill-primary/20" />
-              <div className="absolute inset-0 flex items-center justify-center text-xl font-bold text-white">星</div>
+              <div className="absolute inset-0 flex items-center justify-center text-xl font-bold text-white">
+                星
+              </div>
             </div>
           </div>
 
-          <h1 className="mb-2 text-2xl font-bold tracking-tight sm:text-3xl text-primary">小朋友积分乐园</h1>
-          <p className="mb-6 text-base sm:mb-8 sm:text-lg text-muted-foreground">完成任务，赢取积分，兑换奖励！</p>
+          <h1 className="mb-2 text-2xl font-bold tracking-tight sm:text-3xl text-primary">
+            小朋友积分乐园
+          </h1>
+          <p className="mb-6 text-base sm:mb-8 sm:text-lg text-muted-foreground">
+            完成任务，赢取积分，兑换奖励！
+          </p>
 
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
@@ -120,9 +110,7 @@ export default function LoginScreen() {
                   required
                   disabled={isLoading}
                 />
-                <div
-                  className="absolute inset-0 transition-opacity duration-300 opacity-0 pointer-events-none rounded-xl bg-gradient-to-r from-primary/10 via-purple-500/10 to-pink-500/10 group-hover:opacity-100 group-focus-within:opacity-100"
-                />
+                <div className="absolute inset-0 transition-opacity duration-300 opacity-0 pointer-events-none rounded-xl bg-gradient-to-r from-primary/10 via-purple-500/10 to-pink-500/10 group-hover:opacity-100 group-focus-within:opacity-100" />
               </div>
             </div>
 
@@ -145,9 +133,7 @@ export default function LoginScreen() {
                   required
                   disabled={isLoading}
                 />
-                <div
-                  className="absolute inset-0 transition-opacity duration-300 opacity-0 pointer-events-none rounded-xl bg-gradient-to-r from-primary/10 via-purple-500/10 to-pink-500/10 group-hover:opacity-100 group-focus-within:opacity-100"
-                />
+                <div className="absolute inset-0 transition-opacity duration-300 opacity-0 pointer-events-none rounded-xl bg-gradient-to-r from-primary/10 via-purple-500/10 to-pink-500/10 group-hover:opacity-100 group-focus-within:opacity-100" />
               </div>
             </div>
 
@@ -169,6 +155,5 @@ export default function LoginScreen() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-
