@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth} from "@/lib/auth";
 import { z } from "zod";
+import { formatDateTime } from "@/lib/utils";
 
 // 定义Zod验证模式
 const createFamilySchema = z.object({
@@ -40,7 +41,9 @@ export const GET = withAuth('admin', async (request) => {
           },
           select: {
             id: true,
-            name: true
+            name: true,
+            username: true,
+            mobile: true
           }
         });
 
@@ -67,10 +70,12 @@ export const GET = withAuth('admin', async (request) => {
           points: child.integral || 0
         }));
 
-        // 格式化父母数据，添加默认头像
+        // 格式化父母数据，添加默认头像和新增的username和mobile字段
         const formattedParents = parents.map(parent => ({
           id: parent.id,
           name: parent.name,
+          username: parent.username,
+          mobile: parent.mobile,
           avatar: "/placeholder.svg?height=40&width=40"
         }));
 
@@ -80,7 +85,7 @@ export const GET = withAuth('admin', async (request) => {
           name: family.name,
           parents: formattedParents,
           children: formattedChildren,
-          createdAt: family.created_at
+          createdAt: family.created_at ? formatDateTime(family.created_at) : null
         };
       })
     );
@@ -116,11 +121,29 @@ export const POST = withAuth('admin', async (request) => {
     }
     
     const { name } = validationResult.data;
+    const currentUserId = request.user.id;
+    const currentTime = new Date();
+
+    // 检查家庭名称是否已存在
+    const existingFamily = await prisma.family.findFirst({
+      where: { name }
+    });
+
+    if (existingFamily) {
+      return NextResponse.json(
+        { code: 400, message: "家庭名称已存在" },
+        { status: 400 }
+      );
+    }
 
     // 创建新家庭
     const newFamily = await prisma.family.create({
       data: {
         name: name,
+        created_at: currentTime,
+        updated_at: currentTime,
+        created_user_id: currentUserId,
+        updated_user_id: currentUserId
       }
     });
 
@@ -133,7 +156,7 @@ export const POST = withAuth('admin', async (request) => {
         name: newFamily.name,
         parents: [],
         children: [],
-        createdAt: newFamily.created_at
+        createdAt: newFamily.created_at ? formatDateTime(newFamily.created_at) : null
       }
     });
   } catch (error) {
@@ -162,6 +185,8 @@ export const PUT = withAuth('admin', async (request) => {
     }
     
     const { id, name } = validationResult.data;
+    const currentUserId = request.user.id;
+    const currentTime = new Date();
 
     // 检查家庭是否存在
     const existingFamily = await prisma.family.findUnique({
@@ -175,10 +200,29 @@ export const PUT = withAuth('admin', async (request) => {
       );
     }
 
+    // 检查家庭名称是否已被其他家庭使用
+    const duplicateFamily = await prisma.family.findFirst({
+      where: { 
+        name,
+        id: { not: id }
+      }
+    });
+
+    if (duplicateFamily) {
+      return NextResponse.json(
+        { code: 400, message: "家庭名称已被其他家庭使用" },
+        { status: 400 }
+      );
+    }
+
     // 更新家庭信息
     const updatedFamily = await prisma.family.update({
       where: { id: id },
-      data: { name: name }
+      data: { 
+        name: name,
+        updated_at: currentTime,
+        updated_user_id: currentUserId
+      }
     });
 
     // 查询该家庭的父母和孩子
@@ -189,7 +233,9 @@ export const PUT = withAuth('admin', async (request) => {
       },
       select: {
         id: true,
-        name: true
+        name: true,
+        username: true,
+        mobile: true
       }
     });
 
@@ -210,6 +256,8 @@ export const PUT = withAuth('admin', async (request) => {
     const formattedParents = parents.map(parent => ({
       id: parent.id,
       name: parent.name,
+      username: parent.username,
+      mobile: parent.mobile,
       avatar: "/placeholder.svg?height=40&width=40"
     }));
 
@@ -230,7 +278,8 @@ export const PUT = withAuth('admin', async (request) => {
         name: updatedFamily.name,
         parents: formattedParents,
         children: formattedChildren,
-        createdAt: updatedFamily.created_at
+        createdAt: updatedFamily.created_at ? formatDateTime(updatedFamily.created_at) : null,
+        updatedAt: updatedFamily.updated_at ? formatDateTime(updatedFamily.updated_at) : null
       }
     });
   } catch (error) {

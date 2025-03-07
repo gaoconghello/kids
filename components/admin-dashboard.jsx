@@ -355,6 +355,7 @@ export default function AdminDashboard() {
   }
 
   const handleAddParent = (newParent) => {
+    // 更新本地状态
     setFamilies(
       families.map((family) => {
         if (family.id === newParent.familyId) {
@@ -369,6 +370,7 @@ export default function AdminDashboard() {
   }
 
   const handleEditParent = (updatedParent) => {
+    // 更新本地状态
     setFamilies(
       families.map((family) => {
         if (family.id === updatedParent.familyId) {
@@ -383,6 +385,7 @@ export default function AdminDashboard() {
   }
 
   const handleDeleteParent = (parentToDelete) => {
+    // 更新本地状态
     setFamilies(
       families.map((family) => {
         if (family.id === parentToDelete.familyId) {
