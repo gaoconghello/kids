@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model account {
+  id              Int       @id @default(autoincrement())
+  username        String    @db.VarChar(50)
+  password        String    @db.VarChar(50)
+  name            String    @db.VarChar(50)
+  age             Int?
+  parent_id       Int?
+  grade           Int?
+  role            String    @db.VarChar(20)
+  family_id       Int?
+  integral        Int?
+  created_at      DateTime? @db.Timestamp(6)
+  updated_at      DateTime? @db.Timestamp(6)
+  created_user_id Int?
+  updated_user_id Int?
+}
+
+model family {
+  id              Int       @id @default(autoincrement())
+  name            String?   @db.VarChar(50)
+  created_at      DateTime? @db.Timestamp(6)
+  updated_at      DateTime? @db.Timestamp(6)
+  created_user_id Int?
+  updated_user_id Int?
+}
+
+model homework {
+  id                      Int       @id @default(autoincrement())
+  name                    String    @db.VarChar(100)
+  subject_id              Int?
+  estimated_duration      Int?
+  deadline                DateTime? @db.Timestamp(6)
+  integral                Int?
+  incorrect               Int?
+  homework_date           DateTime? @db.Date
+  create_review           String?   @db.VarChar(1)
+  complete_review         String?   @db.VarChar(1)
+  create_review_time      DateTime? @db.Timestamp(6)
+  complete_review_time    DateTime? @db.Timestamp(6)
+  create_review_user_id   Int?
+  complete_review_user_id Int?
+  complete_time           DateTime? @db.Timestamp(6)
+  child_id                Int?
+  created_at              DateTime? @db.Timestamp(6)
+  updated_at              DateTime? @db.Timestamp(6)
+  created_user_id         Int?
+  updated_user_id         Int?
+}
+
+model integral_history {
+  id            Int     @id @default(autoincrement())
+  integral_id   Int?
+  integral_type String? @db.VarChar(2)
+  child_id      Int?
+  family_id     Int?
+}
+
+model prize {
+  id              Int       @id @default(autoincrement())
+  name            String?   @db.VarChar(100)
+  integral        Int?
+  family_id       Int?
+  pic             String?   @db.VarChar(36)
+  pic_ext         String?   @db.VarChar(20)
+  created_at      DateTime? @db.Timestamp(6)
+  updated_at      DateTime? @db.Timestamp(6)
+  created_user_id Int?
+  updated_user_id Int?
+}
+
+model prize_history {
+  id              Int       @id @default(autoincrement())
+  prize_id        Int?
+  review          String?   @db.VarChar(1)
+  review_time     DateTime? @db.Timestamp(6)
+  child_id        Int?
+  created_at      DateTime? @db.Timestamp(6)
+  updated_at      DateTime? @db.Timestamp(6)
+  created_user_id Int?
+  updated_user_id Int?
+}
+
+model task {
+  id                      Int       @id @default(autoincrement())
+  name                    String?   @db.VarChar(100)
+  integral                Int?
+  child_id                Int?
+  create_review           String?   @db.VarChar(1)
+  complete_review         String?   @db.VarChar(1)
+  create_review_time      DateTime? @db.Timestamp(6)
+  complete_review_time    DateTime? @db.Timestamp(6)
+  create_review_user_id   Int?
+  complete_review_user_id Int?
+  complete_time           DateTime? @db.Timestamp(6)
+  created_at              DateTime? @db.Timestamp(6)
+  updated_at              DateTime? @db.Timestamp(6)
+  created_user_id         Int?
+  updated_user_id         Int?
+}
