@@ -30,20 +30,43 @@ import { DeleteParentDialog } from "./delete-parent-dialog"
 import { AddChildDialog } from "./add-child-dialog"
 import { EditChildDialog } from "./edit-child-dialog"
 import { DeleteChildDialog } from "./delete-child-dialog"
+import { useAuth } from "@/app/providers/AuthProvider"
+import { toast } from "sonner"
+import { get, post, put, del } from "@/lib/http"
 
 export function AddFamilyDialog({ isOpen, onClose, onAdd }) {
   const [familyName, setFamilyName] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = () => {
-    const newFamily = {
-      id: Date.now(), // 临时ID
-      name: familyName,
-      parents: [],
-      children: [],
-      createdAt: new Date().toLocaleDateString(),
+  const handleSubmit = async () => {
+    if (!familyName.trim()) {
+      toast.error("家庭名称不能为空");
+      return;
     }
-    onAdd(newFamily)
-    onClose()
+
+    try {
+      setIsSubmitting(true);
+      
+      // 调用API创建新家庭
+      const response = await post('/api/family', { name: familyName });
+      const result = await response.json();
+      
+      if (result.code === 200) {
+        // 成功创建家庭
+        toast.success("家庭创建成功");
+        onAdd(result.data);
+        setFamilyName(""); // 清空输入
+        onClose();
+      } else {
+        // API返回错误
+        toast.error(result.message || "创建家庭失败");
+      }
+    } catch (error) {
+      console.error("创建家庭出错:", error);
+      toast.error("创建家庭时发生错误");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -54,7 +77,7 @@ export function AddFamilyDialog({ isOpen, onClose, onAdd }) {
           <DialogDescription>在此处填写新家庭的信息。</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
+          <div className="grid items-center grid-cols-4 gap-4">
             <Label htmlFor="name" className="text-right">
               家庭名称
             </Label>
@@ -67,8 +90,12 @@ export function AddFamilyDialog({ isOpen, onClose, onAdd }) {
           </div>
         </div>
         <div className="flex justify-end">
-          <Button type="submit" onClick={handleSubmit}>
-            添加家庭
+          <Button 
+            type="submit" 
+            onClick={handleSubmit} 
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "添加中..." : "添加家庭"}
           </Button>
         </div>
       </DialogContent>
@@ -78,6 +105,7 @@ export function AddFamilyDialog({ isOpen, onClose, onAdd }) {
 
 export function EditFamilyDialog({ isOpen, onClose, onEdit, family }) {
   const [familyName, setFamilyName] = useState(family?.name || "")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // 当family属性变化时更新状态
   React.useEffect(() => {
@@ -86,15 +114,39 @@ export function EditFamilyDialog({ isOpen, onClose, onEdit, family }) {
     }
   }, [family])
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!family) return
-
-    const updatedFamily = {
-      ...family,
-      name: familyName,
+    
+    if (!familyName.trim()) {
+      toast.error("家庭名称不能为空");
+      return;
     }
-    onEdit(updatedFamily)
-    onClose()
+
+    try {
+      setIsSubmitting(true);
+      
+      // 调用API更新家庭信息
+      const response = await put('/api/family', { 
+        id: family.id, 
+        name: familyName 
+      });
+      const result = await response.json();
+      
+      if (result.code === 200) {
+        // 成功更新家庭
+        toast.success("家庭信息更新成功");
+        onEdit(result.data);
+        onClose();
+      } else {
+        // API返回错误
+        toast.error(result.message || "更新家庭失败");
+      }
+    } catch (error) {
+      console.error("更新家庭出错:", error);
+      toast.error("更新家庭时发生错误");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -105,7 +157,7 @@ export function EditFamilyDialog({ isOpen, onClose, onEdit, family }) {
           <DialogDescription>修改家庭信息。</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
+          <div className="grid items-center grid-cols-4 gap-4">
             <Label htmlFor="edit-name" className="text-right">
               家庭名称
             </Label>
@@ -118,8 +170,12 @@ export function EditFamilyDialog({ isOpen, onClose, onEdit, family }) {
           </div>
         </div>
         <div className="flex justify-end">
-          <Button type="submit" onClick={handleSubmit}>
-            保存修改
+          <Button 
+            type="submit" 
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "保存中..." : "保存修改"}
           </Button>
         </div>
       </DialogContent>
@@ -128,10 +184,33 @@ export function EditFamilyDialog({ isOpen, onClose, onEdit, family }) {
 }
 
 export function DeleteFamilyDialog({ isOpen, onClose, onDelete, family }) {
-  const handleDelete = () => {
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleDelete = async () => {
     if (!family) return
-    onDelete(family.id)
-    onClose()
+    
+    try {
+      setIsDeleting(true);
+      
+      // 调用API删除家庭
+      const response = await del(`/api/family?id=${family.id}`);
+      const result = await response.json();
+      
+      if (result.code === 200) {
+        // 成功删除家庭
+        toast.success("家庭已成功删除");
+        onDelete(family.id);
+        onClose();
+      } else {
+        // API返回错误
+        toast.error(result.message || "删除家庭失败");
+      }
+    } catch (error) {
+      console.error("删除家庭出错:", error);
+      toast.error("删除家庭时发生错误");
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   return (
@@ -147,8 +226,12 @@ export function DeleteFamilyDialog({ isOpen, onClose, onDelete, family }) {
           <Button variant="outline" onClick={onClose}>
             取消
           </Button>
-          <Button variant="destructive" onClick={handleDelete}>
-            确认删除
+          <Button 
+            variant="destructive" 
+            onClick={handleDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? "删除中..." : "确认删除"}
           </Button>
         </div>
       </DialogContent>
@@ -157,63 +240,57 @@ export function DeleteFamilyDialog({ isOpen, onClose, onDelete, family }) {
 }
 
 export default function AdminDashboard() {
-  // 示例家庭数据
-  const [families, setFamilies] = useState([
-    {
-      id: 1,
-      name: "张家",
-      parents: [
-        { id: 1, name: "张爸爸", avatar: "/placeholder.svg?height=40&width=40" },
-        { id: 2, name: "张妈妈", avatar: "/placeholder.svg?height=40&width=40" },
-      ],
-      children: [
-        { id: 1, name: "张小明", age: 8, avatar: "/placeholder.svg?height=40&width=40", points: 350 },
-        { id: 2, name: "张小红", age: 6, avatar: "/placeholder.svg?height=40&width=40", points: 280 },
-      ],
-      createdAt: "2025-01-15",
-    },
-    {
-      id: 2,
-      name: "李家",
-      parents: [{ id: 3, name: "李爸爸", avatar: "/placeholder.svg?height=40&width=40" }],
-      children: [{ id: 3, name: "李小华", age: 9, avatar: "/placeholder.svg?height=40&width=40", points: 420 }],
-      createdAt: "2025-02-01",
-    },
-    {
-      id: 3,
-      name: "王家",
-      parents: [
-        { id: 4, name: "王爸爸", avatar: "/placeholder.svg?height=40&width=40" },
-        { id: 5, name: "王妈妈", avatar: "/placeholder.svg?height=40&width=40" },
-      ],
-      children: [
-        { id: 4, name: "王小军", age: 7, avatar: "/placeholder.svg?height=40&width=40", points: 310 },
-        { id: 5, name: "王小丽", age: 5, avatar: "/placeholder.svg?height=40&width=40", points: 150 },
-        { id: 6, name: "王小刚", age: 10, avatar: "/placeholder.svg?height=40&width=40", points: 520 },
-      ],
-      createdAt: "2025-02-10",
-    },
-    {
-      id: 4,
-      name: "陈家",
-      parents: [
-        { id: 6, name: "陈爸爸", avatar: "/placeholder.svg?height=40&width=40" },
-        { id: 7, name: "陈妈妈", avatar: "/placeholder.svg?height=40&width=40" },
-      ],
-      children: [{ id: 7, name: "陈小玲", age: 8, avatar: "/placeholder.svg?height=40&width=40", points: 380 }],
-      createdAt: "2025-02-20",
-    },
-    {
-      id: 5,
-      name: "刘家",
-      parents: [{ id: 8, name: "刘爸爸", avatar: "/placeholder.svg?height=40&width=40" }],
-      children: [
-        { id: 8, name: "刘小阳", age: 9, avatar: "/placeholder.svg?height=40&width=40", points: 400 },
-        { id: 9, name: "刘小月", age: 7, avatar: "/placeholder.svg?height=40&width=40", points: 290 },
-      ],
-      createdAt: "2025-03-01",
-    },
-  ])
+  const { logout } = useAuth()
+  // 修改为使用API获取家庭数据
+  const [families, setFamilies] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // 添加useEffect钩子来获取家庭数据
+  React.useEffect(() => {
+    const fetchFamilies = async () => {
+      try {
+        setLoading(true)
+        const response = await get('/api/family')
+        const result = await response.json()
+        
+        if (result.code === 200) {
+          setFamilies(result.data)
+        } else {
+          setError(result.message || '获取家庭数据失败')
+        }
+      } catch (err) {
+        console.error('获取家庭数据出错:', err)
+        setError('获取家庭数据时发生错误')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchFamilies()
+  }, [])
+
+  // 添加重新获取数据的函数
+  const handleRefreshData = async () => {
+    try {
+      // 只设置局部加载状态
+      setError(null)
+      const response = await get('/api/family')
+      const result = await response.json()
+      
+      if (result.code === 200) {
+        setFamilies(result.data)
+        toast.success('数据已成功刷新')
+      } else {
+        setError(result.message || '获取家庭数据失败')
+        toast.error(result.message || '获取家庭数据失败')
+      }
+    } catch (err) {
+      console.error('获取家庭数据出错:', err)
+      setError('获取家庭数据时发生错误')
+      toast.error('获取家庭数据时发生错误')
+    }
+  }
 
   const [searchTerm, setSearchTerm] = useState("")
   const [expandedFamilies, setExpandedFamilies] = useState({})
@@ -253,16 +330,28 @@ export default function AdminDashboard() {
     }))
   }
 
-  const handleAddFamily = (newFamily) => {
+  const handleAddFamily = async (newFamily) => {
+    // 添加新家庭到状态
     setFamilies([...families, newFamily])
+    
+    // 刷新数据以确保与服务器同步
+    await handleRefreshData()
   }
 
-  const handleEditFamily = (updatedFamily) => {
+  const handleEditFamily = async (updatedFamily) => {
+    // 更新家庭信息
     setFamilies(families.map((family) => (family.id === updatedFamily.id ? updatedFamily : family)))
+    
+    // 刷新数据以确保与服务器同步
+    await handleRefreshData()
   }
 
-  const handleDeleteFamily = (familyId) => {
+  const handleDeleteFamily = async (familyId) => {
+    // 从状态中移除家庭
     setFamilies(families.filter((family) => family.id !== familyId))
+    
+    // 刷新数据以确保与服务器同步
+    await handleRefreshData()
   }
 
   const handleAddParent = (newParent) => {
@@ -396,65 +485,65 @@ export default function AdminDashboard() {
   }
 
   // 计算统计数据
-  const totalFamilies = families.length
-  const totalParents = families.reduce((sum, family) => sum + family.parents.length, 0)
-  const totalChildren = families.reduce((sum, family) => sum + family.children.length, 0)
+  const totalFamilies = loading ? 0 : families.length
+  const totalParents = loading ? 0 : families.reduce((sum, family) => sum + family.parents.length, 0)
+  const totalChildren = loading ? 0 : families.reduce((sum, family) => sum + family.children.length, 0)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 p-3 sm:p-4 md:p-8">
-      <div className="mx-auto max-w-6xl">
+    <div className="min-h-screen p-3 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 sm:p-4 md:p-8">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <header className="mb-4 sm:mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 rounded-2xl bg-white/90 backdrop-blur-sm p-3 sm:p-4 shadow-lg border-2 border-white/50">
+        <header className="flex flex-col items-start justify-between gap-3 p-3 mb-4 border-2 shadow-lg sm:mb-6 sm:flex-row sm:items-center sm:gap-0 rounded-2xl bg-white/90 backdrop-blur-sm sm:p-4 border-white/50">
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 animate-pulse blur"></div>
-              <Avatar className="relative h-12 w-12 border-2 border-white">
+              <Avatar className="relative w-12 h-12 border-2 border-white">
                 <AvatarImage src="/placeholder.svg?height=40&width=40" />
-                <AvatarFallback className="bg-gradient-to-r from-blue-400 to-purple-400 text-white">
+                <AvatarFallback className="text-white bg-gradient-to-r from-blue-400 to-purple-400">
                   管理
                 </AvatarFallback>
               </Avatar>
             </div>
             <div>
-              <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h2 className="text-xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text">
                 系统管理员
               </h2>
               <p className="text-gray-600">欢迎使用管理员控制台</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-400/10 to-purple-400/10 border border-blue-400/20">
-              <Users className="h-6 w-6 text-blue-500" />
+            <div className="flex items-center gap-2 px-4 py-2 border rounded-full bg-gradient-to-r from-blue-400/10 to-purple-400/10 border-blue-400/20">
+              <Users className="w-6 h-6 text-blue-500" />
               <span className="text-lg font-bold text-blue-600">管理员模式</span>
             </div>
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full hover:bg-blue-100 hover:text-blue-600 transition-colors"
+              className="transition-colors rounded-full hover:bg-blue-100 hover:text-blue-600"
             >
-              <Settings className="h-5 w-5" />
+              <Settings className="w-5 h-5" />
               <span className="sr-only">设置</span>
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full hover:bg-red-100 hover:text-red-600 transition-colors"
-              onClick={() => (window.location.href = "/login")}
+              className="transition-colors rounded-full hover:bg-red-100 hover:text-red-600"
+              onClick={logout}
             >
-              <LogOut className="h-5 w-5" />
+              <LogOut className="w-5 h-5" />
               <span className="sr-only">退出登录</span>
             </Button>
           </div>
         </header>
 
         {/* 统计卡片 */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="grid grid-cols-1 gap-3 mb-4 sm:grid-cols-3 sm:gap-4 sm:mb-6">
           {/* 家庭数量卡片 */}
-          <div className="rounded-2xl bg-gradient-to-br from-blue-400/90 to-cyan-500/90 p-4 shadow-lg border-2 border-white/50">
+          <div className="p-4 border-2 shadow-lg rounded-2xl bg-gradient-to-br from-blue-400/90 to-cyan-500/90 border-white/50">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                  <Home className="h-6 w-6 text-white" />
+                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm">
+                  <Home className="w-6 h-6 text-white" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-white/80">家庭总数</p>
@@ -465,11 +554,11 @@ export default function AdminDashboard() {
           </div>
 
           {/* 家长数量卡片 */}
-          <div className="rounded-2xl bg-gradient-to-br from-purple-400/90 to-pink-500/90 p-4 shadow-lg border-2 border-white/50">
+          <div className="p-4 border-2 shadow-lg rounded-2xl bg-gradient-to-br from-purple-400/90 to-pink-500/90 border-white/50">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                  <User className="h-6 w-6 text-white" />
+                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm">
+                  <User className="w-6 h-6 text-white" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-white/80">家长总数</p>
@@ -480,11 +569,11 @@ export default function AdminDashboard() {
           </div>
 
           {/* 孩子数量卡片 */}
-          <div className="rounded-2xl bg-gradient-to-br from-yellow-400/90 to-amber-500/90 p-4 shadow-lg border-2 border-white/50">
+          <div className="p-4 border-2 shadow-lg rounded-2xl bg-gradient-to-br from-yellow-400/90 to-amber-500/90 border-white/50">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                  <Users className="h-6 w-6 text-white" />
+                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm">
+                  <Users className="w-6 h-6 text-white" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-white/80">孩子总数</p>
@@ -497,13 +586,13 @@ export default function AdminDashboard() {
 
         {/* Main Content */}
         <Tabs defaultValue="families" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 rounded-xl bg-white/80 p-1 text-xs sm:text-sm md:text-lg shadow-xl">
+          <TabsList className="grid w-full grid-cols-2 p-1 text-xs shadow-xl rounded-xl bg-white/80 sm:text-sm md:text-lg">
             <TabsTrigger
               value="families"
               className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
             >
               <div className="flex items-center">
-                <Home className="mr-2 h-5 w-5" />
+                <Home className="w-5 h-5 mr-2" />
                 <span>家庭管理</span>
               </div>
             </TabsTrigger>
@@ -512,7 +601,7 @@ export default function AdminDashboard() {
               className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
             >
               <div className="flex items-center">
-                <Settings className="mr-2 h-5 w-5" />
+                <Settings className="w-5 h-5 mr-2" />
                 <span>系统设置</span>
               </div>
             </TabsTrigger>
@@ -520,19 +609,19 @@ export default function AdminDashboard() {
 
           {/* 家庭管理标签页内容 */}
           <TabsContent value="families" className="space-y-4">
-            <Card className="overflow-hidden rounded-2xl border-2 border-primary/20 bg-white">
+            <Card className="overflow-hidden bg-white border-2 rounded-2xl border-primary/20">
               <CardHeader className="bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
-                    <Home className="mr-2 h-6 w-6 text-primary" />
+                    <Home className="w-6 h-6 mr-2 text-primary" />
                     家庭列表
                   </CardTitle>
                   <div className="flex items-center gap-4">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Search className="absolute w-4 h-4 text-gray-400 -translate-y-1/2 left-3 top-1/2" />
                       <Input
                         placeholder="搜索家庭或成员..."
-                        className="pl-9 w-full sm:w-64"
+                        className="w-full pl-9 sm:w-64"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
@@ -542,7 +631,7 @@ export default function AdminDashboard() {
                       size="sm"
                       onClick={() => setIsAddFamilyOpen(true)}
                     >
-                      <Plus className="mr-2 h-4 w-4" />
+                      <Plus className="w-4 h-4 mr-2" />
                       添加家庭
                     </Button>
                   </div>
@@ -551,34 +640,64 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-4">
-                  {filteredFamilies.length > 0 ? (
+                  {loading ? (
+                    // 加载状态UI
+                    <div className="p-8 text-center border border-gray-300 border-dashed rounded-lg">
+                      <div className="flex items-center justify-center w-12 h-12 mx-auto bg-blue-100 rounded-full animate-pulse">
+                        <svg className="w-6 h-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      </div>
+                      <h3 className="mt-4 text-lg font-medium text-gray-900">正在加载家庭数据</h3>
+                      <p className="mt-2 text-sm text-gray-500">请稍候，正在从服务器获取数据...</p>
+                    </div>
+                  ) : error ? (
+                    // 错误状态UI
+                    <div className="p-8 text-center border border-red-300 border-dashed rounded-lg">
+                      <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full">
+                        <svg className="w-6 h-6 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      </div>
+                      <h3 className="mt-4 text-lg font-medium text-red-900">获取数据失败</h3>
+                      <p className="mt-2 text-sm text-red-500">{error}</p>
+                      <Button 
+                        variant="outline" 
+                        className="mt-4 text-red-600 border-red-300 hover:bg-red-50"
+                        onClick={handleRefreshData}
+                      >
+                        重新加载
+                      </Button>
+                    </div>
+                  ) : filteredFamilies.length > 0 ? (
                     filteredFamilies.map((family) => (
-                      <div key={family.id} className="rounded-xl border-2 border-primary/10 overflow-hidden">
+                      <div key={family.id} className="overflow-hidden border-2 rounded-xl border-primary/10">
                         <div
-                          className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-purple-50 cursor-pointer"
+                          className="flex items-center justify-between p-4 cursor-pointer bg-gradient-to-r from-blue-50 to-purple-50"
                           onClick={() => toggleFamilyExpanded(family.id)}
                         >
                           <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                              <Home className="h-5 w-5 text-primary" />
+                            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+                              <Home className="w-5 h-5 text-primary" />
                             </div>
                             <div>
-                              <h3 className="font-semibold text-lg">{family.name}</h3>
+                              <h3 className="text-lg font-semibold">{family.name}</h3>
                               <p className="text-sm text-muted-foreground">创建于 {family.createdAt}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
-                            <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">
+                            <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">
                               {family.parents.length} 位家长
                             </Badge>
-                            <Badge variant="outline" className="bg-purple-50 text-purple-600 border-purple-200">
+                            <Badge variant="outline" className="text-purple-600 border-purple-200 bg-purple-50">
                               {family.children.length} 位孩子
                             </Badge>
                             <Button variant="ghost" size="icon">
                               {expandedFamilies[family.id] ? (
-                                <ChevronDown className="h-5 w-5" />
+                                <ChevronDown className="w-5 h-5" />
                               ) : (
-                                <ChevronRight className="h-5 w-5" />
+                                <ChevronRight className="w-5 h-5" />
                               )}
                             </Button>
                           </div>
@@ -586,11 +705,11 @@ export default function AdminDashboard() {
 
                         {expandedFamilies[family.id] && (
                           <div className="p-4 bg-white">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                               {/* 家长列表 */}
-                              <div className="rounded-lg border border-blue-100 p-4">
-                                <h4 className="font-medium text-blue-700 mb-3 flex items-center">
-                                  <User className="h-5 w-5 mr-2" />
+                              <div className="p-4 border border-blue-100 rounded-lg">
+                                <h4 className="flex items-center mb-3 font-medium text-blue-700">
+                                  <User className="w-5 h-5 mr-2" />
                                   家长
                                 </h4>
                                 <div className="space-y-3">
@@ -600,7 +719,7 @@ export default function AdminDashboard() {
                                       className="flex items-center justify-between p-2 rounded-lg hover:bg-blue-50"
                                     >
                                       <div className="flex items-center gap-3">
-                                        <Avatar className="h-8 w-8">
+                                        <Avatar className="w-8 h-8">
                                           <AvatarImage src={parent.avatar} />
                                           <AvatarFallback>{parent.name.charAt(0)}</AvatarFallback>
                                         </Avatar>
@@ -610,24 +729,24 @@ export default function AdminDashboard() {
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="h-8 w-8"
+                                          className="w-8 h-8"
                                           onClick={(e) => {
                                             e.stopPropagation()
                                             openEditParentDialog(parent, family.id)
                                           }}
                                         >
-                                          <Edit className="h-4 w-4" />
+                                          <Edit className="w-4 h-4" />
                                         </Button>
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="h-8 w-8 text-red-500"
+                                          className="w-8 h-8 text-red-500"
                                           onClick={(e) => {
                                             e.stopPropagation()
                                             openDeleteParentDialog(parent, family.id)
                                           }}
                                         >
-                                          <Trash2 className="h-4 w-4" />
+                                          <Trash2 className="w-4 h-4" />
                                         </Button>
                                       </div>
                                     </div>
@@ -641,7 +760,7 @@ export default function AdminDashboard() {
                                       openAddParentDialog(family)
                                     }}
                                   >
-                                    <Plus className="h-4 w-4 mr-2" />
+                                    <Plus className="w-4 h-4 mr-2" />
                                     添加家长
                                   </Button>
                                 </div>
@@ -649,9 +768,9 @@ export default function AdminDashboard() {
 
                               {/* 孩子列表 */}
                               {/* 孩子列表部分 */}
-                              <div className="rounded-lg border border-purple-100 p-4">
-                                <h4 className="font-medium text-purple-700 mb-3 flex items-center">
-                                  <Users className="h-5 w-5 mr-2" />
+                              <div className="p-4 border border-purple-100 rounded-lg">
+                                <h4 className="flex items-center mb-3 font-medium text-purple-700">
+                                  <Users className="w-5 h-5 mr-2" />
                                   孩子
                                 </h4>
                                 <div className="space-y-3">
@@ -661,7 +780,7 @@ export default function AdminDashboard() {
                                       className="flex items-center justify-between p-2 rounded-lg hover:bg-purple-50"
                                     >
                                       <div className="flex items-center gap-3">
-                                        <Avatar className="h-8 w-8">
+                                        <Avatar className="w-8 h-8">
                                           <AvatarImage src={child.avatar} />
                                           <AvatarFallback>{child.name.charAt(0)}</AvatarFallback>
                                         </Avatar>
@@ -702,10 +821,10 @@ export default function AdminDashboard() {
                                                                         : ""}
                                             </span>
                                           </div>
-                                          <div className="text-xs text-amber-600 flex items-center">
+                                          <div className="flex items-center text-xs text-amber-600">
                                             <svg
                                               xmlns="http://www.w3.org/2000/svg"
-                                              className="h-3 w-3 mr-1"
+                                              className="w-3 h-3 mr-1"
                                               viewBox="0 0 24 24"
                                               fill="currentColor"
                                             >
@@ -719,24 +838,24 @@ export default function AdminDashboard() {
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="h-8 w-8"
+                                          className="w-8 h-8"
                                           onClick={(e) => {
                                             e.stopPropagation()
                                             openEditChildDialog(child, family.id)
                                           }}
                                         >
-                                          <Edit className="h-4 w-4" />
+                                          <Edit className="w-4 h-4" />
                                         </Button>
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="h-8 w-8 text-red-500"
+                                          className="w-8 h-8 text-red-500"
                                           onClick={(e) => {
                                             e.stopPropagation()
                                             openDeleteChildDialog(child, family.id)
                                           }}
                                         >
-                                          <Trash2 className="h-4 w-4" />
+                                          <Trash2 className="w-4 h-4" />
                                         </Button>
                                       </div>
                                     </div>
@@ -750,14 +869,14 @@ export default function AdminDashboard() {
                                       openAddChildDialog(family)
                                     }}
                                   >
-                                    <Plus className="h-4 w-4 mr-2" />
+                                    <Plus className="w-4 h-4 mr-2" />
                                     添加孩子
                                   </Button>
                                 </div>
                               </div>
                             </div>
 
-                            <div className="flex justify-end mt-4 gap-2">
+                            <div className="flex justify-end gap-2 mt-4">
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -767,7 +886,7 @@ export default function AdminDashboard() {
                                   openEditFamilyDialog(family)
                                 }}
                               >
-                                <Edit className="h-4 w-4 mr-2" />
+                                <Edit className="w-4 h-4 mr-2" />
                                 编辑家庭
                               </Button>
                               <Button
@@ -779,7 +898,7 @@ export default function AdminDashboard() {
                                   openDeleteFamilyDialog(family)
                                 }}
                               >
-                                <Trash2 className="h-4 w-4 mr-2" />
+                                <Trash2 className="w-4 h-4 mr-2" />
                                 删除家庭
                               </Button>
                             </div>
@@ -788,9 +907,9 @@ export default function AdminDashboard() {
                       </div>
                     ))
                   ) : (
-                    <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
-                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
-                        <Search className="h-6 w-6 text-gray-400" />
+                    <div className="p-8 text-center border border-gray-300 border-dashed rounded-lg">
+                      <div className="flex items-center justify-center w-12 h-12 mx-auto bg-gray-100 rounded-full">
+                        <Search className="w-6 h-6 text-gray-400" />
                       </div>
                       <h3 className="mt-4 text-lg font-medium text-gray-900">未找到家庭</h3>
                       <p className="mt-2 text-sm text-gray-500">没有找到符合搜索条件的家庭，请尝试其他搜索词。</p>
@@ -798,8 +917,8 @@ export default function AdminDashboard() {
                   )}
                 </div>
               </CardContent>
-              <CardFooter className="bg-gray-50 p-6">
-                <div className="flex w-full items-center justify-between">
+              <CardFooter className="p-6 bg-gray-50">
+                <div className="flex items-center justify-between w-full">
                   <div className="text-sm text-muted-foreground">共 {filteredFamilies.length} 个家庭</div>
                   <Button variant="outline" size="sm">
                     导出数据
@@ -811,18 +930,18 @@ export default function AdminDashboard() {
 
           {/* 系统设置标签页内容 */}
           <TabsContent value="settings" className="space-y-4">
-            <Card className="overflow-hidden rounded-2xl border-2 border-primary/20 bg-white">
+            <Card className="overflow-hidden bg-white border-2 rounded-2xl border-primary/20">
               <CardHeader className="bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20">
                 <CardTitle className="flex items-center text-2xl">
-                  <Settings className="mr-2 h-6 w-6 text-primary" />
+                  <Settings className="w-6 h-6 mr-2 text-primary" />
                   系统设置
                 </CardTitle>
                 <CardDescription>管理系统设置</CardDescription>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
-                    <Settings className="h-6 w-6 text-gray-400" />
+                <div className="p-8 text-center border border-gray-300 border-dashed rounded-lg">
+                  <div className="flex items-center justify-center w-12 h-12 mx-auto bg-gray-100 rounded-full">
+                    <Settings className="w-6 h-6 text-gray-400" />
                   </div>
                   <h3 className="mt-4 text-lg font-medium text-gray-900">系统设置功能开发中</h3>
                   <p className="mt-2 text-sm text-gray-500">此功能正在开发中，敬请期待。</p>
