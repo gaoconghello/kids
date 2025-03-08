@@ -92,8 +92,8 @@ export async function POST(request) {
         role: "parent",
         mobile: data.mobile,
         family_id: parseInt(data.family_id),
-        created_at: new Date(),
-        updated_at: new Date(),
+        created_at: new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })),
+        updated_at: new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })),
         created_user_id: data.created_user_id || null,
       },
     });
@@ -150,7 +150,7 @@ export async function PUT(request) {
       username: data.username,
       name: data.name,
       mobile: data.mobile,
-      updated_at: new Date(),
+      updated_at: new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })),
       updated_user_id: data.updated_user_id || null,
     };
     

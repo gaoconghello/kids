@@ -138,7 +138,7 @@ export const POST = withAuth("admin", async (request) => {
 
     const { name } = validationResult.data;
     const currentUserId = request.user.id;
-    const currentTime = new Date();
+    const currentTime = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
 
     // 检查家庭名称是否已存在
     const existingFamily = await prisma.family.findFirst({

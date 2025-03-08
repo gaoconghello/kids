@@ -109,8 +109,8 @@ export const POST = withAuth(["admin"], async (request) => {
         gender: data.gender || null,
         grade: data.grade ? parseInt(data.grade) : null,
         family_id: parseInt(data.family_id),
-        created_at: new Date(),
-        updated_at: new Date(),
+        created_at: new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })),
+        updated_at: new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })),
         created_user_id: request.user.id || null,
       },
     });
@@ -195,7 +195,7 @@ export const PUT = withAuth(["admin"], async (request) => {
         data.points !== undefined ? data.points : existingChild.integral,
       gender: data.gender || existingChild.gender,
       grade: data.grade ? parseInt(data.grade) : existingChild.grade,
-      updated_at: new Date(),
+      updated_at: new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })),
       updated_user_id: request.user.id || null,
     };
 
@@ -204,6 +204,8 @@ export const PUT = withAuth(["admin"], async (request) => {
       where: { id: parseInt(data.id) },
       data: updateData,
     });
+
+    console.log("更新孩子时间:", new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
 
     return NextResponse.json({
       code: 200,
