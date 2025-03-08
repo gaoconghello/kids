@@ -34,6 +34,29 @@ import { useAuth } from "@/app/providers/AuthProvider"
 import { toast } from "sonner"
 import { get, post, put, del } from "@/lib/http"
 
+// 添加年级显示辅助函数
+const getGradeText = (grade) => {
+  const gradeMap = {
+    0: "幼儿园",
+    1: "一年级",
+    2: "二年级",
+    3: "三年级",
+    4: "四年级",
+    5: "五年级",
+    6: "六年级",
+    7: "初一",
+    8: "初二",
+    9: "初三",
+    10: "高一",
+    11: "高二",
+    12: "高三"
+  };
+  
+  // 处理字符串或数字类型的grade
+  const gradeKey = typeof grade === "string" ? parseInt(grade, 10) : grade;
+  return gradeMap[gradeKey] || "";
+};
+
 export function AddFamilyDialog({ isOpen, onClose, onAdd }) {
   const [familyName, setFamilyName] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -893,33 +916,7 @@ export default function AdminDashboard() {
                                               {child.gender === "m" ? "男" : "女"}
                                             </span>
                                             <span className="text-xs text-gray-500">
-                                              {child.grade === "0" || child.grade === 0
-                                                ? "幼儿园"
-                                                : child.grade === "1" || child.grade === 1
-                                                  ? "一年级"
-                                                  : child.grade === "2" || child.grade === 2
-                                                    ? "二年级"
-                                                    : child.grade === "3" || child.grade === 3
-                                                      ? "三年级"
-                                                      : child.grade === "4" || child.grade === 4
-                                                        ? "四年级"
-                                                        : child.grade === "5" || child.grade === 5
-                                                          ? "五年级"
-                                                          : child.grade === "6" || child.grade === 6
-                                                            ? "六年级"
-                                                            : child.grade === "7" || child.grade === 7
-                                                              ? "初一"
-                                                              : child.grade === "8" || child.grade === 8
-                                                                ? "初二"
-                                                                : child.grade === "9" || child.grade === 9
-                                                                  ? "初三"
-                                                                  : child.grade === "10" || child.grade === 10
-                                                                    ? "高一"
-                                                                    : child.grade === "11" || child.grade === 11
-                                                                      ? "高二"
-                                                                      : child.grade === "12" || child.grade === 12
-                                                                        ? "高三"
-                                                                        : ""}
+                                              {getGradeText(child.grade)}
                                             </span>
                                           </div>
                                           <div className="flex items-center text-xs text-gray-500">
