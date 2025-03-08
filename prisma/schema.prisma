@@ -66,7 +66,7 @@ model integral_history {
   family_id     Int?
 }
 
-model prize {
+model reward {
   id              Int       @id @default(autoincrement())
   name            String?   @db.VarChar(100)
   integral        Int?
@@ -79,9 +79,9 @@ model prize {
   updated_user_id Int?
 }
 
-model prize_history {
+model reward_history {
   id              Int       @id @default(autoincrement())
-  prize_id        Int?
+  reward_id       Int?
   review          String?   @db.VarChar(1)
   review_time     DateTime? @db.Timestamp(6)
   child_id        Int?
