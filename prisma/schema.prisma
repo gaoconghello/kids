@@ -39,6 +39,7 @@ model homework {
   id                      Int       @id @default(autoincrement())
   name                    String    @db.VarChar(100)
   subject_id              Int?
+  subject                 subject?  @relation(fields: [subject_id], references: [id])
   estimated_duration      Int?
   deadline                DateTime? @db.Timestamp(6)
   integral                Int?
@@ -112,6 +113,7 @@ model task {
 model subject {
   id              Int       @id @default(autoincrement())
   name            String    @db.VarChar(50)
+  homeworks       homework[]
   created_at      DateTime? @db.Timestamp(6)
   updated_at      DateTime? @db.Timestamp(6)
   created_user_id Int?
