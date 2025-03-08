@@ -64,10 +64,17 @@ function CompletionCelebration({ onClose }) {
 
 export default function Dashboard() {
   const { logout } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [name, setName] = useState("");
   const [points, setPoints] = useState(350);
   const [subjects, setSubjects] = useState([]);
+
+  // 添加作业列表状态
+  const [homeworks, setHomeworks] = useState([]);
+  const [isLoadingHomework, setIsLoadingHomework] = useState(true);  
+
+  // 添加任务列表状态
   const [tasks, setTasks] = useState([
     {
       id: 1,
@@ -81,6 +88,7 @@ export default function Dashboard() {
     { id: 4, title: "帮妈妈洗碗", points: 25, completed: false, time: "今天" },
   ]);
 
+  // 添加积分兑换列表状态
   const [rewards, setRewards] = useState([
     {
       id: 1,
@@ -132,9 +140,10 @@ export default function Dashboard() {
     },
   ]);
 
-  // Add new state for showing all rewards
+  // 添加显示所有奖励状态
   const [showAllRewards, setShowAllRewards] = useState(false);
 
+  // 添加积分记录状态
   const [history, setHistory] = useState([
     {
       id: 1,
@@ -196,15 +205,12 @@ export default function Dashboard() {
     },
   ]);
 
-  // Add new state for showing all records after the history state:
+  // 添加显示所有记录状态
   const [showAllRecords, setShowAllRecords] = useState(false);
 
-  // 添加作业列表状态
-  const [homework, setHomework] = useState([]);
-  const [isLoadingHomework, setIsLoadingHomework] = useState(true);
 
   // 获取作业数据
-  const fetchHomework = async () => {
+  const fetchHomeworks = async () => {
     try {
       setIsLoadingHomework(true);
       
@@ -215,7 +221,7 @@ export default function Dashboard() {
       if (result.code === 200 && result.data) {
         // 将API返回的数据转换为组件需要的格式
         const formattedHomework = formatHomeworkData(result.data);
-        setHomework(formattedHomework);
+        setHomeworks(formattedHomework);
       } else {
         console.error('获取作业失败:', result.message);
       }
@@ -233,7 +239,7 @@ export default function Dashboard() {
     
     apiData.forEach(item => {
       const subjectId = item.subject_id || 0;
-      const subjectName = getSubjectName(subjectId);
+      const subjectName = item.subject_name;
       
       if (!subjectMap[subjectId]) {
         subjectMap[subjectId] = {
@@ -245,12 +251,12 @@ export default function Dashboard() {
       
       subjectMap[subjectId].tasks.push({
         id: item.id,
-        title: item.name,
+        name: item.name,
         duration: item.estimated_duration ? `${item.estimated_duration}分钟` : '未设置',
         points: item.integral || 0,
         completed: item.complete_review === 'Y',
-        deadline: item.deadline ? item.deadline.split(' ')[1] : '未设置',
-        wrongAnswers: item.incorrect || 0
+        deadline: item.deadline ? item.deadline.split(' ')[1].substring(0, 5) : '未设置',
+        incorrect: item.incorrect || 0
       });
     });
     
@@ -288,10 +294,12 @@ export default function Dashboard() {
     const fetchAllData = async () => {
       try {
         await fetchUserInfo();
-        await fetchHomework();
         await fetchSubjects();
+        await fetchHomeworks();
       } catch (error) {
         console.error("数据获取失败:", error);
+      }finally{
+        setIsLoading(false);
       }
     };
   
@@ -456,19 +464,18 @@ export default function Dashboard() {
   const handleAddHomework = async (newHomework) => {
     try {
       // 准备API请求数据
-      const subjectId = getSubjectId(newHomework.subject);
-      const apiData = {
-        name: newHomework.title,
+      const subjectId = newHomework.subject;
+      const homeworkData = {
+        name: newHomework.name,
         subject_id: subjectId,
         estimated_duration: parseInt(newHomework.duration) || null,
         deadline: newHomework.deadline ? `${new Date().toISOString().split('T')[0]} ${newHomework.deadline}` : null,
         integral: parseInt(newHomework.points) || 0,
-        child_id: 1, // 假设当前用户的孩子ID为1，实际应从用户信息中获取
         homework_date: new Date().toISOString().split('T')[0]
       };
 
       // 使用封装的post方法替代fetch
-      const response = await post('/api/homework', apiData);
+      const response = await post('/api/homework', homeworkData);
       const result = await response.json();
       
       if (result.code === 200 && result.data) {
@@ -482,33 +489,15 @@ export default function Dashboard() {
     }
   };
 
-  // 根据科目名称获取科目ID
-  const getSubjectId = (subjectName) => {
-    const subjectMap = {
-      '语文': 1,
-      '数学': 2,
-      '英语': 3,
-      '科学': 4,
-      '历史': 5,
-      '地理': 6,
-      '音乐': 7,
-      '美术': 8,
-      '其他': 0
-    };
-    
-    return subjectMap[subjectName] || 0;
-  };
 
-  // 3. 添加处理添加任务的函数
-  // 在 handleAddHomework 函数后添加：
+  // 添加处理添加任务的函数
   const handleAddTask = (newTask) => {
     const nextId =
       tasks.length > 0 ? Math.max(...tasks.map((task) => task.id)) + 1 : 1;
     setTasks([...tasks, { ...newTask, id: nextId }]);
   };
 
-  // 3. 添加开始番茄计时的函数
-  // 在 handleAddHomework 函数后添加以下函数
+  // 添加开始番茄计时的函数
   const startPomodoro = (subjectId, taskId) => {
     const subject = homework.find((s) => s.id === subjectId);
     const task = subject?.tasks.find((t) => t.id === taskId);
@@ -519,7 +508,7 @@ export default function Dashboard() {
         taskId,
         taskInfo: {
           subject: subject.subject,
-          title: task.title,
+          name: task.name,
           duration: task.duration,
           deadline: task.deadline,
           points: task.points,
@@ -544,7 +533,7 @@ export default function Dashboard() {
   };
 
   // 计算未完成的作业数量
-  const unfinishedHomeworkCount = homework.reduce((acc, subject) => {
+  const unfinishedHomeworkCount = homeworks.reduce((acc, subject) => {
     return acc + subject.tasks.filter((task) => !task.completed).length;
   }, 0);
 
@@ -778,6 +767,29 @@ export default function Dashboard() {
     );
   };
 
+  // 加载中状态显示
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-blue-400 to-purple-500">
+        <div className="text-center">
+          <div className="flex justify-center mb-4 space-x-4">
+            <div className="w-4 h-4 bg-red-500 rounded-full animate-bounce"></div>
+            <div
+              className="w-4 h-4 bg-yellow-500 rounded-full animate-bounce"
+              style={{ animationDelay: "0.2s" }}
+            ></div>
+            <div
+              className="w-4 h-4 bg-green-500 rounded-full animate-bounce"
+              style={{ animationDelay: "0.4s" }}
+            ></div>
+          </div>
+          <h2 className="text-2xl font-bold text-white">小朋友积分乐园</h2>
+          <p className="mt-2 text-white">正在加载中...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen p-3 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 sm:p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
@@ -931,7 +943,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <CardDescription>按时完成作业，获得积分奖励！</CardDescription>
-                {homework.length > 0 && (
+                {homeworks.length > 0 && (
                   <div className="flex items-center gap-2 mt-2 text-sm">
                     <Clock className="w-4 h-4 text-amber-500" />
                     <span className="font-medium text-amber-600">
@@ -966,8 +978,8 @@ export default function Dashboard() {
                     <div className="flex items-center justify-center h-40">
                       <div className="w-10 h-10 border-b-2 rounded-full animate-spin border-primary"></div>
                     </div>
-                  ) : homework.length > 0 ? (
-                    homework.map((subject) => (
+                  ) : homeworks.length > 0 ? (
+                    homeworks.map((subject) => (
                       <div
                         key={subject.id}
                         className="p-4 border-2 rounded-xl border-primary/10"
@@ -1005,7 +1017,7 @@ export default function Dashboard() {
                                   )}
                                 </div>
                                 <div>
-                                  <h4 className="font-medium">{task.title}</h4>
+                                  <h4 className="font-medium">{task.name}</h4>
                                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                     <span className="flex items-center gap-1">
                                       <Clock className="w-4 h-4" />
@@ -1131,7 +1143,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-6">
-                  {homework.map((subject) => {
+                  {homeworks.map((subject) => {
                     const totalTasks = subject.tasks.length;
                     const completedTasks = subject.tasks.filter(
                       (t) => t.completed
@@ -1212,7 +1224,7 @@ export default function Dashboard() {
                   <div className="space-y-2">
                     <h3 className="font-medium">科目番茄分布</h3>
                     <div className="grid grid-cols-3 gap-3">
-                      {homework.map((subject) => {
+                      {homeworks.map((subject) => {
                         const subjectPomodoros = subject.tasks.reduce(
                           (sum, task) => {
                             return (
@@ -1287,7 +1299,7 @@ export default function Dashboard() {
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="text-4xl font-bold text-amber-500">
-                        {homework.reduce(
+                        {homeworks.reduce(
                           (sum, subject) =>
                             sum +
                             subject.tasks.reduce(
@@ -1322,7 +1334,7 @@ export default function Dashboard() {
                   <div className="space-y-2">
                     <h3 className="font-medium">科目错题分布</h3>
                     <div className="grid grid-cols-3 gap-3">
-                      {homework.map((subject) => {
+                      {homeworks.map((subject) => {
                         const subjectWrongAnswers = subject.tasks.reduce(
                           (sum, task) =>
                             sum + (task.completed ? task.wrongAnswers || 0 : 0),
@@ -1713,6 +1725,8 @@ export default function Dashboard() {
         isOpen={isAddHomeworkOpen}
         onClose={() => setIsAddHomeworkOpen(false)}
         onAdd={handleAddHomework}
+        subjects={subjects}
+        childId={user.id}
       />
       {/* 5. 在组件最后，在 AddHomeworkDialog 后添加 AddTaskDialog
       // 在 <AddHomeworkDialog /> 后添加： */}
@@ -1720,6 +1734,7 @@ export default function Dashboard() {
         isOpen={isAddTaskOpen}
         onClose={() => setIsAddTaskOpen(false)}
         onAdd={handleAddTask}
+
       />
       {/* 5. 在组件最后，在 AddTaskDialog 后添加 ChangePasswordDialog
       // 在 <AddTaskDialog /> 后添加： */}
