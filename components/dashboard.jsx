@@ -67,6 +67,7 @@ export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [name, setName] = useState("");
   const [points, setPoints] = useState(350);
+  const [subjects, setSubjects] = useState([]);
   const [tasks, setTasks] = useState([
     {
       id: 1,
@@ -256,22 +257,6 @@ export default function Dashboard() {
     return Object.values(subjectMap);
   };
   
-  // 获取科目名称
-  const getSubjectName = (subjectId) => {
-    const subjectNames = {
-      1: '语文',
-      2: '数学',
-      3: '英语',
-      4: '科学',
-      5: '历史',
-      6: '地理',
-      7: '音乐',
-      8: '美术',
-      0: '其他'
-    };
-    
-    return subjectNames[subjectId] || '其他';
-  };
 
   // 添加获取用户信息的函数
   const fetchUserInfo = async () => {
@@ -293,14 +278,24 @@ export default function Dashboard() {
     }
   };
 
-  // 在组件加载时获取用户信息
-  useEffect(() => {
-    fetchUserInfo();
-  }, []);
+  const fetchSubjects = async () => {
+    const response = await get('/api/subject');
+    const result = await response.json();
+    setSubjects(result.data);
+  };
 
-  // 在组件加载时获取作业数据
   useEffect(() => {
-    fetchHomework();
+    const fetchAllData = async () => {
+      try {
+        await fetchUserInfo();
+        await fetchHomework();
+        await fetchSubjects();
+      } catch (error) {
+        console.error("数据获取失败:", error);
+      }
+    };
+  
+    fetchAllData();
   }, []);
 
   // 添加新的 state 来控制对话框
