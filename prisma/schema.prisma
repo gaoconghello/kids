@@ -18,6 +18,7 @@ model account {
   role            String    @db.VarChar(20)
   family_id       Int?
   integral        Int?
+  gender          String?   @db.VarChar(1)
   mobile          String?   @db.VarChar(20)
   created_at      DateTime? @db.Timestamp(6)
   updated_at      DateTime? @db.Timestamp(6)
