@@ -241,6 +241,29 @@ export default function ParentDashboard() {
         setEditingHomework(null)
       } else {
         console.log("添加新作业:", newHomework)
+        // 如果是数组（多个小朋友的作业），则添加多个
+        if (Array.isArray(newHomework)) {
+          const nextId = pendingHomework.length > 0 ? Math.max(...pendingHomework.map((hw) => hw.id)) + 1 : 1
+          const newHomeworks = newHomework.map((hw, index) => ({
+            ...hw,
+            id: nextId + index,
+            status: "pending",
+            createdAt: new Date().toISOString().slice(0, 16).replace("T", " "),
+          }))
+          setPendingHomework([...pendingHomework, ...newHomeworks])
+        } else {
+          // 单个作业的情况
+          const nextId = pendingHomework.length > 0 ? Math.max(...pendingHomework.map((hw) => hw.id)) + 1 : 1
+          setPendingHomework([
+            ...pendingHomework,
+            {
+              ...newHomework,
+              id: nextId,
+              status: "pending",
+              createdAt: new Date().toISOString().slice(0, 16).replace("T", " "),
+            },
+          ])
+        }
       }
     } catch (error) {
       alert("操作失败：" + error.message)
@@ -265,16 +288,29 @@ export default function ParentDashboard() {
         setEditingTask(null)
       } else {
         console.log("添加新任务:", newTask)
-        const nextId = pendingTasks.length > 0 ? Math.max(...pendingTasks.map((task) => task.id)) + 1 : 1
-        setPendingTasks([
-          ...pendingTasks,
-          {
-            ...newTask,
-            id: nextId,
-            childName: "小明",
+        // 如果是数组（多个小朋友的任务），则添加多个
+        if (Array.isArray(newTask)) {
+          const nextId = pendingTasks.length > 0 ? Math.max(...pendingTasks.map((task) => task.id)) + 1 : 1
+          const newTasks = newTask.map((task, index) => ({
+            ...task,
+            id: nextId + index,
+            status: "pending",
             createdAt: new Date().toISOString().slice(0, 16).replace("T", " "),
-          },
-        ])
+          }))
+          setPendingTasks([...pendingTasks, ...newTasks])
+        } else {
+          // 单个任务的情况
+          const nextId = pendingTasks.length > 0 ? Math.max(...pendingTasks.map((task) => task.id)) + 1 : 1
+          setPendingTasks([
+            ...pendingTasks,
+            {
+              ...newTask,
+              id: nextId,
+              status: "pending",
+              createdAt: new Date().toISOString().slice(0, 16).replace("T", " "),
+            },
+          ])
+        }
       }
     } catch (error) {
       alert("操作失败：" + error.message)
@@ -552,9 +588,27 @@ export default function ParentDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-4 py-2 border rounded-full bg-gradient-to-r from-blue-400/10 to-purple-400/10 border-blue-400/20">
-                <User className="w-6 h-6 text-blue-500" />
-                <span className="text-lg font-bold text-blue-600">家长模式</span>
+              <div className="flex items-center gap-2 mr-3">
+                <User className="w-5 h-5 text-blue-500" />
+                <Select
+                  defaultValue={childrenList[0]?.name}
+                  onValueChange={(value) => {
+                    setSelectedChildForHomework(value)
+                    setSelectedChildForTasks(value)
+                    setSelectedChildForHistory(value)
+                  }}
+                >
+                  <SelectTrigger className="w-[120px] bg-blue-50 border-blue-200">
+                    <SelectValue placeholder="选择小朋友" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {childrenList.map((child) => (
+                      <SelectItem key={child.id} value={child.name}>
+                        {child.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <Button
                 variant="ghost"
@@ -895,28 +949,11 @@ export default function ParentDashboard() {
                     )}
                   </div>
                   <div className="p-4 mt-6 border-2 border-blue-100 rounded-xl bg-blue-50">
-                    <div className="flex flex-col items-start justify-between gap-2 mb-4 sm:flex-row sm:items-center">
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
-                          <BookOpen className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-blue-700">{selectedChildForHomework}的作业列表</h3>
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                        <BookOpen className="w-5 h-5 text-blue-600" />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <User className="w-5 h-5 text-blue-600" />
-                        <Select value={selectedChildForHomework} onValueChange={setSelectedChildForHomework}>
-                          <SelectTrigger className="w-[120px]">
-                            <SelectValue placeholder="选择孩子" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {childrenList.map((child) => (
-                              <SelectItem key={child.id} value={child.name}>
-                                {child.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <h3 className="text-lg font-semibold text-blue-700">{selectedChildForHomework}的作业列表</h3>
                     </div>
 
                     <div className="space-y-6">
@@ -1188,28 +1225,11 @@ export default function ParentDashboard() {
                   </div>
 
                   <div className="p-4 mt-6 border-2 border-blue-100 rounded-xl bg-blue-50">
-                    <div className="flex flex-col items-start justify-between gap-2 mb-4 sm:flex-row sm:items-center">
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
-                          <BookOpen className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-blue-700">{selectedChildForTasks}的任务列表</h3>
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                        <BookOpen className="w-5 h-5 text-blue-600" />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <User className="w-5 h-5 text-blue-600" />
-                        <Select value={selectedChildForTasks} onValueChange={setSelectedChildForTasks}>
-                          <SelectTrigger className="w-[120px]">
-                            <SelectValue placeholder="选择孩子" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {childrenList.map((child) => (
-                              <SelectItem key={child.id} value={child.name}>
-                                {child.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <h3 className="text-lg font-semibold text-blue-700">{selectedChildForTasks}的任务列表</h3>
                     </div>
 
                     <div className="space-y-4">
@@ -1418,23 +1438,8 @@ export default function ParentDashboard() {
                     <History className="w-6 h-6 mr-2 text-primary" />
                     积分记录
                   </CardTitle>
-                  <div className="flex items-center gap-2">
-                    <User className="w-5 h-5 text-primary" />
-                    <Select value={selectedChildForHistory} onValueChange={setSelectedChildForHistory}>
-                      <SelectTrigger className="w-[120px]">
-                        <SelectValue placeholder="选择孩子" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {childrenList.map((child) => (
-                          <SelectItem key={child.id} value={child.name}>
-                            {child.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
-                <CardDescription>查看{selectedChildForHistory}的积分获取和使用历史</CardDescription>
+                <CardDescription>查看积分获取和使用历史</CardDescription>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-4">

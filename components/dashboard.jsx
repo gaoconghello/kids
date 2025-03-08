@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 import {
   Star,
   Gift,
@@ -18,74 +18,180 @@ import {
   LogOut,
   Settings,
   AlertCircle,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { AddHomeworkDialog } from "./add-homework-dialog"
-import { PomodoroTimer } from "./pomodoro-timer"
-import { ConfettiCelebration } from "./confetti-celebration"
-import { createTaskConfetti } from "./task-confetti"
-import { AddTaskDialog } from "./add-task-dialog"
-import { TaskCalendar } from "./task-calendar"
-import { ChangePasswordDialog } from "./change-password-dialog"
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AddHomeworkDialog } from "./add-homework-dialog";
+import { PomodoroTimer } from "./pomodoro-timer";
+import { ConfettiCelebration } from "./confetti-celebration";
+import { createTaskConfetti } from "./task-confetti";
+import { AddTaskDialog } from "./add-task-dialog";
+import { TaskCalendar } from "./task-calendar";
+import { ChangePasswordDialog } from "./change-password-dialog";
 
 // 庆祝组件
 function CompletionCelebration({ onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="rounded-lg bg-white p-8 shadow-xl">
-        <h2 className="mb-4 text-3xl font-bold text-green-600">恭喜你完成了所有作业！</h2>
+      <div className="p-8 bg-white rounded-lg shadow-xl">
+        <h2 className="mb-4 text-3xl font-bold text-green-600">
+          恭喜你完成了所有作业！
+        </h2>
         <p className="mb-6 text-gray-700">奖励 +50 积分已到账！</p>
-        <Button onClick={onClose} className="bg-green-500 text-white hover:bg-green-700">
+        <Button
+          onClick={onClose}
+          className="text-white bg-green-500 hover:bg-green-700"
+        >
           关闭
         </Button>
       </div>
     </div>
-  )
+  );
 }
 
 export default function Dashboard() {
-  const [points, setPoints] = useState(350)
+  const [points, setPoints] = useState(350);
   const [tasks, setTasks] = useState([
-    { id: 1, title: "完成数学作业", points: 20, completed: false, time: "今天" },
+    {
+      id: 1,
+      title: "完成数学作业",
+      points: 20,
+      completed: false,
+      time: "今天",
+    },
     { id: 2, title: "阅读30分钟", points: 15, completed: false, time: "今天" },
     { id: 3, title: "整理玩具", points: 10, completed: false, time: "今天" },
     { id: 4, title: "帮妈妈洗碗", points: 25, completed: false, time: "今天" },
-  ])
+  ]);
 
   const [rewards, setRewards] = useState([
-    { id: 1, title: "看30分钟动画片", points: 50, image: "/placeholder.svg?height=80&width=80" },
-    { id: 2, title: "冰淇淋一个", points: 100, image: "/placeholder.svg?height=80&width=80" },
-    { id: 3, title: "玩具小车", points: 200, image: "/placeholder.svg?height=80&width=80" },
-    { id: 4, title: "游乐场门票", points: 500, image: "/placeholder.svg?height=80&width=80" },
-    { id: 5, title: "新故事书一本", points: 150, image: "/placeholder.svg?height=80&width=80" },
-    { id: 6, title: "画画套装", points: 300, image: "/placeholder.svg?height=80&width=80" },
-    { id: 7, title: "积木玩具", points: 250, image: "/placeholder.svg?height=80&width=80" },
-    { id: 8, title: "小提琴课一节", points: 400, image: "/placeholder.svg?height=80&width=80" },
-  ])
+    {
+      id: 1,
+      title: "看30分钟动画片",
+      points: 50,
+      image: "/placeholder.svg?height=80&width=80",
+    },
+    {
+      id: 2,
+      title: "冰淇淋一个",
+      points: 100,
+      image: "/placeholder.svg?height=80&width=80",
+    },
+    {
+      id: 3,
+      title: "玩具小车",
+      points: 200,
+      image: "/placeholder.svg?height=80&width=80",
+    },
+    {
+      id: 4,
+      title: "游乐场门票",
+      points: 500,
+      image: "/placeholder.svg?height=80&width=80",
+    },
+    {
+      id: 5,
+      title: "新故事书一本",
+      points: 150,
+      image: "/placeholder.svg?height=80&width=80",
+    },
+    {
+      id: 6,
+      title: "画画套装",
+      points: 300,
+      image: "/placeholder.svg?height=80&width=80",
+    },
+    {
+      id: 7,
+      title: "积木玩具",
+      points: 250,
+      image: "/placeholder.svg?height=80&width=80",
+    },
+    {
+      id: 8,
+      title: "小提琴课一节",
+      points: 400,
+      image: "/placeholder.svg?height=80&width=80",
+    },
+  ]);
 
   // Add new state for showing all rewards
-  const [showAllRewards, setShowAllRewards] = useState(false)
+  const [showAllRewards, setShowAllRewards] = useState(false);
 
   const [history, setHistory] = useState([
-    { id: 1, title: "完成语文作业", points: 20, type: "earn", date: "2025-02-28" },
-    { id: 2, title: "兑换冰淇淋", points: 100, type: "spend", date: "2025-02-27" },
-    { id: 3, title: "帮爸爸整理书架", points: 30, type: "earn", date: "2025-02-26" },
-    { id: 4, title: "完成英语作业", points: 20, type: "earn", date: "2025-02-25" },
-    { id: 5, title: "完成数学练习", points: 25, type: "earn", date: "2025-02-24" },
-    { id: 6, title: "兑换画画套装", points: 300, type: "spend", date: "2025-02-23" },
-    { id: 7, title: "完成科学实验", points: 35, type: "earn", date: "2025-02-22" },
+    {
+      id: 1,
+      title: "完成语文作业",
+      points: 20,
+      type: "earn",
+      date: "2025-02-28",
+    },
+    {
+      id: 2,
+      title: "兑换冰淇淋",
+      points: 100,
+      type: "spend",
+      date: "2025-02-27",
+    },
+    {
+      id: 3,
+      title: "帮爸爸整理书架",
+      points: 30,
+      type: "earn",
+      date: "2025-02-26",
+    },
+    {
+      id: 4,
+      title: "完成英语作业",
+      points: 20,
+      type: "earn",
+      date: "2025-02-25",
+    },
+    {
+      id: 5,
+      title: "完成数学练习",
+      points: 25,
+      type: "earn",
+      date: "2025-02-24",
+    },
+    {
+      id: 6,
+      title: "兑换画画套装",
+      points: 300,
+      type: "spend",
+      date: "2025-02-23",
+    },
+    {
+      id: 7,
+      title: "完成科学实验",
+      points: 35,
+      type: "earn",
+      date: "2025-02-22",
+    },
     { id: 8, title: "整理房间", points: 15, type: "earn", date: "2025-02-21" },
     { id: 9, title: "背诵古诗", points: 20, type: "earn", date: "2025-02-20" },
-    { id: 10, title: "兑换故事书", points: 150, type: "spend", date: "2025-02-19" },
-  ])
+    {
+      id: 10,
+      title: "兑换故事书",
+      points: 150,
+      type: "spend",
+      date: "2025-02-19",
+    },
+  ]);
 
   // Add new state for showing all records after the history state:
-  const [showAllRecords, setShowAllRecords] = useState(false)
+  const [showAllRecords, setShowAllRecords] = useState(false);
 
   // 添加作业列表状态
   const [homework, setHomework] = useState([
@@ -93,7 +199,14 @@ export default function Dashboard() {
       id: 1,
       subject: "语文",
       tasks: [
-        { id: 1, title: "阅读课文《春天》", duration: "20分钟", points: 15, completed: false, deadline: "15:30" },
+        {
+          id: 1,
+          title: "阅读课文《春天》",
+          duration: "20分钟",
+          points: 15,
+          completed: false,
+          deadline: "15:30",
+        },
         {
           id: 2,
           title: "完成练习册第12页",
@@ -109,7 +222,14 @@ export default function Dashboard() {
       id: 2,
       subject: "数学",
       tasks: [
-        { id: 3, title: "完成乘法练习", duration: "25分钟", points: 15, completed: false, deadline: "16:30" },
+        {
+          id: 3,
+          title: "完成乘法练习",
+          duration: "25分钟",
+          points: 15,
+          completed: false,
+          deadline: "16:30",
+        },
         {
           id: 4,
           title: "解决应用题5道",
@@ -125,7 +245,14 @@ export default function Dashboard() {
       id: 3,
       subject: "英语",
       tasks: [
-        { id: 5, title: "背诵单词列表", duration: "15分钟", points: 10, completed: false, deadline: "17:30" },
+        {
+          id: 5,
+          title: "背诵单词列表",
+          duration: "15分钟",
+          points: 10,
+          completed: false,
+          deadline: "17:30",
+        },
         {
           id: 6,
           title: "完成听力练习",
@@ -137,48 +264,50 @@ export default function Dashboard() {
         },
       ],
     },
-  ])
+  ]);
 
   // 添加新的 state 来控制对话框
-  const [isAddHomeworkOpen, setIsAddHomeworkOpen] = useState(false)
-  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
-  const [activePomodoro, setActivePomodoro] = useState(null)
-  const [pomodoroStats, setPomodoroStats] = useState({})
-  const [showCelebration, setShowCelebration] = useState(false)
-  const [confirmingReward, setConfirmingReward] = useState(null)
-  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false)
-  const [selectedDate, setSelectedDate] = useState(new Date())
-  const [showCalendar, setShowCalendar] = useState(false)
+  const [isAddHomeworkOpen, setIsAddHomeworkOpen] = useState(false);
+  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
+  const [activePomodoro, setActivePomodoro] = useState(null);
+  const [pomodoroStats, setPomodoroStats] = useState({});
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [confirmingReward, setConfirmingReward] = useState(null);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showCalendar, setShowCalendar] = useState(false);
   // 添加作业日历相关状态
-  const [selectedHomeworkDate, setSelectedHomeworkDate] = useState(new Date())
-  const [showHomeworkCalendar, setShowHomeworkCalendar] = useState(false)
+  const [selectedHomeworkDate, setSelectedHomeworkDate] = useState(new Date());
+  const [showHomeworkCalendar, setShowHomeworkCalendar] = useState(false);
 
   const completeTask = (taskId) => {
     // 避免重复完成
-    if (tasks.find((t) => t.id === taskId)?.completed) return
+    if (tasks.find((t) => t.id === taskId)?.completed) return;
 
     // 创建完成任务的彩带效果
-    createTaskConfetti()
+    createTaskConfetti();
 
     setTasks(
       tasks.map((task) => {
         if (task.id === taskId && !task.completed) {
-          setPoints(points + task.points)
-          return { ...task, completed: true }
+          setPoints(points + task.points);
+          return { ...task, completed: true };
         }
-        return task
-      }),
-    )
+        return task;
+      })
+    );
 
     // 检查是否所有任务都已完成
-    const updatedTasks = tasks.map((task) => (task.id === taskId ? { ...task, completed: true } : task))
-    const allCompleted = updatedTasks.every((task) => task.completed)
+    const updatedTasks = tasks.map((task) =>
+      task.id === taskId ? { ...task, completed: true } : task
+    );
+    const allCompleted = updatedTasks.every((task) => task.completed);
 
     if (allCompleted) {
       // 显示庆祝效果
-      setShowCelebration(true)
+      setShowCelebration(true);
       // 额外奖励50积分
-      setPoints((prev) => prev + 50)
+      setPoints((prev) => prev + 50);
       // 添加到历史记录
       setHistory([
         {
@@ -189,16 +318,16 @@ export default function Dashboard() {
           date: new Date().toISOString().split("T")[0],
         },
         ...history,
-      ])
+      ]);
     }
-  }
+  };
 
   // 2. Update the redeemReward function to handle the confirmation flow
   // Replace the existing redeemReward function with this:
   const redeemReward = (rewardId) => {
-    const reward = rewards.find((r) => r.id === rewardId)
+    const reward = rewards.find((r) => r.id === rewardId);
     if (reward && points >= reward.points) {
-      setPoints(points - reward.points)
+      setPoints(points - reward.points);
       setHistory([
         {
           id: Date.now(),
@@ -208,20 +337,22 @@ export default function Dashboard() {
           date: new Date().toISOString().split("T")[0],
         },
         ...history,
-      ])
+      ]);
       // Close the confirmation dialog
-      setConfirmingReward(null)
+      setConfirmingReward(null);
     }
-  }
+  };
 
   // 完成作业任务的处理函数
   const completeHomeworkTask = (subjectId, taskId) => {
     // 避免重复完成
-    const task = homework.find((s) => s.id === subjectId)?.tasks.find((t) => t.id === taskId)
-    if (task?.completed) return
+    const task = homework
+      .find((s) => s.id === subjectId)
+      ?.tasks.find((t) => t.id === taskId);
+    if (task?.completed) return;
 
     // 创建完成任务的彩带效果
-    createTaskConfetti()
+    createTaskConfetti();
 
     setHomework(
       homework.map((subject) => {
@@ -230,30 +361,34 @@ export default function Dashboard() {
             ...subject,
             tasks: subject.tasks.map((task) => {
               if (task.id === taskId && !task.completed) {
-                setPoints(points + task.points)
-                return { ...task, completed: true }
+                setPoints(points + task.points);
+                return { ...task, completed: true };
               }
-              return task
+              return task;
             }),
-          }
+          };
         }
-        return subject
-      }),
-    )
+        return subject;
+      })
+    );
 
     // 检查是否所有作业都已完成
     const updatedHomework = homework.map((subject) => ({
       ...subject,
       tasks: subject.tasks.map((task) =>
-        task.id === taskId && subject.id === subjectId ? { ...task, completed: true } : task,
+        task.id === taskId && subject.id === subjectId
+          ? { ...task, completed: true }
+          : task
       ),
-    }))
+    }));
 
-    const allCompleted = updatedHomework.every((subject) => subject.tasks.every((task) => task.completed))
+    const allCompleted = updatedHomework.every((subject) =>
+      subject.tasks.every((task) => task.completed)
+    );
 
     if (allCompleted) {
-      setShowCelebration(true)
-      setPoints((prev) => prev + 50)
+      setShowCelebration(true);
+      setPoints((prev) => prev + 50);
       // 添加到历史记录
       setHistory([
         {
@@ -264,13 +399,13 @@ export default function Dashboard() {
           date: new Date().toISOString().split("T")[0],
         },
         ...history,
-      ])
+      ]);
     }
-  }
+  };
 
   // 添加新作业的处理函数
   const handleAddHomework = (newHomework) => {
-    const subject = homework.find((s) => s.subject === newHomework.subject)
+    const subject = homework.find((s) => s.subject === newHomework.subject);
     if (subject) {
       // 如果科目已存在，添加新任务
       setHomework(
@@ -289,11 +424,11 @@ export default function Dashboard() {
                   deadline: newHomework.deadline,
                 },
               ],
-            }
+            };
           }
-          return s
-        }),
-      )
+          return s;
+        })
+      );
     } else {
       // 如果是新科目，创建新的科目和任务
       setHomework([
@@ -312,22 +447,23 @@ export default function Dashboard() {
             },
           ],
         },
-      ])
+      ]);
     }
-  }
+  };
 
   // 3. 添加处理添加任务的函数
   // 在 handleAddHomework 函数后添加：
   const handleAddTask = (newTask) => {
-    const nextId = tasks.length > 0 ? Math.max(...tasks.map((task) => task.id)) + 1 : 1
-    setTasks([...tasks, { ...newTask, id: nextId }])
-  }
+    const nextId =
+      tasks.length > 0 ? Math.max(...tasks.map((task) => task.id)) + 1 : 1;
+    setTasks([...tasks, { ...newTask, id: nextId }]);
+  };
 
   // 3. 添加开始番茄计时的函数
   // 在 handleAddHomework 函数后添加以下函数
   const startPomodoro = (subjectId, taskId) => {
-    const subject = homework.find((s) => s.id === subjectId)
-    const task = subject?.tasks.find((t) => t.id === taskId)
+    const subject = homework.find((s) => s.id === subjectId);
+    const task = subject?.tasks.find((t) => t.id === taskId);
 
     if (subject && task) {
       setActivePomodoro({
@@ -340,61 +476,85 @@ export default function Dashboard() {
           deadline: task.deadline,
           points: task.points,
         },
-      })
+      });
     }
-  }
+  };
 
   const completePomodoro = () => {
     if (activePomodoro) {
-      const { subjectId, taskId } = activePomodoro
+      const { subjectId, taskId } = activePomodoro;
       setPomodoroStats((prev) => {
-        const key = `${subjectId}-${taskId}`
-        const current = prev[key] || 0
-        return { ...prev, [key]: current + 1 }
-      })
+        const key = `${subjectId}-${taskId}`;
+        const current = prev[key] || 0;
+        return { ...prev, [key]: current + 1 };
+      });
     }
-  }
+  };
 
   const cancelPomodoro = () => {
-    setActivePomodoro(null)
-  }
+    setActivePomodoro(null);
+  };
 
   // 计算未完成的作业数量
   const unfinishedHomeworkCount = homework.reduce((acc, subject) => {
-    return acc + subject.tasks.filter((task) => !task.completed).length
-  }, 0)
+    return acc + subject.tasks.filter((task) => !task.completed).length;
+  }, 0);
 
   // 计算未完成的任务数量
-  const unfinishedTasksCount = tasks.filter((task) => !task.completed).length
+  const unfinishedTasksCount = tasks.filter((task) => !task.completed).length;
 
   // 3. 添加处理修改密码的函数
   // 在 RewardConfirmationDialog 函数前添加：
   const handleChangePassword = (passwordData) => {
     // 在实际应用中，这里应该发送请求到后端
-    console.log("修改密码:", passwordData)
+    console.log("修改密码:", passwordData);
     // 模拟修改成功
-    alert("密码修改成功！")
-  }
+    alert("密码修改成功！");
+  };
 
   // 3. 添加处理日期选择的函数
   // 在 handleChangePassword 函数后添加：
   const handleDateSelect = (date) => {
-    setSelectedDate(date)
+    setSelectedDate(date);
     // 在实际应用中，这里应该根据日期筛选任务
-    console.log("选择的日期:", date.toISOString().split("T")[0])
+    console.log("选择的日期:", date.toISOString().split("T")[0]);
 
     // 模拟根据日期筛选任务
-    const formattedDate = date.toISOString().split("T")[0]
+    const formattedDate = date.toISOString().split("T")[0];
 
     // 这里只是示例，实际应用中应该从后端获取特定日期的任务
     if (formattedDate === new Date().toISOString().split("T")[0]) {
       // 如果是今天，显示默认任务
       setTasks([
-        { id: 1, title: "完成数学作业", points: 20, completed: false, time: "今天" },
-        { id: 2, title: "阅读30分钟", points: 15, completed: false, time: "今天" },
-        { id: 3, title: "整理玩具", points: 10, completed: false, time: "今天" },
-        { id: 4, title: "帮妈妈洗碗", points: 25, completed: false, time: "今天" },
-      ])
+        {
+          id: 1,
+          title: "完成数学作业",
+          points: 20,
+          completed: false,
+          time: "今天",
+        },
+        {
+          id: 2,
+          title: "阅读30分钟",
+          points: 15,
+          completed: false,
+          time: "今天",
+        },
+        {
+          id: 3,
+          title: "整理玩具",
+          points: 10,
+          completed: false,
+          time: "今天",
+        },
+        {
+          id: 4,
+          title: "帮妈妈洗碗",
+          points: 25,
+          completed: false,
+          time: "今天",
+        },
+      ]);
     } else {
       // 如果是其他日期，生成一些示例任务
       setTasks([
@@ -412,17 +572,17 @@ export default function Dashboard() {
           completed: false,
           time: `${date.getMonth() + 1}月${date.getDate()}日`,
         },
-      ])
+      ]);
     }
-  }
+  };
 
   // 添加处理作业日期选择的函数
   const handleHomeworkDateSelect = (date) => {
-    setSelectedHomeworkDate(date)
-    console.log("选择的作业日期:", date.toISOString().split("T")[0])
+    setSelectedHomeworkDate(date);
+    console.log("选择的作业日期:", date.toISOString().split("T")[0]);
 
     // 模拟根据日期筛选作业
-    const formattedDate = date.toISOString().split("T")[0]
+    const formattedDate = date.toISOString().split("T")[0];
 
     // 这里只是示例，实际应用中应该从后端获取特定日期的作业
     if (formattedDate === new Date().toISOString().split("T")[0]) {
@@ -432,7 +592,14 @@ export default function Dashboard() {
           id: 1,
           subject: "语文",
           tasks: [
-            { id: 1, title: "阅读课文《春天》", duration: "20分钟", points: 15, completed: false, deadline: "15:30" },
+            {
+              id: 1,
+              title: "阅读课文《春天》",
+              duration: "20分钟",
+              points: 15,
+              completed: false,
+              deadline: "15:30",
+            },
             {
               id: 2,
               title: "完成练习册第12页",
@@ -448,7 +615,14 @@ export default function Dashboard() {
           id: 2,
           subject: "数学",
           tasks: [
-            { id: 3, title: "完成乘法练习", duration: "25分钟", points: 15, completed: false, deadline: "16:30" },
+            {
+              id: 3,
+              title: "完成乘法练习",
+              duration: "25分钟",
+              points: 15,
+              completed: false,
+              deadline: "16:30",
+            },
             {
               id: 4,
               title: "解决应用题5道",
@@ -464,7 +638,14 @@ export default function Dashboard() {
           id: 3,
           subject: "英语",
           tasks: [
-            { id: 5, title: "背诵单词列表", duration: "15分钟", points: 10, completed: false, deadline: "17:30" },
+            {
+              id: 5,
+              title: "背诵单词列表",
+              duration: "15分钟",
+              points: 10,
+              completed: false,
+              deadline: "17:30",
+            },
             {
               id: 6,
               title: "完成听力练习",
@@ -476,7 +657,7 @@ export default function Dashboard() {
             },
           ],
         },
-      ])
+      ]);
     } else {
       // 如果是其他日期，生成一些示例作业
       setHomework([
@@ -510,28 +691,30 @@ export default function Dashboard() {
             },
           ],
         },
-      ])
+      ]);
     }
-  }
+  };
 
   // 3. Add the confirmation dialog component
   // Add this right before the return statement in the Dashboard component
   const RewardConfirmationDialog = () => {
-    if (!confirmingReward) return null
+    if (!confirmingReward) return null;
 
-    const reward = rewards.find((r) => r.id === confirmingReward)
-    if (!reward) return null
+    const reward = rewards.find((r) => r.id === confirmingReward);
+    if (!reward) return null;
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-        <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+        <div className="w-full max-w-md p-6 bg-white shadow-2xl rounded-2xl">
           <h3 className="mb-2 text-xl font-bold text-primary">确认兑换</h3>
           <p className="mb-4 text-gray-600">
-            你确定要使用 <span className="font-bold text-primary">{reward.points}</span> 积分兑换{" "}
+            你确定要使用{" "}
+            <span className="font-bold text-primary">{reward.points}</span>{" "}
+            积分兑换{" "}
             <span className="font-bold text-primary">{reward.title}</span> 吗？
           </p>
 
-          <div className="mt-6 flex justify-end gap-3">
+          <div className="flex justify-end gap-3 mt-6">
             <Button variant="outline" onClick={() => setConfirmingReward(null)}>
               取消
             </Button>
@@ -544,38 +727,38 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-    )
-  }
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 p-3 sm:p-4 md:p-8">
-      <div className="mx-auto max-w-5xl">
+    <div className="min-h-screen p-3 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 sm:p-4 md:p-8">
+      <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <header className="mb-4 sm:mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 rounded-2xl bg-white/90 backdrop-blur-sm p-3 sm:p-4 shadow-lg border-2 border-white/50">
+        <header className="flex flex-col items-start justify-between gap-3 p-3 mb-4 border-2 shadow-lg sm:mb-6 sm:flex-row sm:items-center sm:gap-0 rounded-2xl bg-white/90 backdrop-blur-sm sm:p-4 border-white/50">
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-yellow-400 to-purple-400 animate-pulse blur"></div>
-              <Avatar className="relative h-12 w-12 border-2 border-white">
+              <Avatar className="relative w-12 h-12 border-2 border-white">
                 <AvatarImage src="/placeholder.svg?height=40&width=40" />
-                <AvatarFallback className="bg-gradient-to-r from-yellow-400 to-purple-400 text-white">
+                <AvatarFallback className="text-white bg-gradient-to-r from-yellow-400 to-purple-400">
                   小明
                 </AvatarFallback>
               </Avatar>
             </div>
             <div>
-              <h2 className="text-xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+              <h2 className="text-xl font-bold text-transparent bg-gradient-to-r from-primary to-purple-600 bg-clip-text">
                 你好，小明！
               </h2>
               <p className="text-gray-600">今天也要加油哦！</p>
             </div>
           </div>
           {/* 4. 在 header 部分添加设置按钮
-          // 找到 <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto justify-between sm:justify-start"> 部分，
+          // 找到 <div className="flex items-center justify-between w-full gap-2 sm:gap-4 sm:w-auto sm:justify-start"> 部分，
           // 修改为： */}
-          <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto justify-between sm:justify-start">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-yellow-400/10 to-purple-400/10 border border-yellow-400/20">
-              <Star className="h-6 w-6 fill-yellow-400 text-yellow-500" />
-              <span className="text-2xl font-bold bg-gradient-to-r from-yellow-600 to-purple-600 bg-clip-text text-transparent">
+          <div className="flex items-center justify-between w-full gap-2 sm:gap-4 sm:w-auto sm:justify-start">
+            <div className="flex items-center gap-2 px-4 py-2 border rounded-full bg-gradient-to-r from-yellow-400/10 to-purple-400/10 border-yellow-400/20">
+              <Star className="w-6 h-6 text-yellow-500 fill-yellow-400" />
+              <span className="text-2xl font-bold text-transparent bg-gradient-to-r from-yellow-600 to-purple-600 bg-clip-text">
                 {points}
               </span>
               <span className="text-gray-600">积分</span>
@@ -584,19 +767,19 @@ export default function Dashboard() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full hover:bg-blue-100 hover:text-blue-600 transition-colors"
+                className="transition-colors rounded-full hover:bg-blue-100 hover:text-blue-600"
                 onClick={() => setIsChangePasswordOpen(true)}
               >
-                <Settings className="h-5 w-5" />
+                <Settings className="w-5 h-5" />
                 <span className="sr-only">修改密码</span>
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full hover:bg-red-100 hover:text-red-600 transition-colors"
+                className="transition-colors rounded-full hover:bg-red-100 hover:text-red-600"
                 onClick={() => (window.location.href = "/login")}
               >
-                <LogOut className="h-5 w-5" />
+                <LogOut className="w-5 h-5" />
                 <span className="sr-only">退出登录</span>
               </Button>
             </div>
@@ -605,13 +788,13 @@ export default function Dashboard() {
 
         {/* Main Content */}
         <Tabs defaultValue="homework" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 rounded-xl bg-white/80 p-1 text-xs sm:text-sm md:text-lg shadow-xl">
+          <TabsList className="grid w-full grid-cols-4 p-1 text-xs shadow-xl rounded-xl bg-white/80 sm:text-sm md:text-lg">
             <TabsTrigger
               value="homework"
               className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
             >
               <div className="flex items-center">
-                <PenLine className="mr-2 h-5 w-5" />
+                <PenLine className="w-5 h-5 mr-2" />
                 <span>作业</span>
                 {unfinishedHomeworkCount > 0 && (
                   <span className="ml-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
@@ -625,7 +808,7 @@ export default function Dashboard() {
               className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
             >
               <div className="flex items-center">
-                <BookOpen className="mr-2 h-5 w-5" />
+                <BookOpen className="w-5 h-5 mr-2" />
                 <span>任务</span>
                 {unfinishedTasksCount > 0 && (
                   <span className="ml-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
@@ -639,7 +822,7 @@ export default function Dashboard() {
               className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
             >
               <div className="flex items-center">
-                <Gift className="mr-2 h-5 w-5" />
+                <Gift className="w-5 h-5 mr-2" />
                 <span>兑换</span>
               </div>
             </TabsTrigger>
@@ -648,7 +831,7 @@ export default function Dashboard() {
               className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
             >
               <div className="flex items-center">
-                <History className="mr-2 h-5 w-5" />
+                <History className="w-5 h-5 mr-2" />
                 <span>记录</span>
               </div>
             </TabsTrigger>
@@ -656,12 +839,16 @@ export default function Dashboard() {
 
           {/* 新增作业标签页内容 */}
           <TabsContent value="homework" className="space-y-4">
-            <Card className="overflow-hidden rounded-2xl border-2 border-primary/20 bg-white">
+            <Card className="overflow-hidden bg-white border-2 rounded-2xl border-primary/20">
               <CardHeader className="bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
-                    <BookOpen className="mr-2 h-6 w-6 text-primary" />
-                    {selectedHomeworkDate.toLocaleDateString("zh-CN", { month: "long", day: "numeric" })}作业
+                    <BookOpen className="w-6 h-6 mr-2 text-primary" />
+                    {selectedHomeworkDate.toLocaleDateString("zh-CN", {
+                      month: "long",
+                      day: "numeric",
+                    })}
+                    作业
                   </CardTitle>
                   <div className="flex items-center gap-4">
                     <Button
@@ -669,39 +856,52 @@ export default function Dashboard() {
                       className="rounded-full bg-gradient-to-r from-primary to-purple-600"
                       size="sm"
                     >
-                      <Plus className="mr-2 h-4 w-4" />
+                      <Plus className="w-4 h-4 mr-2" />
                       添加作业
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       className="rounded-full"
-                      onClick={() => setShowHomeworkCalendar(!showHomeworkCalendar)}
+                      onClick={() =>
+                        setShowHomeworkCalendar(!showHomeworkCalendar)
+                      }
                     >
-                      <Calendar className="mr-2 h-4 w-4" />
+                      <Calendar className="w-4 h-4 mr-2" />
                       {showHomeworkCalendar ? "隐藏日历" : "查看日历"}
                     </Button>
                     <div className="flex items-center gap-2">
-                      <Clock className="h-5 w-5 text-primary" />
+                      <Clock className="w-5 h-5 text-primary" />
                       <span className="text-sm text-muted-foreground">
-                        {new Date().toLocaleDateString("zh-CN", { weekday: "long", month: "long", day: "numeric" })}
+                        {new Date().toLocaleDateString("zh-CN", {
+                          weekday: "long",
+                          month: "long",
+                          day: "numeric",
+                        })}
                       </span>
                     </div>
                   </div>
                 </div>
                 <CardDescription>按时完成作业，获得积分奖励！</CardDescription>
                 {homework.length > 0 && (
-                  <div className="mt-2 flex items-center gap-2 text-sm">
-                    <Clock className="h-4 w-4 text-amber-500" />
-                    <span className="text-amber-600 font-medium">今日截止时间: 20:00</span>
-                    <span className="text-amber-600">(在截止时间前完成所有作业可获得额外奖励)</span>
+                  <div className="flex items-center gap-2 mt-2 text-sm">
+                    <Clock className="w-4 h-4 text-amber-500" />
+                    <span className="font-medium text-amber-600">
+                      今日截止时间: 20:00
+                    </span>
+                    <span className="text-amber-600">
+                      (在截止时间前完成所有作业可获得额外奖励)
+                    </span>
                   </div>
                 )}
               </CardHeader>
               <CardContent className="p-6">
                 {showHomeworkCalendar && (
                   <div className="mb-6">
-                    <TaskCalendar selectedDate={selectedHomeworkDate} onDateSelect={handleHomeworkDateSelect} />
+                    <TaskCalendar
+                      selectedDate={selectedHomeworkDate}
+                      onDateSelect={handleHomeworkDateSelect}
+                    />
                   </div>
                 )}
                 {activePomodoro && (
@@ -715,12 +915,17 @@ export default function Dashboard() {
                 )}
                 <div className="space-y-6">
                   {homework.map((subject) => (
-                    <div key={subject.id} className="rounded-xl border-2 border-primary/10 p-4">
-                      <div className="mb-4 flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                          <BookOpen className="h-5 w-5 text-primary" />
+                    <div
+                      key={subject.id}
+                      className="p-4 border-2 rounded-xl border-primary/10"
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
+                          <BookOpen className="w-5 h-5 text-primary" />
                         </div>
-                        <h3 className="text-lg font-semibold text-primary">{subject.subject}</h3>
+                        <h3 className="text-lg font-semibold text-primary">
+                          {subject.subject}
+                        </h3>
                       </div>
                       <div className="space-y-3">
                         {subject.tasks.map((task) => (
@@ -735,67 +940,93 @@ export default function Dashboard() {
                             <div className="flex items-center gap-4 mb-3 sm:mb-0">
                               <div
                                 className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                                  task.completed ? "bg-green-500" : "bg-primary/10"
+                                  task.completed
+                                    ? "bg-green-500"
+                                    : "bg-primary/10"
                                 }`}
                               >
                                 {task.completed ? (
-                                  <Check className="h-6 w-6 text-white" />
+                                  <Check className="w-6 h-6 text-white" />
                                 ) : (
-                                  <PenLine className="h-5 w-5 text-primary" />
+                                  <PenLine className="w-5 h-5 text-primary" />
                                 )}
                               </div>
                               <div>
                                 <h4 className="font-medium">{task.title}</h4>
                                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                   <span className="flex items-center gap-1">
-                                    <Clock className="h-4 w-4" />
+                                    <Clock className="w-4 h-4" />
                                     {task.duration}
                                   </span>
                                   <span className="flex items-center gap-1">
-                                    <Calendar className="h-4 w-4" />
+                                    <Calendar className="w-4 h-4" />
                                     截止 {task.deadline}
                                   </span>
-                                  {task.completed && task.wrongAnswers !== undefined && (
-                                    <span className="flex items-center gap-1">
-                                      <AlertCircle className="h-4 w-4 text-amber-500" />
-                                      <span className={task.wrongAnswers > 0 ? "text-amber-600" : "text-green-600"}>
-                                        错题: {task.wrongAnswers}
+                                  {task.completed &&
+                                    task.wrongAnswers !== undefined && (
+                                      <span className="flex items-center gap-1">
+                                        <AlertCircle className="w-4 h-4 text-amber-500" />
+                                        <span
+                                          className={
+                                            task.wrongAnswers > 0
+                                              ? "text-amber-600"
+                                              : "text-green-600"
+                                          }
+                                        >
+                                          错题: {task.wrongAnswers}
+                                        </span>
                                       </span>
-                                    </span>
-                                  )}
+                                    )}
                                 </div>
                               </div>
                             </div>
                             <div className="flex items-center gap-3 ml-14 sm:ml-0">
-                              <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
-                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                              <Badge
+                                variant="outline"
+                                className="flex gap-1 border-yellow-300 bg-yellow-50"
+                              >
+                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                 <span>{task.points}</span>
                               </Badge>
-                              {pomodoroStats[`${subject.id}-${task.id}`] > 0 && (
-                                <Badge variant="outline" className="flex gap-1 bg-red-50 border-red-200">
+                              {pomodoroStats[`${subject.id}-${task.id}`] >
+                                0 && (
+                                <Badge
+                                  variant="outline"
+                                  className="flex gap-1 border-red-200 bg-red-50"
+                                >
                                   <span className="text-red-600">🍅</span>
                                   <span className="text-red-600">
-                                    x {pomodoroStats[`${subject.id}-${task.id}`] || 0}
+                                    x{" "}
+                                    {pomodoroStats[
+                                      `${subject.id}-${task.id}`
+                                    ] || 0}
                                   </span>
                                 </Badge>
                               )}
-                              <div className="flex flex-wrap gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                              <div className="flex flex-wrap w-full gap-2 mt-2 sm:w-auto sm:mt-0">
                                 {!task.completed &&
-                                  !(activePomodoro?.subjectId === subject.id && activePomodoro?.taskId === task.id) && (
+                                  !(
+                                    activePomodoro?.subjectId === subject.id &&
+                                    activePomodoro?.taskId === task.id
+                                  ) && (
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      onClick={() => startPomodoro(subject.id, task.id)}
-                                      className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+                                      onClick={() =>
+                                        startPomodoro(subject.id, task.id)
+                                      }
+                                      className="text-red-600 border-red-200 bg-red-50 hover:bg-red-100"
                                     >
-                                      <Clock className="mr-1 h-4 w-4" />
+                                      <Clock className="w-4 h-4 mr-1" />
                                       开始专注
                                     </Button>
                                   )}
                                 <Button
                                   size="sm"
                                   disabled={task.completed}
-                                  onClick={() => completeHomeworkTask(subject.id, task.id)}
+                                  onClick={() =>
+                                    completeHomeworkTask(subject.id, task.id)
+                                  }
                                   className={`transition-all ${
                                     task.completed
                                       ? "bg-green-500"
@@ -813,14 +1044,16 @@ export default function Dashboard() {
                   ))}
                 </div>
               </CardContent>
-              <CardFooter className="bg-gray-50 p-6">
-                <div className="flex w-full items-center justify-between">
+              <CardFooter className="p-6 bg-gray-50">
+                <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-2">
-                    <Award className="h-5 w-5 text-primary" />
-                    <span className="text-sm text-muted-foreground">在 20:00 前完成所有作业可获得额外奖励！</span>
+                    <Award className="w-5 h-5 text-primary" />
+                    <span className="text-sm text-muted-foreground">
+                      在 20:00 前完成所有作业可获得额外奖励！
+                    </span>
                   </div>
                   <Badge variant="outline" className="flex gap-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                     <span>额外 50 积分</span>
                   </Badge>
                 </div>
@@ -828,11 +1061,11 @@ export default function Dashboard() {
             </Card>
 
             {/* 作业完成进度卡片 */}
-            <Card className="overflow-hidden rounded-2xl border-2 border-primary/20">
+            <Card className="overflow-hidden border-2 rounded-2xl border-primary/20">
               <CardHeader className="bg-gradient-to-r from-green-400/20 to-emerald-400/20">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
-                    <Award className="mr-2 h-6 w-6 text-primary" />
+                    <Award className="w-6 h-6 mr-2 text-primary" />
                     作业完成进度
                   </CardTitle>
                   <CardDescription>今日作业完成情况</CardDescription>
@@ -841,9 +1074,11 @@ export default function Dashboard() {
               <CardContent className="p-6">
                 <div className="space-y-6">
                   {homework.map((subject) => {
-                    const totalTasks = subject.tasks.length
-                    const completedTasks = subject.tasks.filter((t) => t.completed).length
-                    const progress = (completedTasks / totalTasks) * 100
+                    const totalTasks = subject.tasks.length;
+                    const completedTasks = subject.tasks.filter(
+                      (t) => t.completed
+                    ).length;
+                    const progress = (completedTasks / totalTasks) * 100;
 
                     return (
                       <div key={subject.id} className="space-y-2">
@@ -859,30 +1094,38 @@ export default function Dashboard() {
                           indicatorClassName="bg-gradient-to-r from-blue-500 to-purple-500"
                         />
                         {/* 在 Progress 组件后添加 */}
-                        <div className="mt-1 flex justify-between text-xs">
+                        <div className="flex justify-between mt-1 text-xs">
                           <span className="text-gray-500">
-                            总错题: {subject.tasks.reduce((sum, t) => sum + (t.wrongAnswers || 0), 0)}个
+                            总错题:{" "}
+                            {subject.tasks.reduce(
+                              (sum, t) => sum + (t.wrongAnswers || 0),
+                              0
+                            )}
+                            个
                           </span>
                           <span className="text-gray-500">
                             平均:{" "}
                             {(
-                              subject.tasks.reduce((sum, t) => sum + (t.wrongAnswers || 0), 0) / subject.tasks.length
+                              subject.tasks.reduce(
+                                (sum, t) => sum + (t.wrongAnswers || 0),
+                                0
+                              ) / subject.tasks.length
                             ).toFixed(1)}
                             个/题
                           </span>
                         </div>
                       </div>
-                    )
+                    );
                   })}
                 </div>
               </CardContent>
             </Card>
             {/* 番茄统计卡片 */}
-            <Card className="overflow-hidden rounded-2xl border-2 border-primary/20">
+            <Card className="overflow-hidden border-2 rounded-2xl border-primary/20">
               <CardHeader className="bg-gradient-to-r from-red-400/20 to-orange-400/20">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
-                    <Clock className="mr-2 h-6 w-6 text-red-500" />
+                    <Clock className="w-6 h-6 mr-2 text-red-500" />
                     番茄学习统计
                   </CardTitle>
                   <CardDescription>使用番茄工作法提高学习效率</CardDescription>
@@ -893,11 +1136,16 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-lg font-medium">今日番茄数</h3>
-                      <p className="text-sm text-muted-foreground">每个番茄代表25分钟的专注学习</p>
+                      <p className="text-sm text-muted-foreground">
+                        每个番茄代表25分钟的专注学习
+                      </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="text-4xl font-bold text-red-500">
-                        {Object.values(pomodoroStats).reduce((sum, count) => sum + count, 0)}
+                        {Object.values(pomodoroStats).reduce(
+                          (sum, count) => sum + count,
+                          0
+                        )}
                       </div>
                       <span className="text-2xl">🍅</span>
                     </div>
@@ -907,28 +1155,40 @@ export default function Dashboard() {
                     <h3 className="font-medium">科目番茄分布</h3>
                     <div className="grid grid-cols-3 gap-3">
                       {homework.map((subject) => {
-                        const subjectPomodoros = subject.tasks.reduce((sum, task) => {
-                          return sum + (pomodoroStats[`${subject.id}-${task.id}`] || 0)
-                        }, 0)
+                        const subjectPomodoros = subject.tasks.reduce(
+                          (sum, task) => {
+                            return (
+                              sum +
+                              (pomodoroStats[`${subject.id}-${task.id}`] || 0)
+                            );
+                          },
+                          0
+                        );
 
                         return subjectPomodoros > 0 ? (
                           <div
                             key={subject.id}
-                            className="rounded-lg border border-primary/10 bg-primary/5 p-3 text-center"
+                            className="p-3 text-center border rounded-lg border-primary/10 bg-primary/5"
                           >
-                            <div className="text-sm font-medium">{subject.subject}</div>
-                            <div className="mt-1 flex items-center justify-center gap-1">
+                            <div className="text-sm font-medium">
+                              {subject.subject}
+                            </div>
+                            <div className="flex items-center justify-center gap-1 mt-1">
                               <span className="text-red-500">🍅</span>
-                              <span className="text-lg font-bold text-primary">{subjectPomodoros}</span>
+                              <span className="text-lg font-bold text-primary">
+                                {subjectPomodoros}
+                              </span>
                             </div>
                           </div>
-                        ) : null
+                        ) : null;
                       })}
                     </div>
                   </div>
 
-                  <div className="rounded-lg border border-primary/10 bg-yellow-50/50 p-4">
-                    <h3 className="mb-2 font-medium text-amber-800">番茄工作法小贴士</h3>
+                  <div className="p-4 border rounded-lg border-primary/10 bg-yellow-50/50">
+                    <h3 className="mb-2 font-medium text-amber-800">
+                      番茄工作法小贴士
+                    </h3>
                     <ul className="space-y-1 text-sm text-amber-700">
                       <li className="flex items-start gap-2">
                         <div className="mt-0.5 h-2 w-2 rounded-full bg-amber-500"></div>
@@ -948,11 +1208,11 @@ export default function Dashboard() {
               </CardContent>
             </Card>
             {/* 错题统计卡片 */}
-            <Card className="overflow-hidden rounded-2xl border-2 border-primary/20">
+            <Card className="overflow-hidden border-2 rounded-2xl border-primary/20">
               <CardHeader className="bg-gradient-to-r from-amber-400/20 to-orange-400/20">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
-                    <AlertCircle className="mr-2 h-6 w-6 text-amber-500" />
+                    <AlertCircle className="w-6 h-6 mr-2 text-amber-500" />
                     错题统计
                   </CardTitle>
                   <CardDescription>分析错题情况，找出薄弱环节</CardDescription>
@@ -963,7 +1223,9 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-lg font-medium">今日错题总数</h3>
-                      <p className="text-sm text-muted-foreground">记录并分析错题，有助于查漏补缺</p>
+                      <p className="text-sm text-muted-foreground">
+                        记录并分析错题，有助于查漏补缺
+                      </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="text-4xl font-bold text-amber-500">
@@ -971,20 +1233,24 @@ export default function Dashboard() {
                           (sum, subject) =>
                             sum +
                             subject.tasks.reduce(
-                              (subSum, task) => subSum + (task.completed ? task.wrongAnswers || 0 : 0),
-                              0,
+                              (subSum, task) =>
+                                subSum +
+                                (task.completed ? task.wrongAnswers || 0 : 0),
+                              0
                             ),
-                          0,
+                          0
                         )}
                       </div>
                       <span className="text-2xl">📝</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between bg-amber-50/70 p-3 rounded-lg border border-amber-200">
+                  <div className="flex items-center justify-between p-3 border rounded-lg bg-amber-50/70 border-amber-200">
                     <div>
-                      <h3 className="text-md font-medium">最近7天错题</h3>
-                      <p className="text-xs text-muted-foreground">近期学习情况</p>
+                      <h3 className="font-medium text-md">最近7天错题</h3>
+                      <p className="text-xs text-muted-foreground">
+                        近期学习情况
+                      </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="text-2xl font-bold text-amber-500">
@@ -1000,28 +1266,35 @@ export default function Dashboard() {
                     <div className="grid grid-cols-3 gap-3">
                       {homework.map((subject) => {
                         const subjectWrongAnswers = subject.tasks.reduce(
-                          (sum, task) => sum + (task.completed ? task.wrongAnswers || 0 : 0),
-                          0,
-                        )
+                          (sum, task) =>
+                            sum + (task.completed ? task.wrongAnswers || 0 : 0),
+                          0
+                        );
 
                         return subjectWrongAnswers > 0 ? (
                           <div
                             key={subject.id}
-                            className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-center"
+                            className="p-3 text-center border rounded-lg border-amber-200 bg-amber-50"
                           >
-                            <div className="text-sm font-medium">{subject.subject}</div>
-                            <div className="mt-1 flex items-center justify-center gap-1">
+                            <div className="text-sm font-medium">
+                              {subject.subject}
+                            </div>
+                            <div className="flex items-center justify-center gap-1 mt-1">
                               <span className="text-amber-500">📝</span>
-                              <span className="text-lg font-bold text-amber-600">{subjectWrongAnswers}</span>
+                              <span className="text-lg font-bold text-amber-600">
+                                {subjectWrongAnswers}
+                              </span>
                             </div>
                           </div>
-                        ) : null
+                        ) : null;
                       })}
                     </div>
                   </div>
 
-                  <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4">
-                    <h3 className="mb-2 font-medium text-amber-800">错题分析小贴士</h3>
+                  <div className="p-4 border rounded-lg border-amber-200 bg-amber-50/50">
+                    <h3 className="mb-2 font-medium text-amber-800">
+                      错题分析小贴士
+                    </h3>
                     <ul className="space-y-1 text-sm text-amber-700">
                       <li className="flex items-start gap-2">
                         <div className="mt-0.5 h-2 w-2 rounded-full bg-amber-500"></div>
@@ -1044,15 +1317,19 @@ export default function Dashboard() {
 
           {/* Tasks Tab */}
           <TabsContent value="tasks" className="space-y-4">
-            <Card className="overflow-hidden rounded-2xl border-2 border-primary/20 bg-gradient-to-br from-blue-50 to-purple-50">
+            <Card className="overflow-hidden border-2 rounded-2xl border-primary/20 bg-gradient-to-br from-blue-50 to-purple-50">
               <CardHeader className="bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20">
                 {/* 4. 在 return 语句中的 TabsContent value="tasks" 部分，修改 CardHeader 部分
                 // 找到 <CardHeader className="bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20"> 下的内容，
                 // 将 <div className="flex items-center justify-between"> 部分替换为： */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
-                    <BookOpen className="mr-2 h-6 w-6 text-primary" />
-                    {selectedDate.toLocaleDateString("zh-CN", { month: "long", day: "numeric" })}任务
+                    <BookOpen className="w-6 h-6 mr-2 text-primary" />
+                    {selectedDate.toLocaleDateString("zh-CN", {
+                      month: "long",
+                      day: "numeric",
+                    })}
+                    任务
                   </CardTitle>
                   <div className="flex items-center gap-3">
                     <Button
@@ -1060,7 +1337,7 @@ export default function Dashboard() {
                       className="rounded-full bg-gradient-to-r from-primary to-purple-600"
                       size="sm"
                     >
-                      <Plus className="mr-2 h-4 w-4" />
+                      <Plus className="w-4 h-4 mr-2" />
                       添加任务
                     </Button>
                     <Button
@@ -1069,7 +1346,7 @@ export default function Dashboard() {
                       className="rounded-full"
                       onClick={() => setShowCalendar(!showCalendar)}
                     >
-                      <Calendar className="mr-2 h-4 w-4" />
+                      <Calendar className="w-4 h-4 mr-2" />
                       {showCalendar ? "隐藏日历" : "查看日历"}
                     </Button>
                   </div>
@@ -1082,7 +1359,10 @@ export default function Dashboard() {
               <CardContent className="p-6">
                 {showCalendar && (
                   <div className="mb-6">
-                    <TaskCalendar selectedDate={selectedDate} onDateSelect={handleDateSelect} />
+                    <TaskCalendar
+                      selectedDate={selectedDate}
+                      onDateSelect={handleDateSelect}
+                    />
                   </div>
                 )}
                 <div className="space-y-4">
@@ -1102,19 +1382,26 @@ export default function Dashboard() {
                           }`}
                         >
                           {task.completed ? (
-                            <Check className="h-6 w-6 text-white" />
+                            <Check className="w-6 h-6 text-white" />
                           ) : (
-                            <span className="text-lg font-bold text-primary">{task.id}</span>
+                            <span className="text-lg font-bold text-primary">
+                              {task.id}
+                            </span>
                           )}
                         </div>
                         <div>
                           <h3 className="font-semibold">{task.title}</h3>
-                          <p className="text-sm text-muted-foreground">{task.time}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {task.time}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 ml-14 sm:ml-0">
-                        <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
-                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                        <Badge
+                          variant="outline"
+                          className="flex gap-1 border-yellow-300 bg-yellow-50"
+                        >
+                          <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                           <span>{task.points}</span>
                         </Badge>
                         <Button
@@ -1136,11 +1423,11 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="overflow-hidden rounded-2xl border-2 border-primary/20">
+            <Card className="overflow-hidden border-2 rounded-2xl border-primary/20">
               <CardHeader className="bg-gradient-to-r from-blue-500/10 to-green-500/10">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
-                    <Award className="mr-2 h-6 w-6 text-primary" />
+                    <Award className="w-6 h-6 mr-2 text-primary" />
                     成就进度
                   </CardTitle>
                   <CardDescription>看看你的进步吧！</CardDescription>
@@ -1151,7 +1438,9 @@ export default function Dashboard() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="font-medium">阅读小达人</span>
-                      <span className="text-sm text-muted-foreground">7/10</span>
+                      <span className="text-sm text-muted-foreground">
+                        7/10
+                      </span>
                     </div>
                     <Progress
                       value={70}
@@ -1162,7 +1451,9 @@ export default function Dashboard() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="font-medium">数学小能手</span>
-                      <span className="text-sm text-muted-foreground">5/10</span>
+                      <span className="text-sm text-muted-foreground">
+                        5/10
+                      </span>
                     </div>
                     <Progress value={50} className="h-3 rounded-full" />
                   </div>
@@ -1180,15 +1471,15 @@ export default function Dashboard() {
 
           {/* Rewards Tab */}
           <TabsContent value="rewards" className="space-y-4">
-            <Card className="overflow-hidden rounded-2xl border-2 border-primary/20 bg-gradient-to-br from-pink-50 to-yellow-50">
+            <Card className="overflow-hidden border-2 rounded-2xl border-primary/20 bg-gradient-to-br from-pink-50 to-yellow-50">
               <CardHeader className="bg-gradient-to-r from-pink-400/20 via-orange-400/20 to-yellow-400/20">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
-                    <Gift className="mr-2 h-6 w-6 text-primary" />
+                    <Gift className="w-6 h-6 mr-2 text-primary" />
                     积分兑换
                   </CardTitle>
                   <div className="flex items-center gap-2">
-                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-500" />
+                    <Star className="w-5 h-5 text-yellow-500 fill-yellow-400" />
                     <span className="font-bold text-primary">{points}</span>
                   </div>
                 </div>
@@ -1197,54 +1488,62 @@ export default function Dashboard() {
               <CardContent className="p-6">
                 <div className="transition-all duration-300 ease-in-out">
                   <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
-                    {rewards.slice(0, showAllRewards ? rewards.length : 4).map((reward) => (
-                      <div
-                        key={reward.id}
-                        className="flex flex-col overflow-hidden rounded-xl border-2 border-primary/20 bg-gradient-to-br from-white to-purple-50 transition-all hover:border-primary/50 hover:shadow-xl"
-                      >
-                        <div className="flex items-center gap-2 sm:gap-4 p-3 sm:p-4">
-                          <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-xl bg-primary/10">
-                            <img
-                              src={reward.image || "/placeholder.svg"}
-                              alt={reward.title}
-                              className="h-16 w-16 object-contain"
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="font-semibold">{reward.title}</h3>
-                            <div className="mt-1 flex items-center gap-1">
-                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
-                              <span className="font-bold text-primary">{reward.points}</span>
-                              <span className="text-sm text-muted-foreground">积分</span>
+                    {rewards
+                      .slice(0, showAllRewards ? rewards.length : 4)
+                      .map((reward) => (
+                        <div
+                          key={reward.id}
+                          className="flex flex-col overflow-hidden transition-all border-2 rounded-xl border-primary/20 bg-gradient-to-br from-white to-purple-50 hover:border-primary/50 hover:shadow-xl"
+                        >
+                          <div className="flex items-center gap-2 p-3 sm:gap-4 sm:p-4">
+                            <div className="flex items-center justify-center w-16 h-16 sm:h-20 sm:w-20 rounded-xl bg-primary/10">
+                              <img
+                                src={reward.image || "/placeholder.svg"}
+                                alt={reward.title}
+                                className="object-contain w-16 h-16"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-semibold">{reward.title}</h3>
+                              <div className="flex items-center gap-1 mt-1">
+                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
+                                <span className="font-bold text-primary">
+                                  {reward.points}
+                                </span>
+                                <span className="text-sm text-muted-foreground">
+                                  积分
+                                </span>
+                              </div>
                             </div>
                           </div>
+                          <div className="p-3 mt-auto bg-primary/5">
+                            {/* 4. Update the rewards mapping in the JSX to show the confirmation dialog */}
+                            {/* Find the Button inside the rewards.map section that says "立即兑换" and replace it with: */}
+                            <Button
+                              className="w-full"
+                              disabled={points < reward.points}
+                              onClick={() => setConfirmingReward(reward.id)}
+                            >
+                              {points < reward.points ? "积分不足" : "立即兑换"}
+                            </Button>
+                          </div>
                         </div>
-                        <div className="mt-auto bg-primary/5 p-3">
-                          {/* 4. Update the rewards mapping in the JSX to show the confirmation dialog */}
-                          {/* Find the Button inside the rewards.map section that says "立即兑换" and replace it with: */}
-                          <Button
-                            className="w-full"
-                            disabled={points < reward.points}
-                            onClick={() => setConfirmingReward(reward.id)}
-                          >
-                            {points < reward.points ? "积分不足" : "立即兑换"}
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="bg-primary/5 p-6">
+              <CardFooter className="p-6 bg-primary/5">
                 <Button
                   variant="outline"
                   className="w-full transition-all duration-300 hover:bg-primary/10"
                   onClick={() => setShowAllRewards(!showAllRewards)}
                 >
-                  <ShoppingBag className="mr-2 h-4 w-4" />
+                  <ShoppingBag className="w-4 h-4 mr-2" />
                   {showAllRewards ? "收起奖励" : "查看更多奖励"}
                   <ChevronRight
-                    className={`ml-2 h-4 w-4 transition-transform duration-300 ${showAllRewards ? "rotate-90" : ""}`}
+                    className={`ml-2 h-4 w-4 transition-transform duration-300 ${
+                      showAllRewards ? "rotate-90" : ""
+                    }`}
                   />
                 </Button>
               </CardFooter>
@@ -1253,11 +1552,11 @@ export default function Dashboard() {
 
           {/* History Tab */}
           <TabsContent value="history" className="space-y-4">
-            <Card className="overflow-hidden rounded-2xl border-2 border-primary/20 bg-gradient-to-br from-blue-50 to-green-50">
+            <Card className="overflow-hidden border-2 rounded-2xl border-primary/20 bg-gradient-to-br from-blue-50 to-green-50">
               <CardHeader className="bg-gradient-to-r from-blue-400/20 via-teal-400/20 to-green-400/20">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
-                    <History className="mr-2 h-6 w-6 text-primary" />
+                    <History className="w-6 h-6 mr-2 text-primary" />
                     积分记录
                   </CardTitle>
                   <CardDescription>查看你的积分获取和使用历史</CardDescription>
@@ -1265,43 +1564,51 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-4">
-                  <div className="transition-all duration-300 ease-in-out space-y-3">
-                    {history.slice(0, showAllRecords ? history.length : 4).map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between rounded-xl border-2 border-primary/20 bg-white p-4"
-                      >
-                        <div className="flex items-center gap-3">
+                  <div className="space-y-3 transition-all duration-300 ease-in-out">
+                    {history
+                      .slice(0, showAllRecords ? history.length : 4)
+                      .map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between p-4 bg-white border-2 rounded-xl border-primary/20"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                                item.type === "earn"
+                                  ? "bg-green-100"
+                                  : "bg-red-100"
+                              }`}
+                            >
+                              {item.type === "earn" ? (
+                                <Plus className="w-5 h-5 text-green-600" />
+                              ) : (
+                                <Gift className="w-5 h-5 text-red-600" />
+                              )}
+                            </div>
+                            <div>
+                              <h3 className="font-semibold">{item.title}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {item.date}
+                              </p>
+                            </div>
+                          </div>
                           <div
-                            className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                              item.type === "earn" ? "bg-green-100" : "bg-red-100"
+                            className={`flex items-center gap-1 font-bold ${
+                              item.type === "earn"
+                                ? "text-green-600"
+                                : "text-red-600"
                             }`}
                           >
-                            {item.type === "earn" ? (
-                              <Plus className="h-5 w-5 text-green-600" />
-                            ) : (
-                              <Gift className="h-5 w-5 text-red-600" />
-                            )}
-                          </div>
-                          <div>
-                            <h3 className="font-semibold">{item.title}</h3>
-                            <p className="text-sm text-muted-foreground">{item.date}</p>
+                            {item.type === "earn" ? "+" : "-"}
+                            {item.points}
                           </div>
                         </div>
-                        <div
-                          className={`flex items-center gap-1 font-bold ${
-                            item.type === "earn" ? "text-green-600" : "text-red-600"
-                          }`}
-                        >
-                          {item.type === "earn" ? "+" : "-"}
-                          {item.points}
-                        </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="bg-primary/5 p-6">
+              <CardFooter className="p-6 bg-primary/5">
                 <Button
                   variant="outline"
                   className="w-full transition-all duration-300 hover:bg-primary/10"
@@ -1309,7 +1616,9 @@ export default function Dashboard() {
                 >
                   {showAllRecords ? "收起记录" : "查看更多记录"}
                   <ChevronRight
-                    className={`ml-2 h-4 w-4 transition-transform duration-300 ${showAllRecords ? "rotate-90" : ""}`}
+                    className={`ml-2 h-4 w-4 transition-transform duration-300 ${
+                      showAllRecords ? "rotate-90" : ""
+                    }`}
                   />
                 </Button>
               </CardFooter>
@@ -1318,21 +1627,21 @@ export default function Dashboard() {
         </Tabs>
 
         {/* Floating Animation Elements */}
-        <div className="pointer-events-none fixed bottom-10 right-10 animate-bounce">
-          <Star className="h-12 w-12 fill-yellow-400 text-yellow-500" />
+        <div className="fixed pointer-events-none bottom-10 right-10 animate-bounce">
+          <Star className="w-12 h-12 text-yellow-500 fill-yellow-400" />
         </div>
-        <div className="pointer-events-none fixed bottom-20 left-10 animate-pulse">
-          <Award className="h-10 w-10 text-blue-400" />
+        <div className="fixed pointer-events-none bottom-20 left-10 animate-pulse">
+          <Award className="w-10 h-10 text-blue-400" />
         </div>
         {/* 添加更多浮动动画元素 */}
-        <div className="pointer-events-none fixed top-10 right-20 animate-pulse">
-          <Gift className="h-8 w-8 text-pink-400" />
+        <div className="fixed pointer-events-none top-10 right-20 animate-pulse">
+          <Gift className="w-8 h-8 text-pink-400" />
         </div>
-        <div className="pointer-events-none fixed top-20 left-20 animate-bounce">
-          <Star className="h-8 w-8 fill-yellow-400 text-yellow-500" />
+        <div className="fixed pointer-events-none top-20 left-20 animate-bounce">
+          <Star className="w-8 h-8 text-yellow-500 fill-yellow-400" />
         </div>
-        <div className="pointer-events-none fixed bottom-40 right-20 animate-bounce delay-150">
-          <Sparkles className="h-6 w-6 text-purple-400" />
+        <div className="fixed delay-150 pointer-events-none bottom-40 right-20 animate-bounce">
+          <Sparkles className="w-6 h-6 text-purple-400" />
         </div>
         {/* 5. Add the confirmation dialog to the JSX */}
         {/* Add this right before the closing </div> of the main container div (before the AddHomeworkDialog) */}
@@ -1347,7 +1656,11 @@ export default function Dashboard() {
       />
       {/* 5. 在组件最后，在 AddHomeworkDialog 后添加 AddTaskDialog
       // 在 <AddHomeworkDialog /> 后添加： */}
-      <AddTaskDialog isOpen={isAddTaskOpen} onClose={() => setIsAddTaskOpen(false)} onAdd={handleAddTask} />
+      <AddTaskDialog
+        isOpen={isAddTaskOpen}
+        onClose={() => setIsAddTaskOpen(false)}
+        onAdd={handleAddTask}
+      />
       {/* 5. 在组件最后，在 AddTaskDialog 后添加 ChangePasswordDialog
       // 在 <AddTaskDialog /> 后添加： */}
       <ChangePasswordDialog
@@ -1357,9 +1670,10 @@ export default function Dashboard() {
         userType="child"
       />
       {/* 只保留一个庆祝动画组件 */}
-      {showCelebration && <ConfettiCelebration onComplete={() => setShowCelebration(false)} />}
+      {showCelebration && (
+        <ConfettiCelebration onComplete={() => setShowCelebration(false)} />
+      )}
       {/*{showCelebration && <CompletionCelebration onClose={() => setShowCelebration(false)} />}*/}
     </div>
-  )
+  );
 }
-

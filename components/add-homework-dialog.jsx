@@ -1,12 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Clock, Award, BookOpen, User } from "lucide-react"
+import { X, Clock, Award, BookOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // 修改 AddHomeworkDialog 组件，添加 childrenList 参数
 export function AddHomeworkDialog({ isOpen, onClose, onAdd, initialData, childrenList = [] }) {
@@ -15,10 +14,7 @@ export function AddHomeworkDialog({ isOpen, onClose, onAdd, initialData, childre
   const [duration, setDuration] = useState(initialData?.duration?.replace("分钟", "") || "")
   const [deadline, setDeadline] = useState(initialData?.deadline || "")
   const [points, setPoints] = useState(initialData?.points?.toString() || "")
-  // 添加 childName 状态
-  const [childName, setChildName] = useState(
-    initialData?.childName || (childrenList.length > 0 ? childrenList[0].name : ""),
-  )
+  // 不再需要childName状态，但在提交时仍需处理
 
   useEffect(() => {
     if (initialData) {
@@ -27,28 +23,44 @@ export function AddHomeworkDialog({ isOpen, onClose, onAdd, initialData, childre
       setDuration(initialData.duration?.replace("分钟", "") || "")
       setDeadline(initialData.deadline || "")
       setPoints(initialData.points?.toString() || "")
-      setChildName(initialData.childName || "")
+      // 移除对childName的设置
     }
   }, [initialData])
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    onAdd({
-      subject,
-      title,
-      duration: `${duration}分钟`,
-      deadline,
-      points: Number.parseInt(points),
-      completed: false,
-      childName, // 添加 childName 到提交的数据中
-    })
+
+    // 如果有多个小朋友，为每个小朋友创建作业
+    if (childrenList.length > 0) {
+      childrenList.forEach((child) => {
+        onAdd({
+          subject,
+          title,
+          duration: `${duration}分钟`,
+          deadline,
+          points: Number.parseInt(points),
+          completed: false,
+          childName: child.name, // 使用当前循环的小朋友名字
+        })
+      })
+    } else {
+      // 如果没有小朋友列表，仍然提交但不指定childName
+      onAdd({
+        subject,
+        title,
+        duration: `${duration}分钟`,
+        deadline,
+        points: Number.parseInt(points),
+        completed: false,
+      })
+    }
+
     // Reset form
     setSubject("")
     setTitle("")
     setDuration("")
     setDeadline("")
     setPoints("")
-    setChildName(childrenList.length > 0 ? childrenList[0].name : "")
     onClose()
   }
 
@@ -70,28 +82,6 @@ export function AddHomeworkDialog({ isOpen, onClose, onAdd, initialData, childre
           </div>
 
           <div className="space-y-4">
-            {/* 添加选择小朋友的下拉菜单 */}
-            {childrenList.length > 0 && (
-              <div className="space-y-2">
-                <Label htmlFor="childName">选择小朋友</Label>
-                <div className="relative">
-                  <User className="absolute w-5 h-5 text-gray-400 left-3 top-3" />
-                  <Select value={childName} onValueChange={setChildName}>
-                    <SelectTrigger className="h-10 pl-10 text-sm sm:h-12 sm:text-base">
-                      <SelectValue placeholder="选择小朋友" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {childrenList.map((child) => (
-                        <SelectItem key={child.id} value={child.name}>
-                          {child.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            )}
-
             <div className="space-y-2">
               <Label htmlFor="subject">科目</Label>
               <div className="grid grid-cols-3 gap-1 sm:gap-2">
