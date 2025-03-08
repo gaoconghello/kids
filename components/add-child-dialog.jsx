@@ -14,13 +14,14 @@ export function AddChildDialog({ isOpen, onClose, onAdd, familyId }) {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [name, setName] = useState("")
-  const [gender, setGender] = useState("male")
+  const [gender, setGender] = useState("m")
   const [age, setAge] = useState("")
   const [grade, setGrade] = useState("")
   const [initialPoints, setInitialPoints] = useState("0")
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [errors, setErrors] = useState({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const validateForm = () => {
     const newErrors = {}
@@ -38,14 +39,17 @@ export function AddChildDialog({ isOpen, onClose, onAdd, familyId }) {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
     if (!validateForm()) return
+    
+    setIsSubmitting(true)
 
     const newChild = {
-      id: Date.now(),
+      // id: Date.now(),
       username,
+      password,
       name,
       gender,
       age: Number(age),
@@ -55,30 +59,44 @@ export function AddChildDialog({ isOpen, onClose, onAdd, familyId }) {
       familyId,
     }
 
-    onAdd(newChild)
+    const result = await onAdd(newChild)
+    
+    setIsSubmitting(false)
+    
+    // 处理用户名重复错误
+    if (result && result.error === "username") {
+      setErrors({
+        ...errors,
+        username: result.message
+      })
+      return
+    }
 
-    // 重置表单
-    setUsername("")
-    setPassword("")
-    setConfirmPassword("")
-    setName("")
-    setGender("male")
-    setAge("")
-    setGrade("")
-    setInitialPoints("0")
-    setErrors({})
+    // 如果没有错误，重置表单并关闭对话框
+    if (!result) {
+      // 重置表单
+      setUsername("")
+      setPassword("")
+      setConfirmPassword("")
+      setName("")
+      setGender("male")
+      setAge("")
+      setGrade("")
+      setInitialPoints("0")
+      setErrors({})
 
-    onClose()
+      onClose()
+    }
   }
 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto bg-black/50">
       <Card className="relative w-full max-w-md overflow-hidden rounded-2xl">
         <div className="absolute right-2 top-2">
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-gray-100" onClick={onClose}>
-            <X className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full hover:bg-gray-100" onClick={onClose}>
+            <X className="w-4 h-4" />
           </Button>
         </div>
 
@@ -92,7 +110,7 @@ export function AddChildDialog({ isOpen, onClose, onAdd, familyId }) {
             <div className="space-y-2">
               <Label htmlFor="username">用户名</Label>
               <div className="relative">
-                <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <User className="absolute w-5 h-5 text-gray-400 left-3 top-3" />
                 <Input
                   id="username"
                   value={username}
@@ -103,7 +121,7 @@ export function AddChildDialog({ isOpen, onClose, onAdd, familyId }) {
               </div>
               {errors.username && (
                 <div className="flex items-center gap-1 text-sm text-red-500">
-                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTriangle className="w-4 h-4" />
                   <span>{errors.username}</span>
                 </div>
               )}
@@ -112,7 +130,7 @@ export function AddChildDialog({ isOpen, onClose, onAdd, familyId }) {
             <div className="space-y-2">
               <Label htmlFor="password">密码</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <Lock className="absolute w-5 h-5 text-gray-400 left-3 top-3" />
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
@@ -125,19 +143,19 @@ export function AddChildDialog({ isOpen, onClose, onAdd, familyId }) {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-1 top-1 h-8 w-8"
+                  className="absolute w-8 h-8 right-1 top-1"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400" />
+                    <EyeOff className="w-5 h-5 text-gray-400" />
                   ) : (
-                    <Eye className="h-5 w-5 text-gray-400" />
+                    <Eye className="w-5 h-5 text-gray-400" />
                   )}
                 </Button>
               </div>
               {errors.password && (
                 <div className="flex items-center gap-1 text-sm text-red-500">
-                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTriangle className="w-4 h-4" />
                   <span>{errors.password}</span>
                 </div>
               )}
@@ -146,7 +164,7 @@ export function AddChildDialog({ isOpen, onClose, onAdd, familyId }) {
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">确认密码</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <Lock className="absolute w-5 h-5 text-gray-400 left-3 top-3" />
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
@@ -159,19 +177,19 @@ export function AddChildDialog({ isOpen, onClose, onAdd, familyId }) {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-1 top-1 h-8 w-8"
+                  className="absolute w-8 h-8 right-1 top-1"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
                   {showConfirmPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400" />
+                    <EyeOff className="w-5 h-5 text-gray-400" />
                   ) : (
-                    <Eye className="h-5 w-5 text-gray-400" />
+                    <Eye className="w-5 h-5 text-gray-400" />
                   )}
                 </Button>
               </div>
               {errors.confirmPassword && (
                 <div className="flex items-center gap-1 text-sm text-red-500">
-                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTriangle className="w-4 h-4" />
                   <span>{errors.confirmPassword}</span>
                 </div>
               )}
@@ -180,7 +198,7 @@ export function AddChildDialog({ isOpen, onClose, onAdd, familyId }) {
             <div className="space-y-2">
               <Label htmlFor="name">姓名</Label>
               <div className="relative">
-                <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <User className="absolute w-5 h-5 text-gray-400 left-3 top-3" />
                 <Input
                   id="name"
                   value={name}
@@ -191,7 +209,7 @@ export function AddChildDialog({ isOpen, onClose, onAdd, familyId }) {
               </div>
               {errors.name && (
                 <div className="flex items-center gap-1 text-sm text-red-500">
-                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTriangle className="w-4 h-4" />
                   <span>{errors.name}</span>
                 </div>
               )}
@@ -201,13 +219,13 @@ export function AddChildDialog({ isOpen, onClose, onAdd, familyId }) {
               <Label>性别</Label>
               <RadioGroup value={gender} onValueChange={setGender} className="flex space-x-4">
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="male" id="male" />
+                  <RadioGroupItem value="m" id="male" />
                   <Label htmlFor="male" className="cursor-pointer">
                     男
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="female" id="female" />
+                  <RadioGroupItem value="f" id="female" />
                   <Label htmlFor="female" className="cursor-pointer">
                     女
                   </Label>
@@ -219,7 +237,7 @@ export function AddChildDialog({ isOpen, onClose, onAdd, familyId }) {
               <div className="space-y-2">
                 <Label htmlFor="age">年龄</Label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                  <Calendar className="absolute w-5 h-5 text-gray-400 left-3 top-3" />
                   <Input
                     id="age"
                     type="number"
@@ -233,7 +251,7 @@ export function AddChildDialog({ isOpen, onClose, onAdd, familyId }) {
                 </div>
                 {errors.age && (
                   <div className="flex items-center gap-1 text-sm text-red-500">
-                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTriangle className="w-4 h-4" />
                     <span>{errors.age}</span>
                   </div>
                 )}
@@ -242,7 +260,7 @@ export function AddChildDialog({ isOpen, onClose, onAdd, familyId }) {
               <div className="space-y-2">
                 <Label htmlFor="grade">年级</Label>
                 <div className="relative">
-                  <GraduationCap className="absolute left-3 top-3 h-5 w-5 text-gray-400 z-10" />
+                  <GraduationCap className="absolute z-10 w-5 h-5 text-gray-400 left-3 top-3" />
                   <Select value={grade} onValueChange={setGrade}>
                     <SelectTrigger
                       className={`h-10 sm:h-12 pl-10 text-sm sm:text-base ${errors.grade ? "border-red-500" : ""}`}
@@ -250,25 +268,25 @@ export function AddChildDialog({ isOpen, onClose, onAdd, familyId }) {
                       <SelectValue placeholder="选择年级" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="preschool">幼儿园</SelectItem>
-                      <SelectItem value="grade1">一年级</SelectItem>
-                      <SelectItem value="grade2">二年级</SelectItem>
-                      <SelectItem value="grade3">三年级</SelectItem>
-                      <SelectItem value="grade4">四年级</SelectItem>
-                      <SelectItem value="grade5">五年级</SelectItem>
-                      <SelectItem value="grade6">六年级</SelectItem>
-                      <SelectItem value="grade7">初一</SelectItem>
-                      <SelectItem value="grade8">初二</SelectItem>
-                      <SelectItem value="grade9">初三</SelectItem>
-                      <SelectItem value="grade10">高一</SelectItem>
-                      <SelectItem value="grade11">高二</SelectItem>
-                      <SelectItem value="grade12">高三</SelectItem>
+                      <SelectItem value="0">幼儿园</SelectItem>
+                      <SelectItem value="1">一年级</SelectItem>
+                      <SelectItem value="2">二年级</SelectItem>
+                      <SelectItem value="3">三年级</SelectItem>
+                      <SelectItem value="4">四年级</SelectItem>
+                      <SelectItem value="5">五年级</SelectItem>
+                      <SelectItem value="6">六年级</SelectItem>
+                      <SelectItem value="7">初一</SelectItem>
+                      <SelectItem value="8">初二</SelectItem>
+                      <SelectItem value="9">初三</SelectItem>
+                      <SelectItem value="10">高一</SelectItem>
+                      <SelectItem value="11">高二</SelectItem>
+                      <SelectItem value="12">高三</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 {errors.grade && (
                   <div className="flex items-center gap-1 text-sm text-red-500">
-                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTriangle className="w-4 h-4" />
                     <span>{errors.grade}</span>
                   </div>
                 )}
@@ -283,17 +301,17 @@ export function AddChildDialog({ isOpen, onClose, onAdd, familyId }) {
                 min="0"
                 value={initialPoints}
                 onChange={(e) => setInitialPoints(e.target.value)}
-                className="h-10 sm:h-12 text-sm sm:text-base"
+                className="h-10 text-sm sm:h-12 sm:text-base"
                 placeholder="初始积分"
               />
             </div>
           </div>
 
-          <div className="mt-6 flex justify-end gap-3">
+          <div className="flex justify-end gap-3 mt-6">
             <Button type="button" variant="outline" onClick={onClose}>
               取消
             </Button>
-            <Button type="submit" className="bg-gradient-to-r from-primary to-purple-600">
+            <Button type="submit" className="bg-gradient-to-r from-primary to-purple-600" disabled={isSubmitting}>
               添加孩子
             </Button>
           </div>

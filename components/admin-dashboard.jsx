@@ -27,9 +27,9 @@ import { AddParentDialog } from "./add-parent-dialog"
 import { EditParentDialog } from "./edit-parent-dialog"
 import { DeleteParentDialog } from "./delete-parent-dialog"
 // 在文件顶部导入新组件
-import { AddChildDialog } from "./add-child-dialog"
-import { EditChildDialog } from "./edit-child-dialog"
-import { DeleteChildDialog } from "./delete-child-dialog"
+import { AddChildDialog } from "@/components/add-child-dialog"
+import { EditChildDialog } from "@/components/edit-child-dialog"
+import { DeleteChildDialog } from "@/components/delete-child-dialog"
 import { useAuth } from "@/app/providers/AuthProvider"
 import { toast } from "sonner"
 import { get, post, put, del } from "@/lib/http"
@@ -399,48 +399,140 @@ export default function AdminDashboard() {
     )
   }
 
-  // 添加处理孩子的函数
-  // 在 handleDeleteParent 函数后添加：
-  const handleAddChild = (newChild) => {
-    setFamilies(
-      families.map((family) => {
-        if (family.id === newChild.familyId) {
-          return {
-            ...family,
-            children: [...family.children, newChild],
+  // 更新处理孩子的函数
+  const handleAddChild = async (newChild) => {
+    try {
+      // 准备请求数据
+      const childData = {
+        name: newChild.name,
+        username: newChild.username,
+        password: newChild.password,
+        age: newChild.age,
+        gender: newChild.gender,
+        grade: newChild.grade,
+        points: newChild.points,
+        family_id: newChild.familyId
+      }
+      
+      // 使用http.js中的post函数发送API请求
+      const response = await post('/api/child', childData)
+      const result = await response.json()
+      
+      if (result.code === 200) {
+        // 添加成功，更新状态
+        const updatedFamilies = [...families]
+        const familyIndex = updatedFamilies.findIndex(f => f.id === newChild.familyId)
+        
+        if (familyIndex !== -1) {
+          if (!updatedFamilies[familyIndex].children) {
+            updatedFamilies[familyIndex].children = []
           }
+          
+          updatedFamilies[familyIndex].children.push(result.data)
+          setFamilies(updatedFamilies)
         }
-        return family
-      }),
-    )
+        
+        toast.success("孩子已成功添加到家庭")
+      } else {
+        // 添加失败，显示错误信息
+        toast.error(result.message || "添加孩子时出现错误")
+        
+        // 如果是用户名重复错误，将错误信息返回给对话框组件
+        if (result.code === 400 && result.message.includes("用户名已存在")) {
+          return { error: "username", message: result.message };
+        }
+      }
+    } catch (error) {
+      console.error("添加孩子时出错:", error)
+      toast.error("添加孩子时出现错误")
+    }
+    return null;
   }
 
-  const handleEditChild = (updatedChild) => {
-    setFamilies(
-      families.map((family) => {
-        if (family.id === updatedChild.familyId) {
-          return {
-            ...family,
-            children: family.children.map((child) => (child.id === updatedChild.id ? updatedChild : child)),
+  // 处理编辑孩子
+  const handleEditChild = async (updatedChild) => {
+    try {
+      console.log("编辑孩子提交数据:", updatedChild); // 添加日志，查看提交的数据
+      
+      // 准备请求数据
+      const childData = {
+        id: updatedChild.id,
+        name: updatedChild.name,
+        username: updatedChild.username,
+        age: updatedChild.age,
+        gender: updatedChild.gender,
+        grade: updatedChild.grade,
+        points: updatedChild.points
+      }
+      
+      // 发送API请求
+      const response = await put('/api/child', childData)
+      const result = await response.json()
+      
+      console.log("编辑孩子API返回:", result); // 添加日志，查看API返回的数据
+      
+      if (result.code === 200) {
+        // 更新成功，更新状态
+        const updatedFamilies = [...families]
+        const familyIndex = updatedFamilies.findIndex(f => f.id === updatedChild.familyId)
+        
+        if (familyIndex !== -1) {
+          const childIndex = updatedFamilies[familyIndex].children.findIndex(c => c.id === updatedChild.id)
+          
+          if (childIndex !== -1) {
+            updatedFamilies[familyIndex].children[childIndex] = {
+              ...updatedFamilies[familyIndex].children[childIndex],
+              ...result.data
+            }
+            
+            setFamilies(updatedFamilies)
           }
         }
-        return family
-      }),
-    )
+        
+        toast.success("孩子信息已成功更新")
+      } else {
+        // 更新失败，显示错误信息
+        toast.error(result.message || "更新孩子信息时出现错误")
+        
+        // 如果是用户名重复错误，将错误信息返回给对话框组件
+        if (result.code === 400 && result.message.includes("用户名已存在")) {
+          return { error: "username", message: result.message };
+        }
+      }
+    } catch (error) {
+      console.error("更新孩子信息时出错:", error)
+      toast.error("更新孩子信息时出现错误")
+    }
+    return null;
   }
 
-  const handleDeleteChild = (childToDelete) => {
-    setFamilies(
-      families.map((family) => {
-        if (family.id === childToDelete.familyId) {
-          return {
-            ...family,
-            children: family.children.filter((child) => child.id !== childToDelete.id),
-          }
-        }
-        return family
-      }),
-    )
+  const handleDeleteChild = async (childToDelete) => {
+    try {
+      // 使用http.js中的del函数发送API请求
+      const response = await del(`/api/child?id=${childToDelete.id}`)
+      const result = await response.json()
+      
+      if (result.code === 200) {
+        // 更新本地状态
+        setFamilies(
+          families.map((family) => {
+            if (family.id === childToDelete.familyId) {
+              return {
+                ...family,
+                children: family.children.filter((child) => child.id !== childToDelete.id),
+              }
+            }
+            return family
+          }),
+        )
+        toast.success('孩子删除成功')
+      } else {
+        toast.error(result.message || '删除孩子失败')
+      }
+    } catch (error) {
+      console.error('删除孩子失败:', error)
+      toast.error('删除孩子失败，请稍后重试')
+    }
   }
 
   // 添加打开编辑对话框的函数
@@ -726,7 +818,13 @@ export default function AdminDashboard() {
                                           <AvatarImage src={parent.avatar} />
                                           <AvatarFallback>{parent.name.charAt(0)}</AvatarFallback>
                                         </Avatar>
-                                        <span>{parent.name}</span>
+                                        <div className="flex flex-col">
+                                          <span className="font-medium">{parent.name}</span>
+                                          <div className="flex flex-col text-xs text-gray-500">
+                                            <span>用户名: {parent.username}</span>
+                                            <span>手机号: {parent.mobile}</span>
+                                          </div>
+                                        </div>
                                       </div>
                                       <div className="flex items-center gap-2">
                                         <Button
@@ -792,37 +890,40 @@ export default function AdminDashboard() {
                                             <span>{child.name}</span>
                                             <span className="text-xs text-gray-500">{child.age}岁</span>
                                             <span className="text-xs text-gray-500">
-                                              {child.gender === "male" ? "男" : "女"}
+                                              {child.gender === "m" ? "男" : "女"}
                                             </span>
                                             <span className="text-xs text-gray-500">
-                                              {child.grade === "preschool"
+                                              {child.grade === "0" || child.grade === 0
                                                 ? "幼儿园"
-                                                : child.grade === "grade1"
+                                                : child.grade === "1" || child.grade === 1
                                                   ? "一年级"
-                                                  : child.grade === "grade2"
+                                                  : child.grade === "2" || child.grade === 2
                                                     ? "二年级"
-                                                    : child.grade === "grade3"
+                                                    : child.grade === "3" || child.grade === 3
                                                       ? "三年级"
-                                                      : child.grade === "grade4"
+                                                      : child.grade === "4" || child.grade === 4
                                                         ? "四年级"
-                                                        : child.grade === "grade5"
+                                                        : child.grade === "5" || child.grade === 5
                                                           ? "五年级"
-                                                          : child.grade === "grade6"
+                                                          : child.grade === "6" || child.grade === 6
                                                             ? "六年级"
-                                                            : child.grade === "grade7"
+                                                            : child.grade === "7" || child.grade === 7
                                                               ? "初一"
-                                                              : child.grade === "grade8"
+                                                              : child.grade === "8" || child.grade === 8
                                                                 ? "初二"
-                                                                : child.grade === "grade9"
+                                                                : child.grade === "9" || child.grade === 9
                                                                   ? "初三"
-                                                                  : child.grade === "grade10"
+                                                                  : child.grade === "10" || child.grade === 10
                                                                     ? "高一"
-                                                                    : child.grade === "grade11"
+                                                                    : child.grade === "11" || child.grade === 11
                                                                       ? "高二"
-                                                                      : child.grade === "grade12"
+                                                                      : child.grade === "12" || child.grade === 12
                                                                         ? "高三"
                                                                         : ""}
                                             </span>
+                                          </div>
+                                          <div className="flex items-center text-xs text-gray-500">
+                                            <span className="mr-2">用户名: {child.username}</span>
                                           </div>
                                           <div className="flex items-center text-xs text-amber-600">
                                             <svg
