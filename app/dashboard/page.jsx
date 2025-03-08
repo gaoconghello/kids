@@ -1,24 +1,16 @@
 "use client";
 
 import { useAuth } from "../providers/AuthProvider";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Dashboard from "@/components/dashboard";
 import ParentDashboard from "@/components/parent-dashboard";
 import AdminDashboard from "@/components/admin-dashboard";
 
 export default function DashboardPage() {
-  const { userInfo, isAuthenticated, logout } = useAuth();
-  const router = useRouter();
-
-  // 确保用户已登录，否则重定向到登录页
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/login");
-    }
-  }, [isAuthenticated, router]);
+  const { userInfo, logout } = useAuth();
 
   // 如果没有用户信息，显示加载状态
+  // 这种情况理论上不应该发生，因为 AuthProvider 会重定向未登录用户
+  // 但保留为安全措施和更好的用户体验
   if (!userInfo) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">

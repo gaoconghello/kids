@@ -25,18 +25,6 @@ export function AuthProvider({ children }) {
 
   // 登出函数
   const logout = async () => {
-    // try {
-    //   // 调用登出 API
-    //   await fetch("/api/logout", {
-    //     method: "POST",
-    //     headers: {
-    //       "Content-Type": "application/json",
-    //     },
-    //   });
-    // } catch (error) {
-    //   console.error("登出 API 调用失败:", error);
-    // }
-
     // 清除本地存储
     localStorage.removeItem("token");
     localStorage.removeItem("userInfo");
@@ -47,7 +35,7 @@ export function AuthProvider({ children }) {
     window.location.href = "/login";
   };
 
-  // 检查认证状态
+  // 初始化时检查认证状态
   useEffect(() => {
     const checkAuth = () => {
       const token = localStorage.getItem("token");
@@ -78,23 +66,20 @@ export function AuthProvider({ children }) {
 
   // 路径变化时检查权限
   useEffect(() => {
+    // 等待认证状态加载完毕
     if (isLoading) return;
     
-    // 简化的路由控制：只检查是否有 token
-    const token = localStorage.getItem("token");
+    // 如果在登录页面且已认证，重定向到仪表盘
+    if (pathname === "/login" && isAuthenticated) {
+      router.push("/dashboard");
+      return;
+    }
     
-    // 如果在登录页面，确保状态是未认证的
-    if (pathname === "/login") {
-      if (token) {
-        // 如果有 token 但在登录页，可能是从 logout 跳转来的
-        // 不做任何跳转，让用户可以重新登录
-        return;
-      }
-    } else if (!token && !PUBLIC_ROUTES.includes(pathname)) {
-      // 没有 token 且不在公共路由，跳转到登录页
+    // 如果不在公共路由且未认证，重定向到登录页
+    if (!PUBLIC_ROUTES.includes(pathname) && !isAuthenticated) {
       router.push("/login");
     }
-  }, [pathname, isLoading, router]);
+  }, [pathname, isLoading, isAuthenticated, router]);
 
   // 加载中状态显示
   if (isLoading) {
@@ -121,9 +106,7 @@ export function AuthProvider({ children }) {
 
   // 提供认证上下文
   return (
-    <AuthContext.Provider
-      value={{ isAuthenticated, userInfo, logout }}
-    >
+    <AuthContext.Provider value={{ isAuthenticated, userInfo, logout }}>
       {children}
     </AuthContext.Provider>
   );
