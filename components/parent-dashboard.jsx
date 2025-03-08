@@ -36,8 +36,10 @@ import { TaskCalendar } from "./task-calendar"
 import { HomeworkStatistics } from "./homework-statistics"
 import { DeadlineSettingsDialog } from "./deadline-settings-settings-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useAuth } from "@/app/providers/AuthProvider"
 
 export default function ParentDashboard() {
+  const { logout } = useAuth()
   const [points, setPoints] = useState(350)
   const [childPoints, setChildPoints] = useState({
     total: 350,
@@ -623,7 +625,7 @@ export default function ParentDashboard() {
                 variant="ghost"
                 size="icon"
                 className="transition-colors rounded-full hover:bg-red-100 hover:text-red-600"
-                onClick={() => (window.location.href = "/login")}
+                onClick={logout}
               >
                 <LogOut className="w-5 h-5" />
                 <span className="sr-only">退出登录</span>

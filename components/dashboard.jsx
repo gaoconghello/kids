@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Star,
   Gift,
@@ -39,6 +39,7 @@ import { createTaskConfetti } from "./task-confetti";
 import { AddTaskDialog } from "./add-task-dialog";
 import { TaskCalendar } from "./task-calendar";
 import { ChangePasswordDialog } from "./change-password-dialog";
+import { useAuth } from "@/app/providers/AuthProvider";
 
 // 庆祝组件
 function CompletionCelebration({ onClose }) {
@@ -61,6 +62,7 @@ function CompletionCelebration({ onClose }) {
 }
 
 export default function Dashboard() {
+  const { logout } = useAuth();
   const [points, setPoints] = useState(350);
   const [tasks, setTasks] = useState([
     {
@@ -777,7 +779,7 @@ export default function Dashboard() {
                 variant="ghost"
                 size="icon"
                 className="transition-colors rounded-full hover:bg-red-100 hover:text-red-600"
-                onClick={() => (window.location.href = "/login")}
+                onClick={logout}
               >
                 <LogOut className="w-5 h-5" />
                 <span className="sr-only">退出登录</span>
