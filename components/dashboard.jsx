@@ -40,6 +40,7 @@ import { AddTaskDialog } from "./add-task-dialog";
 import { TaskCalendar } from "./task-calendar";
 import { ChangePasswordDialog } from "./change-password-dialog";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { get, post, put } from "@/lib/http";
 
 // 庆祝组件
 function CompletionCelebration({ onClose }) {
@@ -63,6 +64,8 @@ function CompletionCelebration({ onClose }) {
 
 export default function Dashboard() {
   const { logout } = useAuth();
+  const [user, setUser] = useState(null);
+  const [name, setName] = useState("");
   const [points, setPoints] = useState(350);
   const [tasks, setTasks] = useState([
     {
@@ -196,77 +199,109 @@ export default function Dashboard() {
   const [showAllRecords, setShowAllRecords] = useState(false);
 
   // 添加作业列表状态
-  const [homework, setHomework] = useState([
-    {
-      id: 1,
-      subject: "语文",
-      tasks: [
-        {
-          id: 1,
-          title: "阅读课文《春天》",
-          duration: "20分钟",
-          points: 15,
-          completed: false,
-          deadline: "15:30",
-        },
-        {
-          id: 2,
-          title: "完成练习册第12页",
-          duration: "30分钟",
-          points: 20,
-          completed: true,
-          deadline: "16:00",
-          wrongAnswers: 2,
-        },
-      ],
-    },
-    {
-      id: 2,
-      subject: "数学",
-      tasks: [
-        {
-          id: 3,
-          title: "完成乘法练习",
-          duration: "25分钟",
-          points: 15,
-          completed: false,
-          deadline: "16:30",
-        },
-        {
-          id: 4,
-          title: "解决应用题5道",
-          duration: "20分钟",
-          points: 15,
-          completed: true,
-          deadline: "17:00",
-          wrongAnswers: 1,
-        },
-      ],
-    },
-    {
-      id: 3,
-      subject: "英语",
-      tasks: [
-        {
-          id: 5,
-          title: "背诵单词列表",
-          duration: "15分钟",
-          points: 10,
-          completed: false,
-          deadline: "17:30",
-        },
-        {
-          id: 6,
-          title: "完成听力练习",
-          duration: "20分钟",
-          points: 15,
-          completed: true,
-          deadline: "18:00",
-          wrongAnswers: 0,
-        },
-      ],
-    },
-  ]);
+  const [homework, setHomework] = useState([]);
+  const [isLoadingHomework, setIsLoadingHomework] = useState(true);
+
+  // 获取作业数据
+  const fetchHomework = async () => {
+    try {
+      setIsLoadingHomework(true);
+      
+      // 使用封装的get方法替代fetch
+      const response = await get('/api/homework');
+      const result = await response.json();
+      
+      if (result.code === 200 && result.data) {
+        // 将API返回的数据转换为组件需要的格式
+        const formattedHomework = formatHomeworkData(result.data);
+        setHomework(formattedHomework);
+      } else {
+        console.error('获取作业失败:', result.message);
+      }
+    } catch (error) {
+      console.error('获取作业数据出错:', error);
+    } finally {
+      setIsLoadingHomework(false);
+    }
+  };
+
+  // 格式化作业数据
+  const formatHomeworkData = (apiData) => {
+    // 按科目分组
+    const subjectMap = {};
+    
+    apiData.forEach(item => {
+      const subjectId = item.subject_id || 0;
+      const subjectName = getSubjectName(subjectId);
+      
+      if (!subjectMap[subjectId]) {
+        subjectMap[subjectId] = {
+          id: subjectId,
+          subject: subjectName,
+          tasks: []
+        };
+      }
+      
+      subjectMap[subjectId].tasks.push({
+        id: item.id,
+        title: item.name,
+        duration: item.estimated_duration ? `${item.estimated_duration}分钟` : '未设置',
+        points: item.integral || 0,
+        completed: item.complete_review === 'Y',
+        deadline: item.deadline ? item.deadline.split(' ')[1] : '未设置',
+        wrongAnswers: item.incorrect || 0
+      });
+    });
+    
+    return Object.values(subjectMap);
+  };
+  
+  // 获取科目名称
+  const getSubjectName = (subjectId) => {
+    const subjectNames = {
+      1: '语文',
+      2: '数学',
+      3: '英语',
+      4: '科学',
+      5: '历史',
+      6: '地理',
+      7: '音乐',
+      8: '美术',
+      0: '其他'
+    };
+    
+    return subjectNames[subjectId] || '其他';
+  };
+
+  // 添加获取用户信息的函数
+  const fetchUserInfo = async () => {
+    try {
+      const response = await get('/api/account');
+      const result = await response.json();
+      
+      if (result.code === 200 && result.data) {
+        // 设置用户信息到状态中
+        setUser(result.data);
+        setName(result.data.name);
+        setPoints(result.data.points);
+        console.log('获取用户信息成功:', result.data);
+      } else {
+        console.error('获取用户信息失败:', result.message);
+      }
+    } catch (error) {
+      console.error('获取用户信息出错:', error);
+    }
+  };
+
+  // 在组件加载时获取用户信息
+  useEffect(() => {
+    fetchUserInfo();
+  }, []);
+
+  // 在组件加载时获取作业数据
+  useEffect(() => {
+    fetchHomework();
+  }, []);
 
   // 添加新的 state 来控制对话框
   const [isAddHomeworkOpen, setIsAddHomeworkOpen] = useState(false);
@@ -346,111 +381,127 @@ export default function Dashboard() {
   };
 
   // 完成作业任务的处理函数
-  const completeHomeworkTask = (subjectId, taskId) => {
+  const completeHomeworkTask = async (subjectId, taskId) => {
     // 避免重复完成
     const task = homework
       .find((s) => s.id === subjectId)
       ?.tasks.find((t) => t.id === taskId);
     if (task?.completed) return;
 
-    // 创建完成任务的彩带效果
-    createTaskConfetti();
+    try {
+      // 使用封装的put方法替代fetch
+      const response = await put('/api/homework', {
+        id: taskId,
+        complete_status: 'completed'
+      });
 
-    setHomework(
-      homework.map((subject) => {
-        if (subject.id === subjectId) {
-          return {
-            ...subject,
-            tasks: subject.tasks.map((task) => {
-              if (task.id === taskId && !task.completed) {
-                setPoints(points + task.points);
-                return { ...task, completed: true };
-              }
-              return task;
-            }),
-          };
+      const result = await response.json();
+      
+      if (result.code === 200) {
+        // 创建完成任务的彩带效果
+        createTaskConfetti();
+
+        // 更新本地状态
+        setHomework(
+          homework.map((subject) => {
+            if (subject.id === subjectId) {
+              return {
+                ...subject,
+                tasks: subject.tasks.map((task) => {
+                  if (task.id === taskId && !task.completed) {
+                    setPoints(points + task.points);
+                    return { ...task, completed: true };
+                  }
+                  return task;
+                }),
+              };
+            }
+            return subject;
+          })
+        );
+
+        // 检查是否所有作业都已完成
+        const updatedHomework = homework.map((subject) => ({
+          ...subject,
+          tasks: subject.tasks.map((task) =>
+            task.id === taskId && subject.id === subjectId
+              ? { ...task, completed: true }
+              : task
+          ),
+        }));
+
+        const allCompleted = updatedHomework.every((subject) =>
+          subject.tasks.every((task) => task.completed)
+        );
+
+        if (allCompleted) {
+          setShowCelebration(true);
+          setPoints((prev) => prev + 50);
+          // 添加到历史记录
+          setHistory([
+            {
+              id: Date.now(),
+              title: "完成所有今日作业",
+              points: 50,
+              type: "earn",
+              date: new Date().toISOString().split("T")[0],
+            },
+            ...history,
+          ]);
         }
-        return subject;
-      })
-    );
-
-    // 检查是否所有作业都已完成
-    const updatedHomework = homework.map((subject) => ({
-      ...subject,
-      tasks: subject.tasks.map((task) =>
-        task.id === taskId && subject.id === subjectId
-          ? { ...task, completed: true }
-          : task
-      ),
-    }));
-
-    const allCompleted = updatedHomework.every((subject) =>
-      subject.tasks.every((task) => task.completed)
-    );
-
-    if (allCompleted) {
-      setShowCelebration(true);
-      setPoints((prev) => prev + 50);
-      // 添加到历史记录
-      setHistory([
-        {
-          id: Date.now(),
-          title: "完成所有今日作业",
-          points: 50,
-          type: "earn",
-          date: new Date().toISOString().split("T")[0],
-        },
-        ...history,
-      ]);
+      } else {
+        console.error('更新作业状态失败:', result.message);
+      }
+    } catch (error) {
+      console.error('完成作业任务出错:', error);
     }
   };
 
   // 添加新作业的处理函数
-  const handleAddHomework = (newHomework) => {
-    const subject = homework.find((s) => s.subject === newHomework.subject);
-    if (subject) {
-      // 如果科目已存在，添加新任务
-      setHomework(
-        homework.map((s) => {
-          if (s.subject === newHomework.subject) {
-            return {
-              ...s,
-              tasks: [
-                ...s.tasks,
-                {
-                  id: Date.now(),
-                  title: newHomework.title,
-                  duration: newHomework.duration,
-                  points: newHomework.points,
-                  completed: false,
-                  deadline: newHomework.deadline,
-                },
-              ],
-            };
-          }
-          return s;
-        })
-      );
-    } else {
-      // 如果是新科目，创建新的科目和任务
-      setHomework([
-        ...homework,
-        {
-          id: Date.now(),
-          subject: newHomework.subject,
-          tasks: [
-            {
-              id: Date.now() + 1,
-              title: newHomework.title,
-              duration: newHomework.duration,
-              points: newHomework.points,
-              completed: false,
-              deadline: newHomework.deadline,
-            },
-          ],
-        },
-      ]);
+  const handleAddHomework = async (newHomework) => {
+    try {
+      // 准备API请求数据
+      const subjectId = getSubjectId(newHomework.subject);
+      const apiData = {
+        name: newHomework.title,
+        subject_id: subjectId,
+        estimated_duration: parseInt(newHomework.duration) || null,
+        deadline: newHomework.deadline ? `${new Date().toISOString().split('T')[0]} ${newHomework.deadline}` : null,
+        integral: parseInt(newHomework.points) || 0,
+        child_id: 1, // 假设当前用户的孩子ID为1，实际应从用户信息中获取
+        homework_date: new Date().toISOString().split('T')[0]
+      };
+
+      // 使用封装的post方法替代fetch
+      const response = await post('/api/homework', apiData);
+      const result = await response.json();
+      
+      if (result.code === 200 && result.data) {
+        // 添加成功后刷新作业列表
+        fetchHomework();
+      } else {
+        console.error('添加作业失败:', result.message);
+      }
+    } catch (error) {
+      console.error('添加作业出错:', error);
     }
+  };
+
+  // 根据科目名称获取科目ID
+  const getSubjectId = (subjectName) => {
+    const subjectMap = {
+      '语文': 1,
+      '数学': 2,
+      '英语': 3,
+      '科学': 4,
+      '历史': 5,
+      '地理': 6,
+      '音乐': 7,
+      '美术': 8,
+      '其他': 0
+    };
+    
+    return subjectMap[subjectName] || 0;
   };
 
   // 3. 添加处理添加任务的函数
@@ -743,13 +794,13 @@ export default function Dashboard() {
               <Avatar className="relative w-12 h-12 border-2 border-white">
                 <AvatarImage src="/placeholder.svg?height=40&width=40" />
                 <AvatarFallback className="text-white bg-gradient-to-r from-yellow-400 to-purple-400">
-                  小明
+                  {name ? name.substring(0, 2) : "用户"}
                 </AvatarFallback>
               </Avatar>
             </div>
             <div>
               <h2 className="text-xl font-bold text-transparent bg-gradient-to-r from-primary to-purple-600 bg-clip-text">
-                你好，小明！
+                你好，{name || "同学"}！
               </h2>
               <p className="text-gray-600">今天也要加油哦！</p>
             </div>
@@ -916,134 +967,144 @@ export default function Dashboard() {
                   </div>
                 )}
                 <div className="space-y-6">
-                  {homework.map((subject) => (
-                    <div
-                      key={subject.id}
-                      className="p-4 border-2 rounded-xl border-primary/10"
-                    >
-                      <div className="flex items-center gap-2 mb-4">
-                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
-                          <BookOpen className="w-5 h-5 text-primary" />
+                  {isLoadingHomework ? (
+                    <div className="flex items-center justify-center h-40">
+                      <div className="w-10 h-10 border-b-2 rounded-full animate-spin border-primary"></div>
+                    </div>
+                  ) : homework.length > 0 ? (
+                    homework.map((subject) => (
+                      <div
+                        key={subject.id}
+                        className="p-4 border-2 rounded-xl border-primary/10"
+                      >
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
+                            <BookOpen className="w-5 h-5 text-primary" />
+                          </div>
+                          <h3 className="text-lg font-semibold text-primary">
+                            {subject.subject}
+                          </h3>
                         </div>
-                        <h3 className="text-lg font-semibold text-primary">
-                          {subject.subject}
-                        </h3>
-                      </div>
-                      <div className="space-y-3">
-                        {subject.tasks.map((task) => (
-                          <div
-                            key={task.id}
-                            className={`flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border p-3 transition-all ${
-                              task.completed
-                                ? "border-green-200 bg-green-50"
-                                : "border-gray-200 bg-white hover:border-primary/30 hover:bg-blue-50"
-                            }`}
-                          >
-                            <div className="flex items-center gap-4 mb-3 sm:mb-0">
-                              <div
-                                className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                                  task.completed
-                                    ? "bg-green-500"
-                                    : "bg-primary/10"
-                                }`}
-                              >
-                                {task.completed ? (
-                                  <Check className="w-6 h-6 text-white" />
-                                ) : (
-                                  <PenLine className="w-5 h-5 text-primary" />
-                                )}
-                              </div>
-                              <div>
-                                <h4 className="font-medium">{task.title}</h4>
-                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="w-4 h-4" />
-                                    {task.duration}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <Calendar className="w-4 h-4" />
-                                    截止 {task.deadline}
-                                  </span>
-                                  {task.completed &&
-                                    task.wrongAnswers !== undefined && (
-                                      <span className="flex items-center gap-1">
-                                        <AlertCircle className="w-4 h-4 text-amber-500" />
-                                        <span
-                                          className={
-                                            task.wrongAnswers > 0
-                                              ? "text-amber-600"
-                                              : "text-green-600"
-                                          }
-                                        >
-                                          错题: {task.wrongAnswers}
+                        <div className="space-y-3">
+                          {subject.tasks.map((task) => (
+                            <div
+                              key={task.id}
+                              className={`flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border p-3 transition-all ${
+                                task.completed
+                                  ? "border-green-200 bg-green-50"
+                                  : "border-gray-200 bg-white hover:border-primary/30 hover:bg-blue-50"
+                              }`}
+                            >
+                              <div className="flex items-center gap-4 mb-3 sm:mb-0">
+                                <div
+                                  className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                                    task.completed
+                                      ? "bg-green-500"
+                                      : "bg-primary/10"
+                                  }`}
+                                >
+                                  {task.completed ? (
+                                    <Check className="w-6 h-6 text-white" />
+                                  ) : (
+                                    <PenLine className="w-5 h-5 text-primary" />
+                                  )}
+                                </div>
+                                <div>
+                                  <h4 className="font-medium">{task.title}</h4>
+                                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="w-4 h-4" />
+                                      {task.duration}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <Calendar className="w-4 h-4" />
+                                      截止 {task.deadline}
+                                    </span>
+                                    {task.completed &&
+                                      task.wrongAnswers !== undefined && (
+                                        <span className="flex items-center gap-1">
+                                          <AlertCircle className="w-4 h-4 text-amber-500" />
+                                          <span
+                                            className={
+                                              task.wrongAnswers > 0
+                                                ? "text-amber-600"
+                                                : "text-green-600"
+                                            }
+                                          >
+                                            错题: {task.wrongAnswers}
+                                          </span>
                                         </span>
+                                      )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3 ml-14 sm:ml-0">
+                                <Badge
+                                  variant="outline"
+                                  className="flex gap-1 border-yellow-300 bg-yellow-50"
+                                >
+                                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
+                                  <span>{task.points}</span>
+                                </Badge>
+                                {pomodoroStats[`${subject.id}-${task.id}`] >
+                                  0 && (
+                                    <Badge
+                                      variant="outline"
+                                      className="flex gap-1 border-red-200 bg-red-50"
+                                    >
+                                      <span className="text-red-600">🍅</span>
+                                      <span className="text-red-600">
+                                        x{" "}
+                                        {pomodoroStats[
+                                          `${subject.id}-${task.id}`
+                                        ] || 0}
                                       </span>
+                                    </Badge>
+                                  )}
+                                <div className="flex flex-wrap w-full gap-2 mt-2 sm:w-auto sm:mt-0">
+                                  {!task.completed &&
+                                    !(
+                                      activePomodoro?.subjectId === subject.id &&
+                                      activePomodoro?.taskId === task.id
+                                    ) && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() =>
+                                          startPomodoro(subject.id, task.id)
+                                        }
+                                        className="text-red-600 border-red-200 bg-red-50 hover:bg-red-100"
+                                      >
+                                        <Clock className="w-4 h-4 mr-1" />
+                                        开始专注
+                                      </Button>
                                     )}
+                                  <Button
+                                    size="sm"
+                                    disabled={task.completed}
+                                    onClick={() =>
+                                      completeHomeworkTask(subject.id, task.id)
+                                    }
+                                    className={`transition-all ${
+                                      task.completed
+                                        ? "bg-green-500"
+                                        : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                                    }`}
+                                  >
+                                    {task.completed ? "已完成" : "完成"}
+                                  </Button>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-3 ml-14 sm:ml-0">
-                              <Badge
-                                variant="outline"
-                                className="flex gap-1 border-yellow-300 bg-yellow-50"
-                              >
-                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
-                                <span>{task.points}</span>
-                              </Badge>
-                              {pomodoroStats[`${subject.id}-${task.id}`] >
-                                0 && (
-                                <Badge
-                                  variant="outline"
-                                  className="flex gap-1 border-red-200 bg-red-50"
-                                >
-                                  <span className="text-red-600">🍅</span>
-                                  <span className="text-red-600">
-                                    x{" "}
-                                    {pomodoroStats[
-                                      `${subject.id}-${task.id}`
-                                    ] || 0}
-                                  </span>
-                                </Badge>
-                              )}
-                              <div className="flex flex-wrap w-full gap-2 mt-2 sm:w-auto sm:mt-0">
-                                {!task.completed &&
-                                  !(
-                                    activePomodoro?.subjectId === subject.id &&
-                                    activePomodoro?.taskId === task.id
-                                  ) && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() =>
-                                        startPomodoro(subject.id, task.id)
-                                      }
-                                      className="text-red-600 border-red-200 bg-red-50 hover:bg-red-100"
-                                    >
-                                      <Clock className="w-4 h-4 mr-1" />
-                                      开始专注
-                                    </Button>
-                                  )}
-                                <Button
-                                  size="sm"
-                                  disabled={task.completed}
-                                  onClick={() =>
-                                    completeHomeworkTask(subject.id, task.id)
-                                  }
-                                  className={`transition-all ${
-                                    task.completed
-                                      ? "bg-green-500"
-                                      : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-                                  }`}
-                                >
-                                  {task.completed ? "已完成" : "完成"}
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="p-6 text-center bg-white rounded-lg shadow">
+                      <p className="text-gray-500">今天没有作业，好好休息吧！</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </CardContent>
               <CardFooter className="p-6 bg-gray-50">
@@ -1380,7 +1441,9 @@ export default function Dashboard() {
                       <div className="flex items-center gap-3 mb-3 sm:mb-0">
                         <div
                           className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                            task.completed ? "bg-green-500" : "bg-primary/20"
+                            task.completed
+                              ? "bg-green-500"
+                              : "bg-primary/10"
                           }`}
                         >
                           {task.completed ? (
