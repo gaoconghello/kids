@@ -75,6 +75,8 @@ export const GET = withAuth(["parent", "child"], async (request) => {
       complete_time: homework.complete_time
         ? formatDateTime(homework.complete_time)
         : null,
+      pomodoro: homework.pomodoro,
+      is_complete: homework.is_complete,
       child_id: homework.child_id,
       created_at: homework.created_at
         ? formatDateTime(homework.created_at)
@@ -132,6 +134,11 @@ export const POST = withAuth(["parent", "child"], async (request) => {
         complete_review: "0",
         create_review_time: null,
         create_review_user_id: null,
+        complete_review_time: null,
+        complete_review_user_id: null,
+        complete_time: null,
+        is_complete: "0",
+        pomodoro: data.pomodoro ? parseInt(data.pomodoro) : null,
 
         child_id: request.user.id,
 
@@ -163,6 +170,7 @@ export const POST = withAuth(["parent", "child"], async (request) => {
           : null,
         create_review: newHomework.create_review,
         complete_review: newHomework.complete_review,
+        is_complete: newHomework.is_complete,
         child_id: newHomework.child_id,
       },
     });
@@ -222,7 +230,7 @@ export const PUT = withAuth(["parent", "child"], async (request) => {
           new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
         );
         // 等待家长审核
-        updateData.complete_review = "N";
+        updateData.complete_review = "0";
       }
     } else {
       // 家长或管理员可以更新所有字段

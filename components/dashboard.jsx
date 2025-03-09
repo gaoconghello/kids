@@ -254,9 +254,10 @@ export default function Dashboard() {
         name: item.name,
         duration: item.estimated_duration ? `${item.estimated_duration}分钟` : '未设置',
         points: item.integral || 0,
-        completed: item.complete_review === 'Y',
+        completed: item.is_complete === '1',
         deadline: item.deadline ? item.deadline.split(' ')[1].substring(0, 5) : '未设置',
-        incorrect: item.incorrect || 0
+        incorrect: item.incorrect || 0,
+        pomodoro: item.pomodoro || 0,
       });
     });
     
@@ -386,16 +387,15 @@ export default function Dashboard() {
   // 完成作业任务的处理函数
   const completeHomeworkTask = async (subjectId, taskId) => {
     // 避免重复完成
-    const task = homework
+    const task = homeworks
       .find((s) => s.id === subjectId)
       ?.tasks.find((t) => t.id === taskId);
     if (task?.completed) return;
 
     try {
       // 使用封装的put方法替代fetch
-      const response = await put('/api/homework', {
-        id: taskId,
-        complete_status: 'completed'
+      const response = await post('/api/homework/complete', {
+        homeworkId: taskId,
       });
 
       const result = await response.json();
@@ -405,8 +405,8 @@ export default function Dashboard() {
         createTaskConfetti();
 
         // 更新本地状态
-        setHomework(
-          homework.map((subject) => {
+        setHomeworks(
+          homeworks.map((subject) => {
             if (subject.id === subjectId) {
               return {
                 ...subject,
@@ -499,7 +499,7 @@ export default function Dashboard() {
 
   // 添加开始番茄计时的函数
   const startPomodoro = (subjectId, taskId) => {
-    const subject = homework.find((s) => s.id === subjectId);
+    const subject = homeworks.find((s) => s.id === subjectId);
     const task = subject?.tasks.find((t) => t.id === taskId);
 
     if (subject && task) {

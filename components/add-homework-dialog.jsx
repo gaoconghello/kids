@@ -49,9 +49,9 @@ export function AddHomeworkDialog({
     // Reset form
     setSubject("");
     setName("");
-    setDuration("");
+    setDuration("20");
     setDeadline("");
-    setPoints("");
+    setPoints("10");
     onClose();
   };
 
