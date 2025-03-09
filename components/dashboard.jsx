@@ -480,7 +480,7 @@ export default function Dashboard() {
       
       if (result.code === 200 && result.data) {
         // 添加成功后刷新作业列表
-        fetchHomework();
+        fetchHomeworks();
       } else {
         console.error('添加作业失败:', result.message);
       }

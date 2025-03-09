@@ -19,10 +19,10 @@ export function AddHomeworkDialog({
   const [subject, setSubject] = useState(initialData?.subject || "");
   const [name, setName] = useState(initialData?.name || "");
   const [duration, setDuration] = useState(
-    initialData?.duration?.replace("分钟", "") || ""
+    initialData?.duration?.replace("分钟", "") || "30"
   );
   const [deadline, setDeadline] = useState(initialData?.deadline || "");
-  const [points, setPoints] = useState(initialData?.points?.toString() || "");
+  const [points, setPoints] = useState(initialData?.points?.toString() || "10");
   // 不再需要childName状态，但在提交时仍需处理
 
   useEffect(() => {
@@ -32,22 +32,19 @@ export function AddHomeworkDialog({
       setDuration(initialData.duration?.replace("分钟", "") || "");
       setDeadline(initialData.deadline || "");
       setPoints(initialData.points?.toString() || "");
-      // 移除对childName的设置
     }
   }, [initialData]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
-      // 如果没有小朋友列表，仍然提交但不指定childName
-      onAdd({
-        subject,
-        name,
-        duration: `${duration}分钟`,
-        deadline,
-        points: Number.parseInt(points),
-        completed: false,
-      });
+    onAdd({
+      subject,
+      name,
+      duration: `${duration}分钟`,
+      deadline,
+      points: Number.parseInt(points),
+      completed: false,
+    });
 
     // Reset form
     setSubject("");
