@@ -53,6 +53,7 @@ model homework {
   complete_review_user_id Int?
   complete_time           DateTime? @db.Timestamp(6)
   child_id                Int?
+  pomodoro                Int?
   created_at              DateTime? @db.Timestamp(6)
   updated_at              DateTime? @db.Timestamp(6)
   created_user_id         Int?
