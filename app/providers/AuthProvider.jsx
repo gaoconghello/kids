@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Loading from "@/components/Loading";
 
 // 定义不需要验证的路由
 const PUBLIC_ROUTES = ["/login", "/"];
@@ -75,6 +76,16 @@ export function AuthProvider({ children }) {
       return;
     }
     
+    // 如果在根路径 / 且认证状态已确定，根据认证状态决定跳转
+    if (pathname === "/" && !isLoading) {
+      if (isAuthenticated) {
+        router.push("/dashboard");
+      } else {
+        router.push("/login");
+      }
+      return;
+    }
+    
     // 如果不在公共路由且未认证，重定向到登录页
     if (!PUBLIC_ROUTES.includes(pathname) && !isAuthenticated) {
       router.push("/login");
@@ -83,25 +94,7 @@ export function AuthProvider({ children }) {
 
   // 加载中状态显示
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-blue-400 to-purple-500">
-        <div className="text-center">
-          <div className="flex justify-center mb-4 space-x-4">
-            <div className="w-4 h-4 bg-red-500 rounded-full animate-bounce"></div>
-            <div
-              className="w-4 h-4 bg-yellow-500 rounded-full animate-bounce"
-              style={{ animationDelay: "0.2s" }}
-            ></div>
-            <div
-              className="w-4 h-4 bg-green-500 rounded-full animate-bounce"
-              style={{ animationDelay: "0.4s" }}
-            ></div>
-          </div>
-          <h2 className="text-2xl font-bold text-white">小朋友积分乐园</h2>
-          <p className="mt-2 text-white">正在加载中...</p>
-        </div>
-      </div>
-    );
+    return <Loading />;
   }
 
   // 提供认证上下文
