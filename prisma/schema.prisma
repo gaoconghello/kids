@@ -52,6 +52,7 @@ model homework {
   create_review_user_id   Int?
   complete_review_user_id Int?
   complete_time           DateTime? @db.Timestamp(6)
+  is_complete             String?   @db.VarChar(1)
   child_id                Int?
   pomodoro                Int?
   created_at              DateTime? @db.Timestamp(6)
