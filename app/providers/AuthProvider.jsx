@@ -71,10 +71,10 @@ export function AuthProvider({ children }) {
     if (isLoading) return;
     
     // 如果在登录页面且已认证，重定向到仪表盘
-    if (pathname === "/login" && isAuthenticated) {
-      router.push("/dashboard");
-      return;
-    }
+    // if (pathname === "/login" && isAuthenticated) {
+    //   router.push("/dashboard");
+    //   return;
+    // }
     
     // 如果在根路径 / 且认证状态已确定，根据认证状态决定跳转
     if (pathname === "/" && !isLoading) {
