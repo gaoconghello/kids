@@ -21,9 +21,9 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
   const breakCompleteSound = useRef(null)
 
   useEffect(() => {
-    // Initialize audio elements
-    timerCompleteSound.current = new Audio("/timer-complete.mp3")
-    breakCompleteSound.current = new Audio("/break-complete.mp3")
+    // Initialize audio elements - 暂时注释掉音频初始化
+    // timerCompleteSound.current = new Audio("/timer-complete.mp3")
+    // breakCompleteSound.current = new Audio("/break-complete.mp3")
 
     return () => {
       // Clean up interval on unmount
@@ -38,14 +38,14 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
           if (prevTime <= 1) {
             clearInterval(intervalRef.current)
 
-            // 播放声音
+            // 播放声音 - 暂时注释掉音频播放
             if (isBreak) {
-              breakCompleteSound.current?.play()
+              // breakCompleteSound.current?.play()
               // 休息结束，等待用户开始新的专注
               setIsActive(false)
               setWaitingForFocus(true)
             } else {
-              timerCompleteSound.current?.play()
+              // timerCompleteSound.current?.play()
               // 专注结束，等待用户开始休息
               setIsActive(false)
               setWaitingForBreak(true)
@@ -86,8 +86,8 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
     setIsBreak(false)
     setWaitingForBreak(false)
     setWaitingForFocus(false)
-    setTime(25 * 60)
-    setInitialTime(25 * 60)
+    setTime(1 * 60)
+    setInitialTime(1 * 60)
   }
 
   const cancelTimer = () => {
@@ -98,8 +98,8 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
   const startBreak = () => {
     setIsBreak(true)
     setWaitingForBreak(false)
-    setTime(5 * 60)
-    setInitialTime(5 * 60)
+    setTime(1 * 60)
+    setInitialTime(1 * 60)
     setIsActive(true)
     setIsPaused(false)
   }
@@ -107,8 +107,8 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
   const startFocus = () => {
     setIsBreak(false)
     setWaitingForFocus(false)
-    setTime(25 * 60)
-    setInitialTime(25 * 60)
+    setTime(1 * 60)
+    setInitialTime(1 * 60)
     setIsActive(true)
     setIsPaused(false)
   }
@@ -124,17 +124,17 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
   const progress = ((initialTime - time) / initialTime) * 100
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border-2 border-red-200 bg-gradient-to-b from-red-50 to-white p-6">
+    <div className="relative p-6 overflow-hidden border-2 border-red-200 rounded-2xl bg-gradient-to-b from-red-50 to-white">
       {/* 装饰性背景元素 */}
-      <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-red-100 opacity-50"></div>
-      <div className="absolute -left-8 -bottom-8 h-24 w-24 rounded-full bg-red-100 opacity-50"></div>
+      <div className="absolute w-24 h-24 bg-red-100 rounded-full opacity-50 -right-8 -top-8"></div>
+      <div className="absolute w-24 h-24 bg-red-100 rounded-full opacity-50 -left-8 -bottom-8"></div>
 
       <div className="relative">
         {/* 当前作业信息 */}
-        <div className="mb-4 sm:mb-6 rounded-xl border border-red-100 bg-white/80 p-3 sm:p-4">
+        <div className="p-3 mb-4 border border-red-100 sm:mb-6 rounded-xl bg-white/80 sm:p-4">
           <div className="flex items-start gap-2 sm:gap-3">
-            <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-50">
-              <BookOpen className="h-5 w-5 text-red-500" />
+            <div className="flex items-center justify-center w-10 h-10 mt-1 rounded-lg shrink-0 bg-red-50">
+              <BookOpen className="w-5 h-5 text-red-500" />
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
@@ -142,7 +142,7 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
                 <span className="text-sm text-gray-400">|</span>
                 <span className="text-sm text-gray-600">预计用时 {currentTask?.duration}</span>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">{currentTask?.title}</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{currentTask?.name}</h3>
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <span>截止时间：{currentTask?.deadline}</span>
                 <Badge variant="outline" className="border-yellow-200 bg-yellow-50">
@@ -153,9 +153,9 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
           </div>
         </div>
 
-        <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-100">
+            <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-xl">
               {isBreak ? <span className="text-2xl">☕️</span> : <span className="text-2xl">🍅</span>}
             </div>
             <div>
@@ -163,23 +163,23 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
               <p className="text-sm text-red-500">{isBreak ? "放松一下眼睛和大脑吧！" : "保持专注，你做得很棒！"}</p>
             </div>
           </div>
-          <Badge variant="outline" className="flex items-center gap-1 border-red-200 bg-red-50 px-3 py-1">
+          <Badge variant="outline" className="flex items-center gap-1 px-3 py-1 border-red-200 bg-red-50">
             <span className="text-red-600">🍅 x {completedPomodoros}</span>
           </Badge>
         </div>
 
-        <div className="mb-6 flex items-center justify-center">
+        <div className="flex items-center justify-center mb-6">
           <div className="relative">
             {/* 外圈装饰 */}
-            <div className="absolute -inset-4 rounded-full bg-gradient-to-r from-red-200 to-pink-200 opacity-20 blur-lg"></div>
+            <div className="absolute rounded-full -inset-4 bg-gradient-to-r from-red-200 to-pink-200 opacity-20 blur-lg"></div>
 
             {/* 时间显示容器 */}
-            <div className="relative flex h-28 w-28 sm:h-32 sm:w-32 items-center justify-center rounded-full border-4 border-red-100 bg-white shadow-inner">
+            <div className="relative flex items-center justify-center bg-white border-4 border-red-100 rounded-full shadow-inner h-28 w-28 sm:h-32 sm:w-32">
               {/* 进度圆环 */}
-              <svg className="absolute h-full w-full -rotate-90" viewBox="0 0 100 100">
+              <svg className="absolute w-full h-full -rotate-90" viewBox="0 0 100 100">
                 <circle className="stroke-red-100" cx="50" cy="50" r="46" strokeWidth="8" fill="none" />
                 <circle
-                  className="stroke-red-400 transition-all duration-1000 ease-linear"
+                  className="transition-all duration-1000 ease-linear stroke-red-400"
                   cx="50"
                   cy="50"
                   r="46"
@@ -192,7 +192,7 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
 
               {/* 时间显示 */}
               <div className="relative z-10 text-center">
-                <span className="text-2xl sm:text-3xl font-bold text-red-500">{formatTime(time)}</span>
+                <span className="text-2xl font-bold text-red-500 sm:text-3xl">{formatTime(time)}</span>
                 <div className="mt-1 text-xs text-red-400">{isBreak ? "休息中..." : "专注中..."}</div>
               </div>
             </div>
@@ -203,47 +203,47 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
           {waitingForBreak ? (
             <Button
               onClick={startBreak}
-              className="bg-gradient-to-r from-blue-400 to-indigo-400 text-white hover:from-blue-500 hover:to-indigo-500"
+              className="text-white bg-gradient-to-r from-blue-400 to-indigo-400 hover:from-blue-500 hover:to-indigo-500"
               size="sm"
             >
-              <Coffee className="mr-1 h-4 w-4" />
+              <Coffee className="w-4 h-4 mr-1" />
               开始休息
             </Button>
           ) : waitingForFocus ? (
             <Button
               onClick={startFocus}
-              className="bg-gradient-to-r from-red-400 to-pink-400 text-white hover:from-red-500 hover:to-pink-500"
+              className="text-white bg-gradient-to-r from-red-400 to-pink-400 hover:from-red-500 hover:to-pink-500"
               size="sm"
             >
-              <Play className="mr-1 h-4 w-4" />
+              <Play className="w-4 h-4 mr-1" />
               开始专注
             </Button>
           ) : !isActive ? (
             <Button
               onClick={startTimer}
-              className="bg-gradient-to-r from-red-400 to-pink-400 text-white hover:from-red-500 hover:to-pink-500"
+              className="text-white bg-gradient-to-r from-red-400 to-pink-400 hover:from-red-500 hover:to-pink-500"
               size="sm"
             >
-              <Play className="mr-1 h-4 w-4" />
+              <Play className="w-4 h-4 mr-1" />
               开始专注
             </Button>
           ) : isPaused ? (
             <Button
               onClick={resumeTimer}
-              className="bg-gradient-to-r from-red-400 to-pink-400 text-white hover:from-red-500 hover:to-pink-500"
+              className="text-white bg-gradient-to-r from-red-400 to-pink-400 hover:from-red-500 hover:to-pink-500"
               size="sm"
             >
-              <Play className="mr-1 h-4 w-4" />
+              <Play className="w-4 h-4 mr-1" />
               继续
             </Button>
           ) : (
             <Button
               onClick={pauseTimer}
               variant="outline"
-              className="border-red-200 text-red-500 hover:bg-red-50"
+              className="text-red-500 border-red-200 hover:bg-red-50"
               size="sm"
             >
-              <Pause className="mr-1 h-4 w-4" />
+              <Pause className="w-4 h-4 mr-1" />
               暂停
             </Button>
           )}
@@ -251,17 +251,17 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
           <Button
             onClick={resetTimer}
             variant="outline"
-            className="border-red-200 text-red-500 hover:bg-red-50"
+            className="text-red-500 border-red-200 hover:bg-red-50"
             size="sm"
           >
-            <RotateCcw className="mr-1 h-4 w-4" />
+            <RotateCcw className="w-4 h-4 mr-1" />
             重置
           </Button>
 
           <Button
             onClick={cancelTimer}
             variant="outline"
-            className="border-red-200 text-red-500 hover:bg-red-50"
+            className="text-red-500 border-red-200 hover:bg-red-50"
             size="sm"
           >
             取消
@@ -269,10 +269,10 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
         </div>
 
         {/* 可爱的提示信息 */}
-        <div className="mt-4 rounded-xl bg-red-50 p-3 text-center text-sm text-red-600">
+        <div className="p-3 mt-4 text-sm text-center text-red-600 rounded-xl bg-red-50">
           {isBreak ? (
             <div className="flex items-center justify-center gap-2">
-              <Coffee className="h-4 w-4" />
+              <Coffee className="w-4 h-4" />
               <span>休息一下，让眼睛和大脑放松~</span>
             </div>
           ) : (
