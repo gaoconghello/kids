@@ -72,7 +72,7 @@ export default function Dashboard() {
 
   // 添加作业列表状态
   const [homeworks, setHomeworks] = useState([]);
-  const [isLoadingHomework, setIsLoadingHomework] = useState(true);  
+  const [isLoadingHomework, setIsLoadingHomework] = useState(true);
 
   // 添加任务列表状态
   const [tasks, setTasks] = useState([
@@ -208,25 +208,24 @@ export default function Dashboard() {
   // 添加显示所有记录状态
   const [showAllRecords, setShowAllRecords] = useState(false);
 
-
   // 获取作业数据
   const fetchHomeworks = async () => {
     try {
       setIsLoadingHomework(true);
-      
+
       // 使用封装的get方法替代fetch
-      const response = await get('/api/homework');
+      const response = await get("/api/homework");
       const result = await response.json();
-      
+
       if (result.code === 200 && result.data) {
         // 将API返回的数据转换为组件需要的格式
         const formattedHomework = formatHomeworkData(result.data);
         setHomeworks(formattedHomework);
       } else {
-        console.error('获取作业失败:', result.message);
+        console.error("获取作业失败:", result.message);
       }
     } catch (error) {
-      console.error('获取作业数据出错:', error);
+      console.error("获取作业数据出错:", error);
     } finally {
       setIsLoadingHomework(false);
     }
@@ -236,70 +235,73 @@ export default function Dashboard() {
   const formatHomeworkData = (apiData) => {
     // 按科目分组
     const subjectMap = {};
-    
-    apiData.forEach(item => {
+
+    apiData.forEach((item) => {
       const subjectId = item.subject_id || 0;
       const subjectName = item.subject_name;
-      
+
       if (!subjectMap[subjectId]) {
         subjectMap[subjectId] = {
           id: subjectId,
           subject: subjectName,
-          tasks: []
+          tasks: [],
         };
       }
-      
+
       subjectMap[subjectId].tasks.push({
         id: item.id,
         name: item.name,
-        duration: item.estimated_duration ? `${item.estimated_duration}分钟` : '未设置',
+        duration: item.estimated_duration
+          ? `${item.estimated_duration}分钟`
+          : "未设置",
         points: item.integral || 0,
-        completed: item.is_complete === '1',
-        deadline: item.deadline ? item.deadline.split(' ')[1].substring(0, 5) : '未设置',
+        completed: item.is_complete === "1",
+        deadline: item.deadline
+          ? item.deadline.split(" ")[1].substring(0, 5)
+          : "未设置",
         incorrect: item.incorrect || 0,
-        pomodoro: item.pomodoro || 0,  // 确保包含番茄钟数量
+        pomodoro: item.pomodoro || 0, // 确保包含番茄钟数量
       });
     });
-    
+
     // 初始化番茄钟统计
     const pomodoroStatsData = {};
-    apiData.forEach(item => {
+    apiData.forEach((item) => {
       if (item.pomodoro && item.pomodoro > 0) {
         const key = `${item.subject_id}-${item.id}`;
         pomodoroStatsData[key] = item.pomodoro;
       }
     });
-    
+
     // 更新番茄钟统计状态
     setPomodoroStats(pomodoroStatsData);
-    
+
     return Object.values(subjectMap);
   };
-  
 
   // 添加获取用户信息的函数
   const fetchUserInfo = async () => {
     try {
-      const response = await get('/api/account');
+      const response = await get("/api/account");
       const result = await response.json();
-      
+
       if (result.code === 200 && result.data) {
         // 设置用户信息到状态中
         setUser(result.data);
         setName(result.data.name);
         setPoints(result.data.points);
-        console.log('获取用户信息成功:', result.data);
+        console.log("获取用户信息成功:", result.data);
       } else {
-        console.error('获取用户信息失败:', result.message);
+        console.error("获取用户信息失败:", result.message);
       }
     } catch (error) {
-      console.error('获取用户信息出错:', error);
+      console.error("获取用户信息出错:", error);
     }
   };
 
   // 获取科目数据
   const fetchSubjects = async () => {
-    const response = await get('/api/subject');
+    const response = await get("/api/subject");
     const result = await response.json();
     setSubjects(result.data);
   };
@@ -312,11 +314,11 @@ export default function Dashboard() {
         await fetchHomeworks();
       } catch (error) {
         console.error("数据获取失败:", error);
-      }finally{
+      } finally {
         setIsLoading(false);
       }
     };
-  
+
     fetchAllData();
   }, []);
 
@@ -407,12 +409,12 @@ export default function Dashboard() {
 
     try {
       // 使用封装的put方法替代fetch
-      const response = await post('/api/homework/complete', {
+      const response = await post("/api/homework/complete", {
         homeworkId: taskId,
       });
 
       const result = await response.json();
-      
+
       if (result.code === 200) {
         // 创建完成任务的彩带效果
         createTaskConfetti();
@@ -466,10 +468,10 @@ export default function Dashboard() {
           ]);
         }
       } else {
-        console.error('更新作业状态失败:', result.message);
+        console.error("更新作业状态失败:", result.message);
       }
     } catch (error) {
-      console.error('完成作业任务出错:', error);
+      console.error("完成作业任务出错:", error);
     }
   };
 
@@ -482,26 +484,27 @@ export default function Dashboard() {
         name: newHomework.name,
         subject_id: subjectId,
         estimated_duration: parseInt(newHomework.duration) || null,
-        deadline: newHomework.deadline ? `${new Date().toISOString().split('T')[0]} ${newHomework.deadline}` : null,
+        deadline: newHomework.deadline
+          ? `${new Date().toISOString().split("T")[0]} ${newHomework.deadline}`
+          : null,
         integral: parseInt(newHomework.points) || 0,
-        homework_date: new Date().toISOString().split('T')[0]
+        homework_date: new Date().toISOString().split("T")[0],
       };
 
       // 使用封装的post方法替代fetch
-      const response = await post('/api/homework', homeworkData);
+      const response = await post("/api/homework", homeworkData);
       const result = await response.json();
-      
+
       if (result.code === 200 && result.data) {
         // 添加成功后刷新作业列表
         fetchHomeworks();
       } else {
-        console.error('添加作业失败:', result.message);
+        console.error("添加作业失败:", result.message);
       }
     } catch (error) {
-      console.error('添加作业出错:', error);
+      console.error("添加作业出错:", error);
     }
   };
-
 
   // 添加处理添加任务的函数
   const handleAddTask = (newTask) => {
@@ -534,45 +537,61 @@ export default function Dashboard() {
   const completePomodoro = async () => {
     if (activePomodoro) {
       const { subjectId, taskId } = activePomodoro;
-      
+
       try {
         // 调用番茄钟API更新服务器数据
-        const response = await post('/api/homework/pomodoro', {
-          homeworkId: taskId
+        const response = await post("/api/homework/pomodoro", {
+          homeworkId: taskId,
         });
-        
+
         const result = await response.json();
-        
+
         if (result.code === 200) {
+          // 确保API返回了最新的番茄钟数量
+          const newPomodoroCount = result.data.pomodoro || 0;
+
           // 更新本地番茄钟统计
           setPomodoroStats((prev) => {
             const key = `${subjectId}-${taskId}`;
-            const current = prev[key] || 0;
-            return { ...prev, [key]: current + 1 };
+            return { ...prev, [key]: newPomodoroCount };
           });
-          
+
           // 更新作业的番茄钟数量
-          setHomeworks(homeworks.map(subject => {
-            if (subject.id === subjectId) {
-              return {
-                ...subject,
-                tasks: subject.tasks.map(task => {
-                  if (task.id === taskId) {
-                    return {
-                      ...task,
-                      pomodoro: (task.pomodoro || 0) + 1
-                    };
-                  }
-                  return task;
-                })
-              };
-            }
-            return subject;
-          }));
-          
-          // 更新本地积分 (API中会加5分)
-          setPoints(prev => prev + 5);
-          
+          setHomeworks(
+            homeworks.map((subject) => {
+              if (subject.id === subjectId) {
+                return {
+                  ...subject,
+                  tasks: subject.tasks.map((task) => {
+                    if (task.id === taskId) {
+                      // 使用服务器返回的番茄钟数量
+                      const updatedTask = {
+                        ...task,
+                        pomodoro: newPomodoroCount,
+                      };
+
+                      // 更新activePomodoro中的任务信息，这样PomodoroTimer也会更新
+                      setActivePomodoro((prev) => ({
+                        ...prev,
+                        taskInfo: {
+                          ...prev.taskInfo,
+                          pomodoro: newPomodoroCount,
+                        },
+                      }));
+
+                      return updatedTask;
+                    }
+                    return task;
+                  }),
+                };
+              }
+              return subject;
+            })
+          );
+
+          // 更新本地积分
+          setPoints((prev) => prev + 5);
+
           // 添加到积分历史记录
           setHistory([
             {
@@ -584,17 +603,16 @@ export default function Dashboard() {
             },
             ...history,
           ]);
-          
-          console.log('番茄钟完成，积分已更新');
+
+          console.log("番茄钟完成，积分已更新");
         } else {
-          console.error('番茄钟API调用失败:', result.message);
+          console.error("番茄钟API调用失败:", result.message);
         }
       } catch (error) {
-        console.error('番茄钟完成处理出错:', error);
+        console.error("番茄钟完成处理出错:", error);
       }
     }
   };
-
   const cancelPomodoro = () => {
     setActivePomodoro(null);
   };
@@ -1132,7 +1150,8 @@ export default function Dashboard() {
                                 <div className="flex flex-wrap w-full gap-2 mt-2 sm:w-auto sm:mt-0">
                                   {!task.completed &&
                                     !(
-                                      activePomodoro?.subjectId === subject.id &&
+                                      activePomodoro?.subjectId ===
+                                        subject.id &&
                                       activePomodoro?.taskId === task.id
                                     ) && (
                                       <Button
@@ -1170,7 +1189,9 @@ export default function Dashboard() {
                     ))
                   ) : (
                     <div className="p-6 text-center bg-white rounded-lg shadow">
-                      <p className="text-gray-500">今天没有作业，好好休息吧！</p>
+                      <p className="text-gray-500">
+                        今天没有作业，好好休息吧！
+                      </p>
                     </div>
                   )}
                 </div>
@@ -1503,9 +1524,7 @@ export default function Dashboard() {
                       <div className="flex items-center gap-3 mb-3 sm:mb-0">
                         <div
                           className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                            task.completed
-                              ? "bg-green-500"
-                              : "bg-primary/10"
+                            task.completed ? "bg-green-500" : "bg-primary/10"
                           }`}
                         >
                           {task.completed ? (

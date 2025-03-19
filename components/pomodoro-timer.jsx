@@ -31,9 +31,9 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
     }
   }, [])
 
-  // 当currentTask变化时更新completedPomodoros
   useEffect(() => {
     if (currentTask?.pomodoro !== undefined) {
+      console.log('PomodoroTimer - 更新番茄钟数量:', currentTask.pomodoro);
       setCompletedPomodoros(currentTask.pomodoro)
     }
   }, [currentTask])
@@ -56,6 +56,9 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
               // 专注结束，等待用户开始休息
               setIsActive(false)
               setWaitingForBreak(true)
+              
+              // 更新本地的番茄钟完成数量
+              // setCompletedPomodoros(prev => prev + 1)
               
               // 使用setTimeout将onComplete回调放在下一个事件循环中执行
               // 这样可以避免在渲染过程中更新父组件状态
