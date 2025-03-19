@@ -100,6 +100,7 @@ model task {
   name                    String?   @db.VarChar(100)
   integral                Int?
   child_id                Int?
+  task_date               DateTime? @db.Date
   create_review           String?   @db.VarChar(1)
   complete_review         String?   @db.VarChar(1)
   create_review_time      DateTime? @db.Timestamp(6)
