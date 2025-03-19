@@ -50,7 +50,14 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
               setIsActive(false)
               setWaitingForBreak(true)
               setCompletedPomodoros((prev) => prev + 1)
-              if (onComplete) onComplete()
+              
+              // 使用setTimeout将onComplete回调放在下一个事件循环中执行
+              // 这样可以避免在渲染过程中更新父组件状态
+              if (onComplete) {
+                setTimeout(() => {
+                  onComplete();
+                }, 0);
+              }
             }
 
             return 0
