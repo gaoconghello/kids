@@ -11,7 +11,7 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
   const [isBreak, setIsBreak] = useState(false)
   const [time, setTime] = useState(1 * 60) // 25 minutes in seconds
   const [initialTime, setInitialTime] = useState(1 * 60)
-  const [completedPomodoros, setCompletedPomodoros] = useState(0)
+  const [completedPomodoros, setCompletedPomodoros] = useState(currentTask?.pomodoro || 0)
   const [waitingForBreak, setWaitingForBreak] = useState(false)
   const [waitingForFocus, setWaitingForFocus] = useState(false)
   const intervalRef = useRef(null)
@@ -30,6 +30,13 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
   }, [])
+
+  // 当currentTask变化时更新completedPomodoros
+  useEffect(() => {
+    if (currentTask?.pomodoro !== undefined) {
+      setCompletedPomodoros(currentTask.pomodoro)
+    }
+  }, [currentTask])
 
   useEffect(() => {
     if (isActive && !isPaused) {

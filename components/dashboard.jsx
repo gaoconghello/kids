@@ -525,6 +525,7 @@ export default function Dashboard() {
           duration: task.duration,
           deadline: task.deadline,
           points: task.points,
+          pomodoro: task.pomodoro || 0, // 添加已完成的番茄钟数量
         },
       });
     }
