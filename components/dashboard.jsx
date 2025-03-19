@@ -1110,13 +1110,6 @@ export default function Dashboard() {
                                 </div>
                               </div>
                               <div className="flex items-center gap-3 ml-14 sm:ml-0">
-                                <Badge
-                                  variant="outline"
-                                  className="flex gap-1 border-yellow-300 bg-yellow-50"
-                                >
-                                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
-                                  <span>{task.points}</span>
-                                </Badge>
                                 {task.pomodoro > 0 && (
                                   <Badge
                                     variant="outline"
@@ -1128,6 +1121,13 @@ export default function Dashboard() {
                                     </span>
                                   </Badge>
                                 )}
+                                <Badge
+                                  variant="outline"
+                                  className="flex gap-1 border-yellow-300 bg-yellow-50"
+                                >
+                                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
+                                  <span>{task.points}</span>
+                                </Badge>
                                 <div className="flex flex-wrap w-full gap-2 mt-2 sm:w-auto sm:mt-0">
                                   {!task.completed &&
                                     !(
