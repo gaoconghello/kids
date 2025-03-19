@@ -257,9 +257,21 @@ export default function Dashboard() {
         completed: item.is_complete === '1',
         deadline: item.deadline ? item.deadline.split(' ')[1].substring(0, 5) : '未设置',
         incorrect: item.incorrect || 0,
-        pomodoro: item.pomodoro || 0,
+        pomodoro: item.pomodoro || 0,  // 确保包含番茄钟数量
       });
     });
+    
+    // 初始化番茄钟统计
+    const pomodoroStatsData = {};
+    apiData.forEach(item => {
+      if (item.pomodoro && item.pomodoro > 0) {
+        const key = `${item.subject_id}-${item.id}`;
+        pomodoroStatsData[key] = item.pomodoro;
+      }
+    });
+    
+    // 更新番茄钟统计状态
+    setPomodoroStats(pomodoroStatsData);
     
     return Object.values(subjectMap);
   };
@@ -285,6 +297,7 @@ export default function Dashboard() {
     }
   };
 
+  // 获取科目数据
   const fetchSubjects = async () => {
     const response = await get('/api/subject');
     const result = await response.json();
@@ -424,7 +437,7 @@ export default function Dashboard() {
         );
 
         // 检查是否所有作业都已完成
-        const updatedHomework = homework.map((subject) => ({
+        const updatedHomework = homeworks.map((subject) => ({
           ...subject,
           tasks: subject.tasks.map((task) =>
             task.id === taskId && subject.id === subjectId
@@ -517,14 +530,67 @@ export default function Dashboard() {
     }
   };
 
-  const completePomodoro = () => {
+  const completePomodoro = async () => {
     if (activePomodoro) {
       const { subjectId, taskId } = activePomodoro;
-      setPomodoroStats((prev) => {
-        const key = `${subjectId}-${taskId}`;
-        const current = prev[key] || 0;
-        return { ...prev, [key]: current + 1 };
-      });
+      
+      try {
+        // 调用番茄钟API更新服务器数据
+        const response = await post('/api/homework/pomodoro', {
+          homeworkId: taskId
+        });
+        
+        const result = await response.json();
+        
+        if (result.code === 200) {
+          // 更新本地番茄钟统计
+          setPomodoroStats((prev) => {
+            const key = `${subjectId}-${taskId}`;
+            const current = prev[key] || 0;
+            return { ...prev, [key]: current + 1 };
+          });
+          
+          // 更新作业的番茄钟数量
+          setHomeworks(homeworks.map(subject => {
+            if (subject.id === subjectId) {
+              return {
+                ...subject,
+                tasks: subject.tasks.map(task => {
+                  if (task.id === taskId) {
+                    return {
+                      ...task,
+                      pomodoro: (task.pomodoro || 0) + 1
+                    };
+                  }
+                  return task;
+                })
+              };
+            }
+            return subject;
+          }));
+          
+          // 更新本地积分 (API中会加5分)
+          setPoints(prev => prev + 5);
+          
+          // 添加到积分历史记录
+          setHistory([
+            {
+              id: Date.now(),
+              title: `完成 ${activePomodoro.taskInfo.name} 的番茄钟学习`,
+              points: 5,
+              type: "01",
+              date: new Date().toISOString().split("T")[0],
+            },
+            ...history,
+          ]);
+          
+          console.log('番茄钟完成，积分已更新');
+        } else {
+          console.error('番茄钟API调用失败:', result.message);
+        }
+      } catch (error) {
+        console.error('番茄钟完成处理出错:', error);
+      }
     }
   };
 
@@ -540,8 +606,7 @@ export default function Dashboard() {
   // 计算未完成的任务数量
   const unfinishedTasksCount = tasks.filter((task) => !task.completed).length;
 
-  // 3. 添加处理修改密码的函数
-  // 在 RewardConfirmationDialog 函数前添加：
+  // 修改密码的函数
   const handleChangePassword = (passwordData) => {
     // 在实际应用中，这里应该发送请求到后端
     console.log("修改密码:", passwordData);
@@ -549,8 +614,7 @@ export default function Dashboard() {
     alert("密码修改成功！");
   };
 
-  // 3. 添加处理日期选择的函数
-  // 在 handleChangePassword 函数后添加：
+  // 添加处理日期选择的函数
   const handleDateSelect = (date) => {
     setSelectedDate(date);
     // 在实际应用中，这里应该根据日期筛选任务
@@ -624,7 +688,7 @@ export default function Dashboard() {
     // 这里只是示例，实际应用中应该从后端获取特定日期的作业
     if (formattedDate === new Date().toISOString().split("T")[0]) {
       // 如果是今天，显示默认作业
-      setHomework([
+      setHomeworks([
         {
           id: 1,
           subject: "语文",
@@ -697,7 +761,7 @@ export default function Dashboard() {
       ]);
     } else {
       // 如果是其他日期，生成一些示例作业
-      setHomework([
+      setHomeworks([
         {
           id: 1,
           subject: "语文",
@@ -1053,21 +1117,17 @@ export default function Dashboard() {
                                   <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                   <span>{task.points}</span>
                                 </Badge>
-                                {pomodoroStats[`${subject.id}-${task.id}`] >
-                                  0 && (
-                                    <Badge
-                                      variant="outline"
-                                      className="flex gap-1 border-red-200 bg-red-50"
-                                    >
-                                      <span className="text-red-600">🍅</span>
-                                      <span className="text-red-600">
-                                        x{" "}
-                                        {pomodoroStats[
-                                          `${subject.id}-${task.id}`
-                                        ] || 0}
-                                      </span>
-                                    </Badge>
-                                  )}
+                                {task.pomodoro > 0 && (
+                                  <Badge
+                                    variant="outline"
+                                    className="flex gap-1 border-red-200 bg-red-50"
+                                  >
+                                    <span className="text-red-600">🍅</span>
+                                    <span className="text-red-600">
+                                      x {task.pomodoro}
+                                    </span>
+                                  </Badge>
+                                )}
                                 <div className="flex flex-wrap w-full gap-2 mt-2 sm:w-auto sm:mt-0">
                                   {!task.completed &&
                                     !(
@@ -1389,9 +1449,6 @@ export default function Dashboard() {
           <TabsContent value="tasks" className="space-y-4">
             <Card className="overflow-hidden border-2 rounded-2xl border-primary/20 bg-gradient-to-br from-blue-50 to-purple-50">
               <CardHeader className="bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20">
-                {/* 4. 在 return 语句中的 TabsContent value="tasks" 部分，修改 CardHeader 部分
-                // 找到 <CardHeader className="bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20"> 下的内容，
-                // 将 <div className="flex items-center justify-between"> 部分替换为： */}
                 <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
                     <BookOpen className="w-6 h-6 mr-2 text-primary" />
@@ -1423,9 +1480,6 @@ export default function Dashboard() {
                 </div>
                 <CardDescription>完成任务获得积分奖励！</CardDescription>
               </CardHeader>
-              {/* 5. 在 CardContent 部分添加日历组件
-              // 找到 <CardContent className="p-6"> 下的内容，
-              // 在 <div className="space-y-4"> 前添加： */}
               <CardContent className="p-6">
                 {showCalendar && (
                   <div className="mb-6">
@@ -1589,8 +1643,6 @@ export default function Dashboard() {
                             </div>
                           </div>
                           <div className="p-3 mt-auto bg-primary/5">
-                            {/* 4. Update the rewards mapping in the JSX to show the confirmation dialog */}
-                            {/* Find the Button inside the rewards.map section that says "立即兑换" and replace it with: */}
                             <Button
                               className="w-full"
                               disabled={points < reward.points}
@@ -1734,7 +1786,6 @@ export default function Dashboard() {
         isOpen={isAddTaskOpen}
         onClose={() => setIsAddTaskOpen(false)}
         onAdd={handleAddTask}
-
       />
       {/* 5. 在组件最后，在 AddTaskDialog 后添加 ChangePasswordDialog
       // 在 <AddTaskDialog /> 后添加： */}
