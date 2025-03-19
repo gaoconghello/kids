@@ -77,6 +77,12 @@ export function TaskCalendar({ selectedDate, onDateSelect }) {
     )
   }
 
+  // 处理日期选择
+  const handleDateSelect = (date) => {
+    // 简单地将选择的日期传递给父组件
+    onDateSelect(date)
+  }
+
   // 上个月
   const prevMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))
@@ -90,7 +96,7 @@ export function TaskCalendar({ selectedDate, onDateSelect }) {
   // 返回今天
   const goToToday = () => {
     setCurrentMonth(new Date())
-    onDateSelect(new Date())
+    handleDateSelect(new Date())
   }
 
   // 月份名称
@@ -113,22 +119,22 @@ export function TaskCalendar({ selectedDate, onDateSelect }) {
   const weekDays = ["一", "二", "三", "四", "五", "六", "日"]
 
   return (
-    <Card className="p-4 rounded-xl border-2 border-primary/20 bg-white">
+    <Card className="p-4 bg-white border-2 rounded-xl border-primary/20">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-lg flex items-center">
-          <CalendarIcon className="mr-2 h-5 w-5 text-primary" />
+        <h3 className="flex items-center text-lg font-semibold">
+          <CalendarIcon className="w-5 h-5 mr-2 text-primary" />
           任务日历
         </h3>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full" onClick={prevMonth}>
-            <ChevronLeft className="h-4 w-4" />
+          <Button variant="outline" size="sm" className="w-8 h-8 p-0 rounded-full" onClick={prevMonth}>
+            <ChevronLeft className="w-4 h-4" />
             <span className="sr-only">上个月</span>
           </Button>
           <div className="text-sm font-medium">
             {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
           </div>
-          <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full" onClick={nextMonth}>
-            <ChevronRight className="h-4 w-4" />
+          <Button variant="outline" size="sm" className="w-8 h-8 p-0 rounded-full" onClick={nextMonth}>
+            <ChevronRight className="w-4 h-4" />
             <span className="sr-only">下个月</span>
           </Button>
         </div>
@@ -136,7 +142,7 @@ export function TaskCalendar({ selectedDate, onDateSelect }) {
 
       <div className="grid grid-cols-7 gap-1 mb-2">
         {weekDays.map((day) => (
-          <div key={day} className="text-center text-xs font-medium text-muted-foreground">
+          <div key={day} className="text-xs font-medium text-center text-muted-foreground">
             {day}
           </div>
         ))}
@@ -155,14 +161,14 @@ export function TaskCalendar({ selectedDate, onDateSelect }) {
               day.isSelected && "bg-primary text-primary-foreground font-bold",
               !day.isSelected && "hover:bg-primary/10",
             )}
-            onClick={() => onDateSelect(day.date)}
+            onClick={() => handleDateSelect(day.date)}
           >
             {day.day}
           </Button>
         ))}
       </div>
 
-      <div className="mt-4 flex justify-center">
+      <div className="flex justify-center mt-4">
         <Button variant="outline" size="sm" className="text-xs" onClick={goToToday}>
           返回今天
         </Button>

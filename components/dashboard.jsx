@@ -74,19 +74,9 @@ export default function Dashboard() {
   const [homeworks, setHomeworks] = useState([]);
   const [isLoadingHomework, setIsLoadingHomework] = useState(true);
 
-  // 添加任务列表状态
-  const [tasks, setTasks] = useState([
-    {
-      id: 1,
-      title: "完成数学作业",
-      points: 20,
-      completed: false,
-      time: "今天",
-    },
-    { id: 2, title: "阅读30分钟", points: 15, completed: false, time: "今天" },
-    { id: 3, title: "整理玩具", points: 10, completed: false, time: "今天" },
-    { id: 4, title: "帮妈妈洗碗", points: 25, completed: false, time: "今天" },
-  ]);
+  // 修改任务状态的初始值为空数组
+  const [tasks, setTasks] = useState([]);
+  const [isLoadingTasks, setIsLoadingTasks] = useState(true);
 
   // 添加积分兑换列表状态
   const [rewards, setRewards] = useState([
@@ -306,12 +296,46 @@ export default function Dashboard() {
     setSubjects(result.data);
   };
 
+  // 添加获取任务的函数
+  const fetchTasks = async () => {
+    try {
+      setIsLoadingTasks(true);
+
+      // 使用封装的get方法获取任务数据
+      const response = await get("/api/task");
+      const result = await response.json();
+
+      if (result.code === 200 && result.data) {
+        // 格式化任务数据
+        const formattedTasks = result.data.map(task => ({
+          id: task.id,
+          title: task.title,
+          points: task.integral || 0,
+          completed: task.is_complete === "1",
+          time: task.task_date ? new Date(task.task_date).toLocaleDateString("zh-CN") : "今天"
+        }));
+        
+        setTasks(formattedTasks);
+      } else {
+        console.error("获取任务失败:", result.message);
+        setTasks([]); // 获取失败时设置为空数组
+      }
+    } catch (error) {
+      console.error("获取任务数据出错:", error);
+      setTasks([]); // 出错时设置为空数组
+    } finally {
+      setIsLoadingTasks(false);
+    }
+  };
+
+  // 修改 useEffect 中的数据获取
   useEffect(() => {
     const fetchAllData = async () => {
       try {
         await fetchUserInfo();
         await fetchSubjects();
         await fetchHomeworks();
+        await fetchTasks(); 
       } catch (error) {
         console.error("数据获取失败:", error);
       } finally {
@@ -511,7 +535,7 @@ export default function Dashboard() {
     const nextId =
       tasks.length > 0 ? Math.max(...tasks.map((task) => task.id)) + 1 : 1;
     setTasks([...tasks, { ...newTask, id: nextId }]);
-  };
+  }; 
 
   // 添加开始番茄计时的函数
   const startPomodoro = (subjectId, taskId) => {
@@ -697,126 +721,47 @@ export default function Dashboard() {
   };
 
   // 添加处理作业日期选择的函数
-  const handleHomeworkDateSelect = (date) => {
+  const handleHomeworkDateSelect = async (date) => {
     setSelectedHomeworkDate(date);
-    console.log("选择的作业日期:", date.toISOString().split("T")[0]);
+    
+    // 使用本地日期格式，避免时区问题
+    // 创建一个新的日期对象避免修改原始对象
+    const localDate = new Date(date);
+    
+    // 格式化为YYYY-MM-DD格式
+    const formattedDate = localDate.getFullYear() + '-' + 
+                          String(localDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                          String(localDate.getDate()).padStart(2, '0');
+    
+    try {
+      // 调用API获取该日期的作业，日志API请求URL
+      const apiUrl = `/api/homework?homeworkDate=${formattedDate}`;
+      console.log("API请求URL:", apiUrl);
+      
+      const response = await get(apiUrl);
+      const result = await response.json();
 
-    // 模拟根据日期筛选作业
-    const formattedDate = date.toISOString().split("T")[0];
+      console.log("API响应:", result);
 
-    // 这里只是示例，实际应用中应该从后端获取特定日期的作业
-    if (formattedDate === new Date().toISOString().split("T")[0]) {
-      // 如果是今天，显示默认作业
-      setHomeworks([
-        {
-          id: 1,
-          subject: "语文",
-          tasks: [
-            {
-              id: 1,
-              title: "阅读课文《春天》",
-              duration: "20分钟",
-              points: 15,
-              completed: false,
-              deadline: "15:30",
-            },
-            {
-              id: 2,
-              title: "完成练习册第12页",
-              duration: "30分钟",
-              points: 20,
-              completed: true,
-              deadline: "16:00",
-              wrongAnswers: 2,
-            },
-          ],
-        },
-        {
-          id: 2,
-          subject: "数学",
-          tasks: [
-            {
-              id: 3,
-              title: "完成乘法练习",
-              duration: "25分钟",
-              points: 15,
-              completed: false,
-              deadline: "16:30",
-            },
-            {
-              id: 4,
-              title: "解决应用题5道",
-              duration: "20分钟",
-              points: 15,
-              completed: true,
-              deadline: "17:00",
-              wrongAnswers: 1,
-            },
-          ],
-        },
-        {
-          id: 3,
-          subject: "英语",
-          tasks: [
-            {
-              id: 5,
-              title: "背诵单词列表",
-              duration: "15分钟",
-              points: 10,
-              completed: false,
-              deadline: "17:30",
-            },
-            {
-              id: 6,
-              title: "完成听力练习",
-              duration: "20分钟",
-              points: 15,
-              completed: true,
-              deadline: "18:00",
-              wrongAnswers: 0,
-            },
-          ],
-        },
-      ]);
-    } else {
-      // 如果是其他日期，生成一些示例作业
-      setHomeworks([
-        {
-          id: 1,
-          subject: "语文",
-          tasks: [
-            {
-              id: 1,
-              title: `${date.getMonth() + 1}月${date.getDate()}日语文作业`,
-              duration: "30分钟",
-              points: 20,
-              completed: true,
-              deadline: "16:00",
-              wrongAnswers: 3,
-            },
-          ],
-        },
-        {
-          id: 2,
-          subject: "数学",
-          tasks: [
-            {
-              id: 2,
-              title: `${date.getMonth() + 1}月${date.getDate()}日数学作业`,
-              duration: "25分钟",
-              points: 15,
-              completed: true,
-              deadline: "17:00",
-              wrongAnswers: 0,
-            },
-          ],
-        },
-      ]);
+      if (result.code === 200 && result.data) {
+        // 将API返回的数据转换为组件需要的格式
+        const formattedHomework = formatHomeworkData(result.data);
+        setHomeworks(formattedHomework);
+        console.log(`已获取${formattedDate}的作业数据，共${result.data.length}条记录`, formattedHomework);
+      } else {
+        console.error("获取作业数据失败:", result.message);
+        
+        // 如果API调用失败或无数据，设置空的作业列表
+        setHomeworks([]);
+      }
+    } catch (error) {
+      console.error("获取作业数据出错:", error);
+      // 出错时设置空的作业列表
+      setHomeworks([]);
     }
   };
 
   // 3. Add the confirmation dialog component
-  // Add this right before the return statement in the Dashboard component
   const RewardConfirmationDialog = () => {
     if (!confirmingReward) return null;
 
@@ -1512,59 +1457,69 @@ export default function Dashboard() {
                   </div>
                 )}
                 <div className="space-y-4">
-                  {tasks.map((task) => (
-                    <div
-                      key={task.id}
-                      className={`flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-xl border-2 p-4 transition-all ${
-                        task.completed
-                          ? "border-green-200 bg-gradient-to-r from-green-100 to-emerald-50"
-                          : "border-primary/20 bg-white hover:border-primary/50 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 mb-3 sm:mb-0">
-                        <div
-                          className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                            task.completed ? "bg-green-500" : "bg-primary/10"
-                          }`}
-                        >
-                          {task.completed ? (
-                            <Check className="w-6 h-6 text-white" />
-                          ) : (
-                            <span className="text-lg font-bold text-primary">
-                              {task.id}
-                            </span>
-                          )}
-                        </div>
-                        <div>
-                          <h3 className="font-semibold">{task.title}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {task.time}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 ml-14 sm:ml-0">
-                        <Badge
-                          variant="outline"
-                          className="flex gap-1 border-yellow-300 bg-yellow-50"
-                        >
-                          <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
-                          <span>{task.points}</span>
-                        </Badge>
-                        <Button
-                          size="sm"
-                          disabled={task.completed}
-                          onClick={() => completeTask(task.id)}
-                          className={`transition-all ${
-                            task.completed
-                              ? "bg-gradient-to-r from-green-500 to-emerald-500"
-                              : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-                          }`}
-                        >
-                          {task.completed ? "已完成" : "完成"}
-                        </Button>
-                      </div>
+                  {isLoadingTasks ? (
+                    <div className="flex items-center justify-center h-40">
+                      <div className="w-10 h-10 border-b-2 rounded-full animate-spin border-primary"></div>
                     </div>
-                  ))}
+                  ) : tasks.length > 0 ? (
+                    tasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className={`flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-xl border-2 p-4 transition-all ${
+                          task.completed
+                            ? "border-green-200 bg-gradient-to-r from-green-100 to-emerald-50"
+                            : "border-primary/20 bg-white hover:border-primary/50 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 mb-3 sm:mb-0">
+                          <div
+                            className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                              task.completed ? "bg-green-500" : "bg-primary/10"
+                            }`}
+                          >
+                            {task.completed ? (
+                              <Check className="w-6 h-6 text-white" />
+                            ) : (
+                              <span className="text-lg font-bold text-primary">
+                                {task.id}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">{task.title}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {task.time}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 ml-14 sm:ml-0">
+                          <Badge
+                            variant="outline"
+                            className="flex gap-1 border-yellow-300 bg-yellow-50"
+                          >
+                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
+                            <span>{task.points}</span>
+                          </Badge>
+                          <Button
+                            size="sm"
+                            disabled={task.completed}
+                            onClick={() => completeTask(task.id)}
+                            className={`transition-all ${
+                              task.completed
+                                ? "bg-gradient-to-r from-green-500 to-emerald-500"
+                                : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                            }`}
+                          >
+                            {task.completed ? "已完成" : "完成"}
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-6 text-center bg-white rounded-lg shadow">
+                      <p className="text-gray-500">今天还没有添加任务哦！</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

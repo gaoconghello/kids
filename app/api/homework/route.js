@@ -10,8 +10,7 @@ export const GET = withAuth(["parent", "child"], async (request) => {
     const { searchParams } = new URL(request.url);
     const childId = searchParams.get("childId");
     const subjectId = searchParams.get("subjectId");
-    const startDate = searchParams.get("startDate");
-    const endDate = searchParams.get("endDate");
+    const homeworkDate = searchParams.get("homeworkDate");
 
     // 构建查询条件
     const where = {};
@@ -27,18 +26,37 @@ export const GET = withAuth(["parent", "child"], async (request) => {
       where.subject_id = parseInt(subjectId);
     }
 
-    // 日期范围过滤
-    if (startDate || endDate) {
-      where.homework_date = {};
-
-      if (startDate) {
-        where.homework_date.gte = new Date(startDate);
-      }
-
-      if (endDate) {
-        where.homework_date.lte = new Date(endDate);
-      }
+    // 日期过滤 - 修改为正确的 Prisma 查询条件格式
+    if (homeworkDate) {
+      // 将 yyyy-mm-dd 格式转换为 Date 对象
+      const [year, month, day] = homeworkDate.split('-').map(Number);
+      
+      // 创建当天开始和结束的时间点（使用上海时区）
+      const startDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+      const endDate = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+      
+      // 使用 Prisma 的日期范围查询
+      where.homework_date = {
+        gte: startDate,
+        lte: endDate
+      };
+    } else {
+      // 如果没有提供日期，查询当天的作业
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const day = now.getDate();
+      
+      const startDate = new Date(Date.UTC(year, month, day, 0, 0, 0));
+      const endDate = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
+      
+      where.homework_date = {
+        gte: startDate,
+        lte: endDate
+      };
     }
+
+    console.log("查询条件:", where);
 
     // 查询数据库
     const homeworks = await prisma.homework.findMany({
