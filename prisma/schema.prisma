@@ -62,12 +62,13 @@ model homework {
 }
 
 model integral_history {
-  id            Int     @id @default(autoincrement())
+  id            Int       @id @default(autoincrement())
   integral_id   Int?
-  integral_type String? @db.VarChar(2)
+  integral_type String?   @db.VarChar(2)
   integral      Int?
   child_id      Int?
   family_id     Int?
+  integral_date DateTime? @db.Timestamp(6)
 }
 
 model reward {
