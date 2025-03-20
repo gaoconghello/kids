@@ -320,15 +320,17 @@ export default function ParentDashboard() {
   const [editingTask, setEditingTask] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 获取待处理作业
+  // 获取待新增作业
   const fetchPendingHomeworks = async () => {
     try {
       // 显示加载状态
       setIsLoading(true);
 
+      console.log("获取待新增作业");
+
       // 调用API获取待处理任务
       const response = await get(
-        `/api/homework/pending?childId=${selectedChildId}`
+        `/api/homework/pending?childId=${selectedChild.id}`
       );
       const result = await response.json();
 
@@ -360,8 +362,11 @@ export default function ParentDashboard() {
   const fetchCompletedHomeworks = async () => {
     try {
       setIsLoading(true);
+
+      console.log("获取已完成作业");
+
       const response = await get(
-        `/api/homework/complete?childId=${selectedChildId}`
+        `/api/homework/complete?childId=${selectedChild.id}`
       );
       const result = await response.json();
 
@@ -396,33 +401,34 @@ export default function ParentDashboard() {
 
   // 当选择的孩子ID变化时，重新获取相关数据
   useEffect(() => {
-    if (selectedChildId && selectedChild) {  // 添加selectedChild检查
+    if (selectedChild) {  // 添加selectedChild检查
       // 获取待处理任务
       fetchPendingHomeworks();
       // 获取已完成作业
       fetchCompletedHomeworks();
       // 这里可以添加其他需要根据childId获取的数据
     }
-  }, [selectedChildId, selectedChild]);  // 添加selectedChild依赖
+  }, [selectedChild]);  // 添加selectedChild依赖
 
   useEffect(() => {
-    const fetchChild = async () => {
-      try {
-        const response = await get(`/api/family/children/${selectedChildId}`);
-        const result = await response.json();
-        if (result.code === 200 && result.data) {
-          setChildPoints({
-            total: result.data.total,
-            thisWeek: result.data.thisWeek,
-            thisWeekSpent: result.data.thisWeekSpent,
-          });
-          console.log(result.data);
-          setSelectedChild(result.data); // 保存完整的孩子信息
+      const fetchChild = async () => {
+        try {
+          console.log('获取孩子信息');
+          const response = await get(`/api/family/children/${selectedChildId}`);
+          const result = await response.json();
+          if (result.code === 200 && result.data) {
+            setChildPoints({
+              total: result.data.total,
+              thisWeek: result.data.thisWeek,
+              thisWeekSpent: result.data.thisWeekSpent,
+            });
+            console.log(result.data);
+            setSelectedChild(result.data); // 保存完整的孩子信息
+          }
+        } catch (error) {
+          console.error("获取孩子积分信息失败:", error);
         }
-      } catch (error) {
-        console.error("获取孩子积分信息失败:", error);
-      }
-    };
+      };
 
     if (selectedChildId) {
       fetchChild();
@@ -450,14 +456,6 @@ export default function ParentDashboard() {
         // 如果有孩子，默认选择第一个
         if (formattedChildren.length > 0) {
           setSelectedChildId(formattedChildren[0].id); // 设置默认选中的孩子ID
-          // 获取并设置第一个孩子的完整信息
-          if (formattedChildren[0].id) {
-            const response = await get(`/api/family/children/${formattedChildren[0].id}`);
-            const result = await response.json();
-            if (result.code === 200 && result.data) {
-              setSelectedChild(result.data);
-            }
-          }
         }
       } else {
         console.error("获取孩子列表失败:", result.message);
