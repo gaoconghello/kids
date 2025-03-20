@@ -62,6 +62,32 @@ function CompletionCelebration({ onClose }) {
   );
 }
 
+// 根据任务标题返回适当的图标
+function getTaskIcon(title) {
+  // 添加对title是否存在的检查
+  if (!title) {
+    return <Sparkles className="w-5 h-5 text-primary" />;
+  }
+  
+  const titleLower = title.toLowerCase();
+  
+  if (titleLower.includes("阅读") || titleLower.includes("读")) {
+    return <BookOpen className="w-5 h-5 text-primary" />;
+  } else if (titleLower.includes("整理") || titleLower.includes("收拾") || titleLower.includes("打扫")) {
+    return <ShoppingBag className="w-5 h-5 text-primary" />;
+  } else if (titleLower.includes("帮") || titleLower.includes("协助")) {
+    return <Award className="w-5 h-5 text-primary" />;
+  } else if (titleLower.includes("完成") || titleLower.includes("作业") || titleLower.includes("习题")) {
+    return <PenLine className="w-5 h-5 text-primary" />;
+  } else if (titleLower.includes("运动") || titleLower.includes("锻炼")) {
+    return <Sparkles className="w-5 h-5 text-primary" />;
+  } else if (titleLower.includes("时间") || titleLower.includes("分钟") || titleLower.includes("点")) {
+    return <Clock className="w-5 h-5 text-primary" />;
+  } else {
+    return <Sparkles className="w-5 h-5 text-primary" />;
+  }
+}
+
 export default function Dashboard() {
   const { logout } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
@@ -309,9 +335,9 @@ export default function Dashboard() {
         // 格式化任务数据
         const formattedTasks = result.data.map(task => ({
           id: task.id,
-          title: task.title,
+          title: task.name,
           points: task.integral || 0,
-          completed: task.is_complete === "1",
+          completed: task.complete_time ? true : false,
           time: task.task_date ? new Date(task.task_date).toLocaleDateString("zh-CN") : "今天"
         }));
         
@@ -360,50 +386,70 @@ export default function Dashboard() {
   const [selectedHomeworkDate, setSelectedHomeworkDate] = useState(new Date());
   const [showHomeworkCalendar, setShowHomeworkCalendar] = useState(false);
 
-  const completeTask = (taskId) => {
+  const completeTask = async (taskId) => {
     // 避免重复完成
     if (tasks.find((t) => t.id === taskId)?.completed) return;
 
-    // 创建完成任务的彩带效果
-    createTaskConfetti();
+    try {
+      // 调用API完成任务
+      const response = await post("/api/task/complete", {
+        taskId: taskId
+      });
+      
+      const result = await response.json();
+      
+      if (result.code === 200) {
+        // 创建完成任务的彩带效果
+        createTaskConfetti();
+        
+        // 找到当前任务以获取其积分值
+        const task = tasks.find(t => t.id === taskId);
+        const taskPoints = task ? task.points : 0;
+        
+        // 更新本地任务状态
+        setTasks(
+          tasks.map((task) => {
+            if (task.id === taskId && !task.completed) {
+              return { ...task, completed: true };
+            }
+            return task;
+          })
+        );
+        
+        // 更新积分
+        setPoints(points + taskPoints);
 
-    setTasks(
-      tasks.map((task) => {
-        if (task.id === taskId && !task.completed) {
-          setPoints(points + task.points);
-          return { ...task, completed: true };
+        // 检查是否所有任务都已完成
+        const updatedTasks = tasks.map((task) =>
+          task.id === taskId ? { ...task, completed: true } : task
+        );
+        const allCompleted = updatedTasks.every((task) => task.completed);
+
+        if (allCompleted) {
+          // 显示庆祝效果
+          setShowCelebration(true);
+          // 额外奖励50积分
+          setPoints((prev) => prev + 50);
+          // 添加到历史记录
+          setHistory([
+            {
+              id: Date.now(),
+              title: "完成所有日常任务",
+              points: 50,
+              type: "earn",
+              date: new Date().toISOString().split("T")[0],
+            },
+            ...history,
+          ]);
         }
-        return task;
-      })
-    );
-
-    // 检查是否所有任务都已完成
-    const updatedTasks = tasks.map((task) =>
-      task.id === taskId ? { ...task, completed: true } : task
-    );
-    const allCompleted = updatedTasks.every((task) => task.completed);
-
-    if (allCompleted) {
-      // 显示庆祝效果
-      setShowCelebration(true);
-      // 额外奖励50积分
-      setPoints((prev) => prev + 50);
-      // 添加到历史记录
-      setHistory([
-        {
-          id: Date.now(),
-          title: "完成所有日常任务",
-          points: 50,
-          type: "earn",
-          date: new Date().toISOString().split("T")[0],
-        },
-        ...history,
-      ]);
+      } else {
+        console.error("完成任务失败:", result.message);
+      }
+    } catch (error) {
+      console.error("完成任务时出错:", error);
     }
   };
 
-  // 2. Update the redeemReward function to handle the confirmation flow
-  // Replace the existing redeemReward function with this:
   const redeemReward = (rewardId) => {
     const reward = rewards.find((r) => r.id === rewardId);
     if (reward && points >= reward.points) {
@@ -531,11 +577,29 @@ export default function Dashboard() {
   };
 
   // 添加处理添加任务的函数
-  const handleAddTask = (newTask) => {
-    const nextId =
-      tasks.length > 0 ? Math.max(...tasks.map((task) => task.id)) + 1 : 1;
-    setTasks([...tasks, { ...newTask, id: nextId }]);
-  }; 
+  const handleAddTask = async (newTask) => {
+    try {
+      // 准备API请求数据
+      const taskData = {
+        name: newTask.title,
+        integral: parseInt(newTask.points) || 0,
+      };
+
+      // 使用封装的post方法向API发送请求
+      const response = await post("/api/task", taskData);
+      const result = await response.json();
+
+      if (result.code === 200 && result.data) {
+        // 添加成功后刷新任务列表
+        fetchTasks();
+        console.log("任务添加成功:", result.data);
+      } else {
+        console.error("添加任务失败:", result.message);
+      }
+    } catch (error) {
+      console.error("添加任务出错:", error);
+    }
+  };
 
   // 添加开始番茄计时的函数
   const startPomodoro = (subjectId, taskId) => {
@@ -658,65 +722,53 @@ export default function Dashboard() {
   };
 
   // 添加处理日期选择的函数
-  const handleDateSelect = (date) => {
+  const handleDateSelect = async (date) => {
     setSelectedDate(date);
-    // 在实际应用中，这里应该根据日期筛选任务
-    console.log("选择的日期:", date.toISOString().split("T")[0]);
+    
+    // 使用本地日期格式，避免时区问题
+    // 创建一个新的日期对象避免修改原始对象
+    const localDate = new Date(date);
+    
+    // 格式化为YYYY-MM-DD格式
+    const formattedDate = localDate.getFullYear() + '-' + 
+                          String(localDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                          String(localDate.getDate()).padStart(2, '0');
+    
+    try {
+      setIsLoadingTasks(true);
+      
+      // 调用API获取该日期的任务，日志API请求URL
+      const apiUrl = `/api/task?taskDate=${formattedDate}`;
+      console.log("任务API请求URL:", apiUrl);
+      
+      const response = await get(apiUrl);
+      const result = await response.json();
 
-    // 模拟根据日期筛选任务
-    const formattedDate = date.toISOString().split("T")[0];
+      console.log("任务API响应:", result);
 
-    // 这里只是示例，实际应用中应该从后端获取特定日期的任务
-    if (formattedDate === new Date().toISOString().split("T")[0]) {
-      // 如果是今天，显示默认任务
-      setTasks([
-        {
-          id: 1,
-          title: "完成数学作业",
-          points: 20,
-          completed: false,
-          time: "今天",
-        },
-        {
-          id: 2,
-          title: "阅读30分钟",
-          points: 15,
-          completed: false,
-          time: "今天",
-        },
-        {
-          id: 3,
-          title: "整理玩具",
-          points: 10,
-          completed: false,
-          time: "今天",
-        },
-        {
-          id: 4,
-          title: "帮妈妈洗碗",
-          points: 25,
-          completed: false,
-          time: "今天",
-        },
-      ]);
-    } else {
-      // 如果是其他日期，生成一些示例任务
-      setTasks([
-        {
-          id: 1,
-          title: `${date.getMonth() + 1}月${date.getDate()}日任务1`,
-          points: Math.floor(Math.random() * 20) + 10,
-          completed: false,
-          time: `${date.getMonth() + 1}月${date.getDate()}日`,
-        },
-        {
-          id: 2,
-          title: `${date.getMonth() + 1}月${date.getDate()}日任务2`,
-          points: Math.floor(Math.random() * 20) + 10,
-          completed: false,
-          time: `${date.getMonth() + 1}月${date.getDate()}日`,
-        },
-      ]);
+      if (result.code === 200 && result.data) {
+        // 格式化任务数据
+        const formattedTasks = result.data.map(task => ({
+          id: task.id,
+          title: task.name,
+          points: task.integral || 0,
+          completed: task.complete_time ? true : false,
+          time: task.task_date ? new Date(task.task_date).toLocaleDateString("zh-CN") : "今天"
+        }));
+        
+        setTasks(formattedTasks);
+        console.log(`已获取${formattedDate}的任务数据，共${result.data.length}条记录`, formattedTasks);
+      } else {
+        console.error("获取任务数据失败:", result.message);
+        // 如果API调用失败或无数据，设置空的任务列表
+        setTasks([]);
+      }
+    } catch (error) {
+      console.error("获取任务数据出错:", error);
+      // 出错时设置空的任务列表
+      setTasks([]);
+    } finally {
+      setIsLoadingTasks(false);
     }
   };
 
@@ -1041,7 +1093,8 @@ export default function Dashboard() {
                                   {task.completed ? (
                                     <Check className="w-6 h-6 text-white" />
                                   ) : (
-                                    <PenLine className="w-5 h-5 text-primary" />
+                                    // 使用getTaskIcon函数来选择图标
+                                    getTaskIcon(task.title)
                                   )}
                                 </div>
                                 <div>
@@ -1480,9 +1533,8 @@ export default function Dashboard() {
                             {task.completed ? (
                               <Check className="w-6 h-6 text-white" />
                             ) : (
-                              <span className="text-lg font-bold text-primary">
-                                {task.id}
-                              </span>
+                              // 根据任务标题选择适当的图标
+                              getTaskIcon(task.title)
                             )}
                           </div>
                           <div>
