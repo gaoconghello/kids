@@ -24,26 +24,10 @@ export function AddTaskDialog({ isOpen, onClose, onAdd, initialData, childrenLis
   const handleSubmit = (e) => {
     e.preventDefault()
 
-    // 如果有多个小朋友，为每个小朋友创建任务
-    if (childrenList.length > 0) {
-      childrenList.forEach((child) => {
-        onAdd({
-          title,
-          points: Number.parseInt(points),
-          completed: false,
-          time: "今天",
-          childName: child.name, // 使用当前循环的小朋友名字
-        })
-      })
-    } else {
-      // 如果没有小朋友列表，仍然提交但不指定childName
-      onAdd({
-        title,
-        points: Number.parseInt(points),
-        completed: false,
-        time: "今天",
-      })
-    }
+    onAdd({
+      title,
+      points: Number.parseInt(points),
+    })
 
     // Reset form
     setTitle("")

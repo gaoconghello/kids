@@ -3,6 +3,152 @@ import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 import { formatDateTime } from "@/lib/utils";
 
+// 获取待审核的已完成作业
+// 获取作业列表(添加待审核作业)
+export const GET = withAuth(["parent"], async (request) => {
+  try {
+    // 从URL获取查询参数
+    const { searchParams } = new URL(request.url);
+    const childId = searchParams.get("childId");
+    const homeworkDate = searchParams.get("homeworkDate");
+
+    // 如果没有提供childId，直接返回空数据
+    if (!childId) {
+      return NextResponse.json(
+        {
+          code: 400,
+          message: "缺少必要参数childId",
+          data: [],
+        },
+        { status: 400 }
+      );
+    }
+
+    // 获取当前家长信息
+    const parent = await prisma.account.findUnique({
+      where: { id: request.user.id },
+      select: { family_id: true },
+    });
+
+    if (!parent) {
+      return NextResponse.json(
+        { code: 403, message: "无法验证家长身份" },
+        { status: 403 }
+      );
+    }
+
+    // 验证child是否属于该family
+    const child = await prisma.account.findUnique({
+      where: { id: parseInt(childId) },
+      select: { family_id: true },
+    });
+
+    if (!child || child.family_id !== parent.family_id) {
+      return NextResponse.json(
+        { code: 403, message: "无权查看此孩子的作业" },
+        { status: 403 }
+      );
+    }
+
+    // 构建查询条件，只查询已经完成但是没有审核的作业
+    const where = {
+      is_complete: "1", // 只查询已完成作业
+      complete_review: "0", // 只查询待审核作业
+      child_id: parseInt(childId),
+    };
+
+    // 日期过滤 - 修改为正确的 Prisma 查询条件格式
+    if (homeworkDate) {
+      // 将 yyyy-mm-dd 格式转换为 Date 对象
+      const [year, month, day] = homeworkDate.split("-").map(Number);
+
+      // 创建当天开始和结束的时间点（使用上海时区）
+      const startDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+      const endDate = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+
+      // 使用 Prisma 的日期范围查询
+      where.homework_date = {
+        gte: startDate,
+        lte: endDate,
+      };
+    } else {
+      // 如果没有提供日期，查询当天的作业
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const day = now.getDate();
+
+      const startDate = new Date(Date.UTC(year, month, day, 0, 0, 0));
+      const endDate = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
+
+      where.homework_date = {
+        gte: startDate,
+        lte: endDate,
+      };
+    }
+
+    console.log("查询条件:", where);
+
+    // 查询数据库
+    const homeworks = await prisma.homework.findMany({
+      where,
+      orderBy: {
+        created_at: "desc",
+      },
+      include: {
+        subject: true,
+      },
+    });
+
+    // 格式化数据
+    const formattedHomeworks = homeworks.map((homework) => ({
+      id: homework.id,
+      name: homework.name,
+      subject_id: homework.subject_id,
+      subject_name: homework.subject.name,
+      estimated_duration: homework.estimated_duration,
+      deadline: homework.deadline ? formatDateTime(homework.deadline) : null,
+      integral: homework.integral || 0,
+      incorrect: homework.incorrect || 0,
+      homework_date: homework.homework_date
+        ? formatDateTime(homework.homework_date, "YYYY-MM-DD")
+        : null,
+      create_review: homework.create_review,
+      complete_review: homework.complete_review,
+      create_review_time: homework.create_review_time
+        ? formatDateTime(homework.create_review_time)
+        : null,
+      complete_review_time: homework.complete_review_time
+        ? formatDateTime(homework.complete_review_time)
+        : null,
+      complete_time: homework.complete_time
+        ? formatDateTime(homework.complete_time)
+        : null,
+      pomodoro: homework.pomodoro,
+      is_complete: homework.is_complete,
+      child_id: homework.child_id,
+      created_at: homework.created_at
+        ? formatDateTime(homework.created_at)
+        : null,
+      updated_at: homework.updated_at
+        ? formatDateTime(homework.updated_at)
+        : null,
+    }));
+
+    return NextResponse.json({
+      code: 200,
+      message: "获取作业列表成功",
+      data: formattedHomeworks,
+    });
+  } catch (error) {
+    console.error("获取作业列表失败:", error);
+    return NextResponse.json(
+      { code: 500, message: "获取作业列表失败", error: error.message },
+      { status: 500 }
+    );
+  }
+});
+
 // 完成作业API
 export const POST = withAuth(["child"], async (request) => {
   try {
@@ -127,117 +273,6 @@ export const POST = withAuth(["child"], async (request) => {
     console.error("完成作业失败:", error);
     return NextResponse.json(
       { code: 500, message: "完成作业失败", error: error.message },
-      { status: 500 }
-    );
-  }
-});
-
-// 获取已完成作业列表
-export const GET = withAuth(["child"], async (request) => {
-  try {
-    // 从URL获取查询参数
-    const { searchParams } = new URL(request.url);
-    const childId = searchParams.get("childId");
-    const subjectId = searchParams.get("subjectId");
-    const startDate = searchParams.get("startDate");
-    const endDate = searchParams.get("endDate");
-    const reviewStatus = searchParams.get("reviewStatus"); // 审核状态：pending, approved, rejected
-
-    // 构建查询条件
-    const where = {
-      is_complete: "1", // 只查询已完成的作业
-    };
-
-    // 如果是孩子角色，只能查看自己的作业
-    if (request.user.role === "child") {
-      where.child_id = request.user.id;
-    } else if (childId) {
-      where.child_id = parseInt(childId);
-    }
-
-    if (subjectId) {
-      where.subject_id = parseInt(subjectId);
-    }
-
-    // 审核状态过滤
-    if (reviewStatus) {
-      switch (reviewStatus) {
-        case "pending":
-          where.complete_review = "0";
-          break;
-        case "approved":
-          where.complete_review = "1";
-          break;
-        case "rejected":
-          where.complete_review = "2";
-          break;
-      }
-    }
-
-    // 日期范围过滤
-    if (startDate || endDate) {
-      where.complete_time = {};
-
-      if (startDate) {
-        where.complete_time.gte = new Date(startDate);
-      }
-
-      if (endDate) {
-        where.complete_time.lte = new Date(endDate);
-      }
-    }
-
-    // 查询数据库
-    const completedHomeworks = await prisma.homework.findMany({
-      where,
-      orderBy: {
-        complete_time: "desc",
-      },
-      include: {
-        subject: true,
-        child: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    });
-
-    // 格式化数据
-    const formattedHomeworks = completedHomeworks.map((homework) => ({
-      id: homework.id,
-      name: homework.name,
-      subject_id: homework.subject_id,
-      subject_name: homework.subject?.name || "",
-      estimated_duration: homework.estimated_duration,
-      deadline: homework.deadline ? formatDateTime(homework.deadline) : null,
-      integral: homework.integral || 0,
-      incorrect: homework.incorrect || 0,
-      homework_date: homework.homework_date
-        ? formatDateTime(homework.homework_date, "YYYY-MM-DD")
-        : null,
-      complete_time: formatDateTime(homework.complete_time),
-      complete_review: homework.complete_review,
-      complete_review_time: homework.complete_review_time
-        ? formatDateTime(homework.complete_review_time)
-        : null,
-      child_id: homework.child_id,
-      child_name: homework.child?.name || "",
-      created_at: homework.created_at
-        ? formatDateTime(homework.created_at)
-        : null,
-    }));
-
-    return NextResponse.json({
-      code: 200,
-      message: "获取已完成作业列表成功",
-      data: formattedHomeworks,
-    });
-  } catch (error) {
-    console.error("获取已完成作业列表失败:", error);
-    return NextResponse.json(
-      { code: 500, message: "获取已完成作业列表失败", error: error.message },
       { status: 500 }
     );
   }

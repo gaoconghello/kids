@@ -4,13 +4,12 @@ import { withAuth } from "@/lib/auth";
 import { formatDateTime } from "@/lib/utils";
 
 // 获取任务列表
-export const GET = withAuth(["admin", "parent", "child"], async (request) => {
+export const GET = withAuth(["parent", "child"], async (request) => {
   try {
     // 从URL获取查询参数
     const { searchParams } = new URL(request.url);
     const childId = searchParams.get("childId");
-    const startDate = searchParams.get("startDate");
-    const endDate = searchParams.get("endDate");
+    const taskDate = searchParams.get("taskDate");
 
     // 构建查询条件
     const where = {};
@@ -22,18 +21,37 @@ export const GET = withAuth(["admin", "parent", "child"], async (request) => {
       where.child_id = parseInt(childId);
     }
 
-    // 日期范围过滤
-    if (startDate || endDate) {
-      where.created_at = {};
+    // 日期过滤
+    if (taskDate) {
+      // 将 yyyy-mm-dd 格式转换为 Date 对象
+      const [year, month, day] = taskDate.split('-').map(Number);
       
-      if (startDate) {
-        where.created_at.gte = new Date(startDate);
-      }
+      // 创建当天开始和结束的时间点（使用上海时区）
+      const startDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+      const endDate = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
       
-      if (endDate) {
-        where.created_at.lte = new Date(endDate);
-      }
+      // 使用 Prisma 的日期范围查询
+      where.task_date = {
+        gte: startDate,
+        lte: endDate
+      };
+    } else {
+      // 如果没有提供日期，查询当天的任务
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const day = now.getDate();
+      
+      const startDate = new Date(Date.UTC(year, month, day, 0, 0, 0));
+      const endDate = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
+      
+      where.task_date = {
+        gte: startDate,
+        lte: endDate
+      };
     }
+
+    console.log("查询条件:", where);
 
     // 查询数据库
     const tasks = await prisma.task.findMany({
@@ -52,6 +70,7 @@ export const GET = withAuth(["admin", "parent", "child"], async (request) => {
       name: task.name,
       integral: task.integral || 0,
       child_id: task.child_id,
+      task_date: task.task_date ? formatDateTime(task.task_date) : null,
       create_review: task.create_review,
       complete_review: task.complete_review,
       create_review_time: task.create_review_time ? formatDateTime(task.create_review_time) : null,
@@ -76,12 +95,12 @@ export const GET = withAuth(["admin", "parent", "child"], async (request) => {
 });
 
 // 创建新任务
-export const POST = withAuth(["admin", "parent"], async (request) => {
+export const POST = withAuth(["parent", "child"], async (request) => {
   try {
     const data = await request.json();
 
     // 验证必填字段
-    if (!data.name || !data.child_id) {
+    if (!data.name) {
       return NextResponse.json(
         { code: 400, message: "缺少必要字段" },
         { status: 400 }
@@ -93,11 +112,12 @@ export const POST = withAuth(["admin", "parent"], async (request) => {
       data: {
         name: data.name,
         integral: data.integral ? parseInt(data.integral) : 0,
-        child_id: parseInt(data.child_id),
-        create_review: data.create_review || "Y",
-        complete_review: data.complete_review || "N",
-        create_review_time: new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })),
-        create_review_user_id: request.user.id,
+        child_id: request.user.id,
+        task_date: new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })),
+        create_review: "0",
+        complete_review: "0",
+        create_review_time: null,
+        create_review_user_id: null,
         created_at: new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })),
         updated_at: new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })),
         created_user_id: request.user.id,
@@ -112,6 +132,7 @@ export const POST = withAuth(["admin", "parent"], async (request) => {
         name: newTask.name,
         integral: newTask.integral || 0,
         child_id: newTask.child_id,
+        task_date: formatDateTime(newTask.task_date),
         create_review: newTask.create_review,
         complete_review: newTask.complete_review,
         create_review_time: formatDateTime(newTask.create_review_time),

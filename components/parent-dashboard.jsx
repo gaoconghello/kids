@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState, useEffect } from "react";
 import {
   Star,
   Gift,
@@ -20,69 +20,49 @@ import {
   LogOut,
   Settings,
   BarChart3,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { AddHomeworkDialog } from "./add-homework-dialog"
-import { AddTaskDialog } from "./add-task-dialog"
-import { AddRewardDialog } from "./add-reward-dialog"
-import { ApprovalDialog } from "./approval-dialog"
-import { ChangePasswordDialog } from "./change-password-dialog"
-import { Progress } from "@/components/ui/progress"
-import { TaskCalendar } from "./task-calendar"
-import { HomeworkStatistics } from "./homework-statistics"
-import { DeadlineSettingsDialog } from "./deadline-settings-settings-dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useAuth } from "@/app/providers/AuthProvider"
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AddHomeworkDialog } from "./add-homework-dialog";
+import { AddTaskDialog } from "./add-task-dialog";
+import { AddRewardDialog } from "./add-reward-dialog";
+import { ApprovalDialog } from "./approval-dialog";
+import { ChangePasswordDialog } from "./change-password-dialog";
+import { Progress } from "@/components/ui/progress";
+import { TaskCalendar } from "./task-calendar";
+import { HomeworkStatistics } from "./homework-statistics";
+import { DeadlineSettingsDialog } from "./deadline-settings-settings-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useAuth } from "@/app/providers/AuthProvider";
+import { get, post, put } from "@/lib/http";
 
 export default function ParentDashboard() {
-  const { logout } = useAuth()
-  const [points, setPoints] = useState(350)
+  const { logout } = useAuth();
+  const [points, setPoints] = useState(350);
   const [childPoints, setChildPoints] = useState({
-    total: 350,
-    thisWeek: 85,
-    thisMonth: 280,
-    thisWeekSpent: 30,
-  })
-  const [pendingHomework, setPendingHomework] = useState([
-    {
-      id: 1,
-      childName: "小明",
-      subject: "语文",
-      title: "阅读课文《春天》",
-      duration: "20分钟",
-      points: 15,
-      status: "pending",
-      createdAt: "2025-03-01 14:30",
-    },
-    {
-      id: 2,
-      childName: "小明",
-      subject: "数学",
-      title: "完成乘法练习",
-      duration: "25分钟",
-      points: 15,
-      status: "pending",
-      createdAt: "2025-03-01 15:45",
-    },
-  ])
+    total: 0,
+    thisWeek: 0,
+    thisWeekSpent: 0,
+  });
 
-  const [completedHomework, setCompletedHomework] = useState([
-    {
-      id: 3,
-      childName: "小明",
-      subject: "英语",
-      title: "背诵单词列表",
-      duration: "15分钟",
-      points: 10,
-      status: "completed",
-      completedAt: "2025-03-01 16:30",
-    },
-  ])
-
+  const [pendingHomework, setPendingHomework] = useState([]);
+  const [completedHomework, setCompletedHomework] = useState([]);
   const [pendingTasks, setPendingTasks] = useState([
     {
       id: 1,
@@ -100,8 +80,7 @@ export default function ParentDashboard() {
       status: "pending",
       createdAt: "2025-03-01 11:30",
     },
-  ])
-
+  ]);
   const [completedTasks, setCompletedTasks] = useState([
     {
       id: 3,
@@ -111,15 +90,33 @@ export default function ParentDashboard() {
       status: "completed",
       completedAt: "2025-03-01 09:45",
     },
-  ])
-
+  ]);
   const [rewards, setRewards] = useState([
-    { id: 1, title: "看30分钟动画片", points: 50, image: "/placeholder.svg?height=80&width=80" },
-    { id: 2, title: "冰淇淋一个", points: 100, image: "/placeholder.svg?height=80&width=80" },
-    { id: 3, title: "玩具小车", points: 200, image: "/placeholder.svg?height=80&width=80" },
-    { id: 4, title: "游乐场门票", points: 500, image: "/placeholder.svg?height=80&width=80" },
-  ])
-
+    {
+      id: 1,
+      title: "看30分钟动画片",
+      points: 50,
+      image: "/placeholder.svg?height=80&width=80",
+    },
+    {
+      id: 2,
+      title: "冰淇淋一个",
+      points: 100,
+      image: "/placeholder.svg?height=80&width=80",
+    },
+    {
+      id: 3,
+      title: "玩具小车",
+      points: 200,
+      image: "/placeholder.svg?height=80&width=80",
+    },
+    {
+      id: 4,
+      title: "游乐场门票",
+      points: 500,
+      image: "/placeholder.svg?height=80&width=80",
+    },
+  ]);
   const [pendingRewards, setPendingRewards] = useState([
     {
       id: 1,
@@ -129,27 +126,102 @@ export default function ParentDashboard() {
       status: "pending",
       requestedAt: "2025-03-01 17:15",
     },
-  ])
-
+  ]);
   const [history, setHistory] = useState([
-    { id: 1, childName: "小明", title: "完成语文作业", points: 20, type: "earn", date: "2025-02-28" },
-    { id: 2, childName: "小明", title: "兑换冰淇淋", points: 100, type: "spend", date: "2025-02-27" },
-    { id: 3, childName: "小明", title: "帮爸爸整理书架", points: 30, type: "earn", date: "2025-02-26" },
-    { id: 4, childName: "小明", title: "完成英语作业", points: 20, type: "earn", date: "2025-02-25" },
-    { id: 5, childName: "小明", title: "完成数学练习", points: 25, type: "earn", date: "2025-02-24" },
-    { id: 6, childName: "小明", title: "兑换画画套装", points: 300, type: "spend", date: "2025-02-23" },
-    { id: 7, childName: "小明", title: "完成科学实验", points: 35, type: "earn", date: "2025-02-22" },
-    { id: 8, childName: "小明", title: "整理房间", points: 15, type: "earn", date: "2025-02-21" },
-    { id: 9, childName: "小明", title: "背诵古诗", points: 20, type: "earn", date: "2025-02-20" },
-    { id: 10, childName: "小明", title: "兑换故事书", points: 150, type: "spend", date: "2025-02-19" },
-  ])
-
+    {
+      id: 1,
+      childName: "小明",
+      title: "完成语文作业",
+      points: 20,
+      type: "earn",
+      date: "2025-02-28",
+    },
+    {
+      id: 2,
+      childName: "小明",
+      title: "兑换冰淇淋",
+      points: 100,
+      type: "spend",
+      date: "2025-02-27",
+    },
+    {
+      id: 3,
+      childName: "小明",
+      title: "帮爸爸整理书架",
+      points: 30,
+      type: "earn",
+      date: "2025-02-26",
+    },
+    {
+      id: 4,
+      childName: "小明",
+      title: "完成英语作业",
+      points: 20,
+      type: "earn",
+      date: "2025-02-25",
+    },
+    {
+      id: 5,
+      childName: "小明",
+      title: "完成数学练习",
+      points: 25,
+      type: "earn",
+      date: "2025-02-24",
+    },
+    {
+      id: 6,
+      childName: "小明",
+      title: "兑换画画套装",
+      points: 300,
+      type: "spend",
+      date: "2025-02-23",
+    },
+    {
+      id: 7,
+      childName: "小明",
+      title: "完成科学实验",
+      points: 35,
+      type: "earn",
+      date: "2025-02-22",
+    },
+    {
+      id: 8,
+      childName: "小明",
+      title: "整理房间",
+      points: 15,
+      type: "earn",
+      date: "2025-02-21",
+    },
+    {
+      id: 9,
+      childName: "小明",
+      title: "背诵古诗",
+      points: 20,
+      type: "earn",
+      date: "2025-02-20",
+    },
+    {
+      id: 10,
+      childName: "小明",
+      title: "兑换故事书",
+      points: 150,
+      type: "spend",
+      date: "2025-02-19",
+    },
+  ]);
   const [childHomework, setChildHomework] = useState([
     {
       id: 1,
       subject: "语文",
       tasks: [
-        { id: 1, title: "阅读课文《春天》", duration: "20分钟", points: 15, completed: false, deadline: "15:30" },
+        {
+          id: 1,
+          title: "阅读课文《春天》",
+          duration: "20分钟",
+          points: 15,
+          completed: false,
+          deadline: "15:30",
+        },
         {
           id: 2,
           title: "完成练习册第12页",
@@ -165,7 +237,14 @@ export default function ParentDashboard() {
       id: 2,
       subject: "数学",
       tasks: [
-        { id: 3, title: "完成乘法练习", duration: "25分钟", points: 15, completed: false, deadline: "16:30" },
+        {
+          id: 3,
+          title: "完成乘法练习",
+          duration: "25分钟",
+          points: 15,
+          completed: false,
+          deadline: "16:30",
+        },
         {
           id: 4,
           title: "解决应用题5道",
@@ -181,7 +260,14 @@ export default function ParentDashboard() {
       id: 3,
       subject: "英语",
       tasks: [
-        { id: 5, title: "背诵单词列表", duration: "15分钟", points: 10, completed: false, deadline: "17:30" },
+        {
+          id: 5,
+          title: "背诵单词列表",
+          duration: "15分钟",
+          points: 10,
+          completed: false,
+          deadline: "17:30",
+        },
         {
           id: 6,
           title: "完成听力练习",
@@ -193,154 +279,345 @@ export default function ParentDashboard() {
         },
       ],
     },
-  ])
+  ]);
 
-  const [isAddHomeworkOpen, setIsAddHomeworkOpen] = useState(false)
-  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
-  const [isAddRewardOpen, setIsAddRewardOpen] = useState(false)
-  const [showAllRecords, setShowAllRecords] = useState(false)
+  const [isAddHomeworkOpen, setIsAddHomeworkOpen] = useState(false);
+  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
+  const [isAddRewardOpen, setIsAddRewardOpen] = useState(false);
+  const [showAllRecords, setShowAllRecords] = useState(false);
   const [childTasks, setChildTasks] = useState([
-    { id: 1, title: "完成数学作业", points: 20, completed: false, time: "今天" },
+    {
+      id: 1,
+      title: "完成数学作业",
+      points: 20,
+      completed: false,
+      time: "今天",
+    },
     { id: 2, title: "阅读30分钟", points: 15, completed: true, time: "今天" },
     { id: 3, title: "整理玩具", points: 10, completed: false, time: "今天" },
     { id: 4, title: "帮妈妈洗碗", points: 25, completed: true, time: "今天" },
-  ])
-  const [selectedTaskDate, setSelectedTaskDate] = useState(new Date())
-  const [showTaskCalendar, setShowTaskCalendar] = useState(false)
-  const [selectedChildForHomework, setSelectedChildForHomework] = useState("小明")
-  const [childrenList, setChildrenList] = useState([
-    { id: 1, name: "小明" },
-    { id: 2, name: "小红" },
-    { id: 3, name: "小华" },
-  ])
+  ]);
+  const [selectedTaskDate, setSelectedTaskDate] = useState(new Date());
+  const [showTaskCalendar, setShowTaskCalendar] = useState(false);
+  const [childrenList, setChildrenList] = useState([]);
+  const [selectedChildId, setSelectedChildId] = useState(null); // 添加一个变量跟踪当前选中的孩子ID
+  const [selectedChild, setSelectedChild] = useState(null); // 保存当前选中孩子的完整信息
 
-  const [selectedChildForTasks, setSelectedChildForTasks] = useState("小明")
-  const [selectedChildForHistory, setSelectedChildForHistory] = useState("小明")
-
-  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false)
-  const [approvalItem, setApprovalItem] = useState(null)
-  const [approvalType, setApprovalType] = useState("") // homework, task, reward
-  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false)
-  const [isDeadlineSettingsOpen, setIsDeadlineSettingsOpen] = useState(false)
+  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
+  const [approvalItem, setApprovalItem] = useState(null);
+  const [approvalType, setApprovalType] = useState(""); // homework, task, reward
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isDeadlineSettingsOpen, setIsDeadlineSettingsOpen] = useState(false);
   const [deadlineSettings, setDeadlineSettings] = useState({
     enabled: true,
     time: "20:00",
     bonusPoints: 50,
-  })
-  const [showStatistics, setShowStatistics] = useState(false)
-  const [selectedHomeworkDate, setSelectedHomeworkDate] = useState(new Date())
-  const [showHomeworkCalendar, setShowHomeworkCalendar] = useState(false)
-  const [editingHomework, setEditingHomework] = useState(null)
-  const [editingTask, setEditingTask] = useState(null)
+  });
+  const [showStatistics, setShowStatistics] = useState(false);
+  const [selectedHomeworkDate, setSelectedHomeworkDate] = useState(new Date());
+  const [showHomeworkCalendar, setShowHomeworkCalendar] = useState(false);
+  const [editingHomework, setEditingHomework] = useState(null);
+  const [editingTask, setEditingTask] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 获取待处理作业
+  const fetchPendingHomeworks = async () => {
+    try {
+      // 显示加载状态
+      setIsLoading(true);
+
+      // 调用API获取待处理任务
+      const response = await get(
+        `/api/homework/pending?childId=${selectedChildId}`
+      );
+      const result = await response.json();
+
+      if (result.code === 200 && result.data) {
+        // 将API返回的数据转换为组件需要的格式
+        const formattedHomeworks = result.data.map((homework) => ({
+          id: homework.id,
+          childName: selectedChild?.name || "未知",
+          subject: homework.subject_name,
+          title: homework.name,
+          duration: `${homework.estimated_duration}分钟`,
+          points: homework.integral || 0,
+          status: "pending",
+          completedAt: homework.complete_time,
+        }));
+
+        setPendingHomework(formattedHomeworks);
+      } else {
+        console.error("获取待处理作业失败:", result.message);
+      }
+    } catch (error) {
+      console.error("获取待处理作业数据出错:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 获取已完成作业
+  const fetchCompletedHomeworks = async () => {
+    try {
+      setIsLoading(true);
+      const response = await get(
+        `/api/homework/complete?childId=${selectedChildId}`
+      );
+      const result = await response.json();
+
+      if (result.code === 200 && result.data) {
+        const formattedHomeworks = result.data.map((homework) => ({
+          id: homework.id,
+          childName: selectedChild?.name || "未知",
+          subject: homework.subject_name,
+          title: homework.name,
+          duration: `${homework.estimated_duration}分钟`,
+          points: homework.integral || 0,
+          status: "completed",
+          completedAt: homework.complete_time,
+        }));
+
+        setCompletedHomework(formattedHomeworks);
+      } else {
+        console.error("获取已完成作业失败:", result.message);
+      }
+    } catch (error) {
+      console.error("获取已完成作业数据出错:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 页面加载时获取数据
+  useEffect(() => {
+    // 首先获取孩子列表
+    fetchChildrenList();
+  }, []);
+
+  // 当选择的孩子ID变化时，重新获取相关数据
+  useEffect(() => {
+    if (selectedChildId && selectedChild) {  // 添加selectedChild检查
+      // 获取待处理任务
+      fetchPendingHomeworks();
+      // 获取已完成作业
+      fetchCompletedHomeworks();
+      // 这里可以添加其他需要根据childId获取的数据
+    }
+  }, [selectedChildId, selectedChild]);  // 添加selectedChild依赖
+
+  useEffect(() => {
+    const fetchChild = async () => {
+      try {
+        const response = await get(`/api/family/children/${selectedChildId}`);
+        const result = await response.json();
+        if (result.code === 200 && result.data) {
+          setChildPoints({
+            total: result.data.total,
+            thisWeek: result.data.thisWeek,
+            thisWeekSpent: result.data.thisWeekSpent,
+          });
+          console.log(result.data);
+          setSelectedChild(result.data); // 保存完整的孩子信息
+        }
+      } catch (error) {
+        console.error("获取孩子积分信息失败:", error);
+      }
+    };
+
+    if (selectedChildId) {
+      fetchChild();
+    }
+  }, [selectedChildId]);
+
+  // 获取孩子列表
+  const fetchChildrenList = async () => {
+    try {
+      setIsLoading(true);
+
+      // 调用API获取孩子列表
+      const response = await get("/api/family/children");
+      const result = await response.json();
+
+      if (result.code === 200 && result.data) {
+        // 将API返回的数据转换为组件需要的格式
+        const formattedChildren = result.data.map((child) => ({
+          id: child.id,
+          name: child.name || `孩子${child.id}`,
+        }));
+
+        setChildrenList(formattedChildren);
+
+        // 如果有孩子，默认选择第一个
+        if (formattedChildren.length > 0) {
+          setSelectedChildId(formattedChildren[0].id); // 设置默认选中的孩子ID
+          // 获取并设置第一个孩子的完整信息
+          if (formattedChildren[0].id) {
+            const response = await get(`/api/family/children/${formattedChildren[0].id}`);
+            const result = await response.json();
+            if (result.code === 200 && result.data) {
+              setSelectedChild(result.data);
+            }
+          }
+        }
+      } else {
+        console.error("获取孩子列表失败:", result.message);
+      }
+    } catch (error) {
+      console.error("获取孩子列表数据出错:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleAddHomework = (newHomework) => {
     try {
       if (editingHomework) {
-        console.log("修改作业:", newHomework)
+        console.log("修改作业:", newHomework);
         setPendingHomework(
-          pendingHomework.map((item) => (item.id === editingHomework.id ? { ...item, ...newHomework } : item)),
-        )
-        setEditingHomework(null)
+          pendingHomework.map((item) =>
+            item.id === editingHomework.id ? { ...item, ...newHomework } : item
+          )
+        );
+        setEditingHomework(null);
       } else {
-        console.log("添加新作业:", newHomework)
+        console.log("添加新作业:", newHomework);
         // 如果是数组（多个小朋友的作业），则添加多个
         if (Array.isArray(newHomework)) {
-          const nextId = pendingHomework.length > 0 ? Math.max(...pendingHomework.map((hw) => hw.id)) + 1 : 1
+          const nextId =
+            pendingHomework.length > 0
+              ? Math.max(...pendingHomework.map((hw) => hw.id)) + 1
+              : 1;
           const newHomeworks = newHomework.map((hw, index) => ({
             ...hw,
             id: nextId + index,
             status: "pending",
             createdAt: new Date().toISOString().slice(0, 16).replace("T", " "),
-          }))
-          setPendingHomework([...pendingHomework, ...newHomeworks])
+          }));
+          setPendingHomework([...pendingHomework, ...newHomeworks]);
         } else {
           // 单个作业的情况
-          const nextId = pendingHomework.length > 0 ? Math.max(...pendingHomework.map((hw) => hw.id)) + 1 : 1
+          const nextId =
+            pendingHomework.length > 0
+              ? Math.max(...pendingHomework.map((hw) => hw.id)) + 1
+              : 1;
           setPendingHomework([
             ...pendingHomework,
             {
               ...newHomework,
               id: nextId,
               status: "pending",
-              createdAt: new Date().toISOString().slice(0, 16).replace("T", " "),
+              createdAt: new Date()
+                .toISOString()
+                .slice(0, 16)
+                .replace("T", " "),
             },
-          ])
+          ]);
         }
       }
     } catch (error) {
-      alert("操作失败：" + error.message)
+      alert("操作失败：" + error.message);
     }
-  }
+  };
 
   const handleEditHomework = (item) => {
-    setEditingHomework(item)
-    setIsAddHomeworkOpen(true)
-  }
+    setEditingHomework(item);
+    setIsAddHomeworkOpen(true);
+  };
 
   const handleEditTask = (item) => {
-    setEditingTask(item)
-    setIsAddTaskOpen(true)
-  }
+    setEditingTask(item);
+    setIsAddTaskOpen(true);
+  };
 
   const handleAddTask = (newTask) => {
     try {
       if (editingTask) {
-        console.log("修改任务:", newTask)
-        setPendingTasks(pendingTasks.map((item) => (item.id === editingTask.id ? { ...item, ...newTask } : item)))
-        setEditingTask(null)
+        console.log("修改任务:", newTask);
+        setPendingTasks(
+          pendingTasks.map((item) =>
+            item.id === editingTask.id ? { ...item, ...newTask } : item
+          )
+        );
+        setEditingTask(null);
+
+        // 这里应该调用API更新数据
+        // 之后刷新数据
+        setTimeout(() => {
+          fetchPendingHomeworks();
+        }, 500);
       } else {
-        console.log("添加新任务:", newTask)
+        console.log("添加新任务:", newTask);
         // 如果是数组（多个小朋友的任务），则添加多个
         if (Array.isArray(newTask)) {
-          const nextId = pendingTasks.length > 0 ? Math.max(...pendingTasks.map((task) => task.id)) + 1 : 1
+          const nextId =
+            pendingTasks.length > 0
+              ? Math.max(...pendingTasks.map((task) => task.id)) + 1
+              : 1;
           const newTasks = newTask.map((task, index) => ({
             ...task,
             id: nextId + index,
             status: "pending",
             createdAt: new Date().toISOString().slice(0, 16).replace("T", " "),
-          }))
-          setPendingTasks([...pendingTasks, ...newTasks])
+          }));
+          setPendingTasks([...pendingTasks, ...newTasks]);
         } else {
           // 单个任务的情况
-          const nextId = pendingTasks.length > 0 ? Math.max(...pendingTasks.map((task) => task.id)) + 1 : 1
+          const nextId =
+            pendingTasks.length > 0
+              ? Math.max(...pendingTasks.map((task) => task.id)) + 1
+              : 1;
           setPendingTasks([
             ...pendingTasks,
             {
               ...newTask,
               id: nextId,
               status: "pending",
-              createdAt: new Date().toISOString().slice(0, 16).replace("T", " "),
+              createdAt: new Date()
+                .toISOString()
+                .slice(0, 16)
+                .replace("T", " "),
             },
-          ])
+          ]);
         }
+
+        // 这里应该调用API添加数据
+        // 之后刷新数据
+        setTimeout(() => {
+          fetchPendingHomeworks();
+        }, 500);
       }
     } catch (error) {
-      alert("操作失败：" + error.message)
+      alert("操作失败：" + error.message);
     }
-  }
+  };
 
   const handleAddReward = (newReward) => {
-    console.log("添加新奖励:", newReward)
-    const nextId = rewards.length > 0 ? Math.max(...rewards.map((r) => r.id)) + 1 : 1
-    setRewards([...rewards, { ...newReward, id: nextId }])
-    alert("奖励添加成功！")
-  }
+    console.log("添加新奖励:", newReward);
+    const nextId =
+      rewards.length > 0 ? Math.max(...rewards.map((r) => r.id)) + 1 : 1;
+    setRewards([...rewards, { ...newReward, id: nextId }]);
+    alert("奖励添加成功！");
+  };
 
   const openApprovalDialog = (item, type) => {
-    setApprovalItem(item)
-    setApprovalType(type)
-    setApprovalDialogOpen(true)
-  }
+    setApprovalItem(item);
+    setApprovalType(type);
+    setApprovalDialogOpen(true);
+  };
 
   const handleApproval = (approved, wrongAnswers = 0) => {
     if (approvalType === "homework-add") {
       if (approved) {
-        setPendingHomework(pendingHomework.filter((item) => item.id !== approvalItem.id))
+        setPendingHomework(
+          pendingHomework.filter((item) => item.id !== approvalItem.id)
+        );
       }
     } else if (approvalType === "homework-complete") {
       if (approved) {
-        const updatedCompletedHomework = completedHomework.filter((item) => item.id !== approvalItem.id)
-        setCompletedHomework(updatedCompletedHomework)
+        const updatedCompletedHomework = completedHomework.filter(
+          (item) => item.id !== approvalItem.id
+        );
+        setCompletedHomework(updatedCompletedHomework);
 
         setChildHomework(
           childHomework.map((subject) => {
@@ -349,17 +626,23 @@ export default function ParentDashboard() {
                 ...subject,
                 tasks: subject.tasks.map((task) => {
                   if (task.title === approvalItem.title) {
-                    return { ...task, completed: true, wrongAnswers: wrongAnswers }
+                    return {
+                      ...task,
+                      completed: true,
+                      wrongAnswers: wrongAnswers,
+                    };
                   }
-                  return task
+                  return task;
                 }),
-              }
+              };
             }
-            return subject
-          }),
-        )
+            return subject;
+          })
+        );
 
-        console.log(`作业 ${approvalItem.title} 完成，错题数量: ${wrongAnswers}`)
+        console.log(
+          `作业 ${approvalItem.title} 完成，错题数量: ${wrongAnswers}`
+        );
 
         setHistory([
           {
@@ -372,22 +655,31 @@ export default function ParentDashboard() {
             wrongAnswers: wrongAnswers,
           },
           ...history,
-        ])
+        ]);
 
         setChildPoints({
           ...childPoints,
           total: childPoints.total + approvalItem.points,
           thisWeek: childPoints.thisWeek + approvalItem.points,
-          thisMonth: childPoints.thisMonth + approvalItem.points,
-        })
+        });
       }
     } else if (approvalType === "task-add") {
       if (approved) {
-        setPendingTasks(pendingTasks.filter((item) => item.id !== approvalItem.id))
+        setPendingTasks(
+          pendingTasks.filter((item) => item.id !== approvalItem.id)
+        );
+
+        // 这里应该调用API更新数据
+        // 之后刷新数据
+        setTimeout(() => {
+          fetchPendingHomeworks();
+        }, 500);
       }
     } else if (approvalType === "task-complete") {
       if (approved) {
-        setCompletedTasks(completedTasks.filter((item) => item.id !== approvalItem.id))
+        setCompletedTasks(
+          completedTasks.filter((item) => item.id !== approvalItem.id)
+        );
         setHistory([
           {
             id: Date.now(),
@@ -398,17 +690,22 @@ export default function ParentDashboard() {
             date: new Date().toISOString().split("T")[0],
           },
           ...history,
-        ])
+        ]);
         setChildPoints({
           ...childPoints,
           total: childPoints.total + approvalItem.points,
           thisWeek: childPoints.thisWeek + approvalItem.points,
           thisMonth: childPoints.thisMonth + approvalItem.points,
-        })
+        });
+
+        // 刷新数据
+        fetchPendingHomeworks();
       }
     } else if (approvalType === "reward-redeem") {
       if (approved) {
-        setPendingRewards(pendingRewards.filter((item) => item.id !== approvalItem.id))
+        setPendingRewards(
+          pendingRewards.filter((item) => item.id !== approvalItem.id)
+        );
         setHistory([
           {
             id: Date.now(),
@@ -419,35 +716,35 @@ export default function ParentDashboard() {
             date: new Date().toISOString().split("T")[0],
           },
           ...history,
-        ])
+        ]);
         setChildPoints({
           ...childPoints,
           total: childPoints.total - approvalItem.points,
           thisWeekSpent: childPoints.thisWeekSpent + approvalItem.points,
-        })
+        });
       }
     }
 
-    setApprovalDialogOpen(false)
-    setApprovalItem(null)
-  }
+    setApprovalDialogOpen(false);
+    setApprovalItem(null);
+  };
 
   const handleChangePassword = (passwordData) => {
-    console.log("修改密码:", passwordData)
-    alert("密码修改成功！")
-  }
+    console.log("修改密码:", passwordData);
+    alert("密码修改成功！");
+  };
 
   const handleSaveDeadlineSettings = (settings) => {
-    console.log("保存截止时间设置:", settings)
-    setDeadlineSettings(settings)
-    alert("设置保存成功！")
-  }
+    console.log("保存截止时间设置:", settings);
+    setDeadlineSettings(settings);
+    alert("设置保存成功！");
+  };
 
   const handleHomeworkDateSelect = (date) => {
-    setSelectedHomeworkDate(date)
-    console.log("选择的作业日期:", date.toISOString().split("T")[0])
+    setSelectedHomeworkDate(date);
+    console.log("选择的作业日期:", date.toISOString().split("T")[0]);
 
-    const formattedDate = date.toISOString().split("T")[0]
+    const formattedDate = date.toISOString().split("T")[0];
 
     if (formattedDate === new Date().toISOString().split("T")[0]) {
       setChildHomework([
@@ -455,7 +752,14 @@ export default function ParentDashboard() {
           id: 1,
           subject: "语文",
           tasks: [
-            { id: 1, title: "阅读课文《春天》", duration: "20分钟", points: 15, completed: false, deadline: "15:30" },
+            {
+              id: 1,
+              title: "阅读课文《春天》",
+              duration: "20分钟",
+              points: 15,
+              completed: false,
+              deadline: "15:30",
+            },
             {
               id: 2,
               title: "完成练习册第12页",
@@ -471,7 +775,14 @@ export default function ParentDashboard() {
           id: 2,
           subject: "数学",
           tasks: [
-            { id: 3, title: "完成乘法练习", duration: "25分钟", points: 15, completed: false, deadline: "16:30" },
+            {
+              id: 3,
+              title: "完成乘法练习",
+              duration: "25分钟",
+              points: 15,
+              completed: false,
+              deadline: "16:30",
+            },
             {
               id: 4,
               title: "解决应用题5道",
@@ -487,7 +798,14 @@ export default function ParentDashboard() {
           id: 3,
           subject: "英语",
           tasks: [
-            { id: 5, title: "背诵单词列表", duration: "15分钟", points: 10, completed: false, deadline: "17:30" },
+            {
+              id: 5,
+              title: "背诵单词列表",
+              duration: "15分钟",
+              points: 10,
+              completed: false,
+              deadline: "17:30",
+            },
             {
               id: 6,
               title: "完成听力练习",
@@ -499,7 +817,7 @@ export default function ParentDashboard() {
             },
           ],
         },
-      ])
+      ]);
     } else {
       setChildHomework([
         {
@@ -530,23 +848,47 @@ export default function ParentDashboard() {
             },
           ],
         },
-      ])
+      ]);
     }
-  }
+  };
 
   const handleTaskDateSelect = (date) => {
-    setSelectedTaskDate(date)
-    console.log("选择的任务日期:", date.toISOString().split("T")[0])
+    setSelectedTaskDate(date);
+    console.log("选择的任务日期:", date.toISOString().split("T")[0]);
 
-    const formattedDate = date.toISOString().split("T")[0]
+    const formattedDate = date.toISOString().split("T")[0];
 
     if (formattedDate === new Date().toISOString().split("T")[0]) {
       setChildTasks([
-        { id: 1, title: "完成数学作业", points: 20, completed: false, time: "今天" },
-        { id: 2, title: "阅读30分钟", points: 15, completed: true, time: "今天" },
-        { id: 3, title: "整理玩具", points: 10, completed: false, time: "今天" },
-        { id: 4, title: "帮妈妈洗碗", points: 25, completed: true, time: "今天" },
-      ])
+        {
+          id: 1,
+          title: "完成数学作业",
+          points: 20,
+          completed: false,
+          time: "今天",
+        },
+        {
+          id: 2,
+          title: "阅读30分钟",
+          points: 15,
+          completed: true,
+          time: "今天",
+        },
+        {
+          id: 3,
+          title: "整理玩具",
+          points: 10,
+          completed: false,
+          time: "今天",
+        },
+        {
+          id: 4,
+          title: "帮妈妈洗碗",
+          points: 25,
+          completed: true,
+          time: "今天",
+        },
+      ]);
     } else {
       setChildTasks([
         {
@@ -563,16 +905,16 @@ export default function ParentDashboard() {
           completed: true,
           time: `${date.getMonth() + 1}月${date.getDate()}日`,
         },
-      ])
+      ]);
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen p-3 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 sm:p-4 md:p-8">
-      <div className="max-w-5xl mx-auto">
+    <div className="p-3 min-h-screen bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 sm:p-4 md:p-8">
+      <div className="mx-auto max-w-5xl">
         <header className="flex flex-col gap-3 mb-4 sm:mb-6 sm:gap-4">
-          <div className="flex flex-col items-start justify-between gap-3 p-3 border-2 shadow-lg sm:flex-row sm:items-center sm:gap-0 rounded-2xl bg-white/90 backdrop-blur-sm sm:p-4 border-white/50">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-3 justify-between items-start p-3 rounded-2xl border-2 shadow-lg backdrop-blur-sm sm:flex-row sm:items-center sm:gap-0 bg-white/90 sm:p-4 border-white/50">
+            <div className="flex gap-3 items-center">
               <div className="relative">
                 <div className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 animate-pulse blur"></div>
                 <Avatar className="relative w-12 h-12 border-2 border-white">
@@ -583,39 +925,58 @@ export default function ParentDashboard() {
                 </Avatar>
               </div>
               <div>
-                <h2 className="text-xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text">
+                <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
                   你好，家长！
                 </h2>
                 <p className="text-gray-600">欢迎使用家长管理界面</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 mr-3">
+            <div className="flex gap-4 items-center">
+              <div className="flex gap-2 items-center mr-3">
                 <User className="w-5 h-5 text-blue-500" />
                 <Select
-                  defaultValue={childrenList[0]?.name}
+                  value={
+                    childrenList.find((child) => child.id === selectedChildId)
+                      ?.name || ""
+                  }
                   onValueChange={(value) => {
-                    setSelectedChildForHomework(value)
-                    setSelectedChildForTasks(value)
-                    setSelectedChildForHistory(value)
+
+                    // 根据选择的名字查找对应的孩子ID
+                    const selectedChild = childrenList.find(
+                      (child) => child.name === value
+                    );
+                    if (selectedChild) {
+                      setSelectedChildId(selectedChild.id);
+
+                      // 重新加载相关数据
+                      fetchPendingHomeworks();
+                    }
                   }}
                 >
                   <SelectTrigger className="w-[120px] bg-blue-50 border-blue-200">
-                    <SelectValue placeholder="选择小朋友" />
+                    <SelectValue
+                      placeholder={isLoading ? "加载中..." : "选择小朋友"}
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {childrenList.map((child) => (
-                      <SelectItem key={child.id} value={child.name}>
-                        {child.name}
+                    {childrenList.length > 0 ? (
+                      childrenList.map((child) => (
+                        <SelectItem key={child.id} value={child.name}>
+                          {child.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="无数据" disabled>
+                        暂无小朋友数据
                       </SelectItem>
-                    ))}
+                    )}
                   </SelectContent>
                 </Select>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
-                className="transition-colors rounded-full hover:bg-blue-100 hover:text-blue-600"
+                className="rounded-full transition-colors hover:bg-blue-100 hover:text-blue-600"
                 onClick={() => setIsChangePasswordOpen(true)}
               >
                 <Settings className="w-5 h-5" />
@@ -624,7 +985,7 @@ export default function ParentDashboard() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="transition-colors rounded-full hover:bg-red-100 hover:text-red-600"
+                className="rounded-full transition-colors hover:bg-red-100 hover:text-red-600"
                 onClick={logout}
               >
                 <LogOut className="w-5 h-5" />
@@ -634,16 +995,20 @@ export default function ParentDashboard() {
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4 sm:gap-4">
-            <div className="p-4 border-2 shadow-lg rounded-2xl bg-gradient-to-br from-green-400/90 to-teal-500/90 border-white/50">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm">
+            <div className="p-4 bg-gradient-to-br rounded-2xl border-2 shadow-lg from-green-400/90 to-teal-500/90 border-white/50">
+              <div className="flex justify-between items-center">
+                <div className="flex gap-3 items-center">
+                  <div className="flex justify-center items-center w-12 h-12 rounded-xl backdrop-blur-sm bg-white/20">
                     <Clock className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-white/80">作业截止时间</p>
+                    <p className="text-sm font-medium text-white/80">
+                      作业截止时间
+                    </p>
                     <h3 className="text-xl font-bold text-white">
-                      {deadlineSettings.enabled ? deadlineSettings.time : "未启用"}
+                      {deadlineSettings.enabled
+                        ? deadlineSettings.time
+                        : "未启用"}
                     </h3>
                   </div>
                 </div>
@@ -658,45 +1023,57 @@ export default function ParentDashboard() {
               </div>
             </div>
 
-            <div className="p-4 border-2 shadow-lg rounded-2xl bg-gradient-to-br from-yellow-400/90 to-amber-500/90 border-white/50">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm">
+            <div className="p-4 bg-gradient-to-br rounded-2xl border-2 shadow-lg from-yellow-400/90 to-amber-500/90 border-white/50">
+              <div className="flex justify-between items-center">
+                <div className="flex gap-3 items-center">
+                  <div className="flex justify-center items-center w-12 h-12 rounded-xl backdrop-blur-sm bg-white/20">
                     <Star className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-white/80">小明的总积分</p>
-                    <h3 className="text-2xl font-bold text-white">{childPoints.total}</h3>
+                    <p className="text-sm font-medium text-white/80">
+                      小明的总积分
+                    </p>
+                    <h3 className="text-2xl font-bold text-white">
+                      {childPoints.total}
+                    </h3>
                   </div>
                 </div>
                 <Award className="w-12 h-12 text-white/20" />
               </div>
             </div>
 
-            <div className="p-4 border-2 shadow-lg rounded-2xl bg-gradient-to-br from-blue-400/90 to-cyan-500/90 border-white/50">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm">
+            <div className="p-4 bg-gradient-to-br rounded-2xl border-2 shadow-lg from-blue-400/90 to-cyan-500/90 border-white/50">
+              <div className="flex justify-between items-center">
+                <div className="flex gap-3 items-center">
+                  <div className="flex justify-center items-center w-12 h-12 rounded-xl backdrop-blur-sm bg-white/20">
                     <Calendar className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-white/80">本周获得积分</p>
-                    <h3 className="text-2xl font-bold text-white">{childPoints.thisWeek}</h3>
+                    <p className="text-sm font-medium text-white/80">
+                      本周获得积分
+                    </p>
+                    <h3 className="text-2xl font-bold text-white">
+                      {childPoints.thisWeek}
+                    </h3>
                   </div>
                 </div>
                 <Star className="w-12 h-12 text-white/20" />
               </div>
             </div>
 
-            <div className="p-4 border-2 shadow-lg rounded-2xl bg-gradient-to-br from-purple-400/90 to-pink-500/90 border-white/50">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm">
+            <div className="p-4 bg-gradient-to-br rounded-2xl border-2 shadow-lg from-purple-400/90 to-pink-500/90 border-white/50">
+              <div className="flex justify-between items-center">
+                <div className="flex gap-3 items-center">
+                  <div className="flex justify-center items-center w-12 h-12 rounded-xl backdrop-blur-sm bg-white/20">
                     <History className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-white/80">本周消耗积分</p>
-                    <h3 className="text-2xl font-bold text-white">{childPoints.thisWeekSpent}</h3>
+                    <p className="text-sm font-medium text-white/80">
+                      本周消耗积分
+                    </p>
+                    <h3 className="text-2xl font-bold text-white">
+                      {childPoints.thisWeekSpent}
+                    </h3>
                   </div>
                 </div>
                 <Gift className="w-12 h-12 text-white/20" />
@@ -706,13 +1083,13 @@ export default function ParentDashboard() {
         </header>
 
         <Tabs defaultValue="homework" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 p-1 text-xs shadow-xl rounded-xl bg-white/80 sm:text-sm md:text-lg">
+          <TabsList className="grid grid-cols-4 p-1 w-full text-xs rounded-xl shadow-xl bg-white/80 sm:text-sm md:text-lg">
             <TabsTrigger
               value="homework"
               className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
             >
               <div className="flex items-center">
-                <PenLine className="w-5 h-5 mr-2" />
+                <PenLine className="mr-2 w-5 h-5" />
                 <span>作业</span>
                 {pendingHomework.length > 0 && (
                   <span className="ml-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
@@ -726,7 +1103,7 @@ export default function ParentDashboard() {
               className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
             >
               <div className="flex items-center">
-                <BookOpen className="w-5 h-5 mr-2" />
+                <BookOpen className="mr-2 w-5 h-5" />
                 <span>任务</span>
                 {pendingTasks.length > 0 && (
                   <span className="ml-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
@@ -740,7 +1117,7 @@ export default function ParentDashboard() {
               className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
             >
               <div className="flex items-center">
-                <Gift className="w-5 h-5 mr-2" />
+                <Gift className="mr-2 w-5 h-5" />
                 <span>兑奖</span>
                 {pendingRewards.length > 0 && (
                   <span className="ml-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
@@ -754,64 +1131,77 @@ export default function ParentDashboard() {
               className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
             >
               <div className="flex items-center">
-                <History className="w-5 h-5 mr-2" />
+                <History className="mr-2 w-5 h-5" />
                 <span>记录</span>
               </div>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="homework" className="space-y-4">
-            <Card className="overflow-hidden bg-white border-2 rounded-2xl border-primary/20">
+            <Card className="overflow-hidden bg-white rounded-2xl border-2 border-primary/20">
               <CardHeader className="bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20">
-                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
+                <div className="flex flex-col gap-2 justify-between items-start sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
-                    <BookOpen className="w-6 h-6 mr-2 text-primary" />
-                    {selectedHomeworkDate.toLocaleDateString("zh-CN", { month: "long", day: "numeric" })}作业管理
+                    <BookOpen className="mr-2 w-6 h-6 text-primary" />
+                    {selectedHomeworkDate.toLocaleDateString("zh-CN", {
+                      month: "long",
+                      day: "numeric",
+                    })}
+                    作业管理
                   </CardTitle>
-                  <div className="flex items-center gap-4">
+                  <div className="flex gap-4 items-center">
                     <Button
                       onClick={() => setIsAddHomeworkOpen(true)}
-                      className="rounded-full bg-gradient-to-r from-primary to-purple-600"
+                      className="bg-gradient-to-r to-purple-600 rounded-full from-primary"
                       size="sm"
                     >
-                      <Plus className="w-4 h-4 mr-2" />
+                      <Plus className="mr-2 w-4 h-4" />
                       添加作业
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       className="rounded-full"
-                      onClick={() => setShowHomeworkCalendar(!showHomeworkCalendar)}
+                      onClick={() =>
+                        setShowHomeworkCalendar(!showHomeworkCalendar)
+                      }
                     >
-                      <Calendar className="w-4 h-4 mr-2" />
+                      <Calendar className="mr-2 w-4 h-4" />
                       {showHomeworkCalendar ? "隐藏日历" : "查看日历"}
                     </Button>
                     <Button
                       size="sm"
-                      className="text-white rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600"
+                      className="text-white bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full hover:from-teal-600 hover:to-cyan-600"
                       onClick={() => setShowStatistics(!showStatistics)}
                     >
-                      <BarChart3 className="w-4 h-4 mr-2" />
+                      <BarChart3 className="mr-2 w-4 h-4" />
                       {showStatistics ? "隐藏统计" : "查看统计"}
                     </Button>
                   </div>
                 </div>
-                <CardDescription>管理小朋友的作业，审批作业添加和完成</CardDescription>
+                <CardDescription>
+                  管理小朋友的作业，审批作业添加和完成
+                </CardDescription>
               </CardHeader>
               <CardContent className="p-6">
                 {showHomeworkCalendar && (
                   <div className="mb-6">
-                    <TaskCalendar selectedDate={selectedHomeworkDate} onDateSelect={handleHomeworkDateSelect} />
+                    <TaskCalendar
+                      selectedDate={selectedHomeworkDate}
+                      onDateSelect={handleHomeworkDateSelect}
+                    />
                   </div>
                 )}
                 {showStatistics && (
                   <div className="mt-4 mb-6">
-                    <div className="p-4 border-2 border-purple-100 rounded-xl bg-purple-50">
-                      <div className="flex items-center gap-2 mb-4">
-                        <div className="flex items-center justify-center w-8 h-8 bg-purple-100 rounded-lg">
+                    <div className="p-4 bg-purple-50 rounded-xl border-2 border-purple-100">
+                      <div className="flex gap-2 items-center mb-4">
+                        <div className="flex justify-center items-center w-8 h-8 bg-purple-100 rounded-lg">
                           <BarChart3 className="w-5 h-5 text-purple-600" />
                         </div>
-                        <h3 className="text-lg font-semibold text-purple-700">作业统计分析</h3>
+                        <h3 className="text-lg font-semibold text-purple-700">
+                          作业统计分析
+                        </h3>
                       </div>
                       <HomeworkStatistics>
                         {[
@@ -823,12 +1213,14 @@ export default function ParentDashboard() {
                   </div>
                 )}
                 <div className="space-y-6">
-                  <div className="p-4 border-2 rounded-xl border-amber-100 bg-amber-50">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100">
+                  <div className="p-4 bg-amber-50 rounded-xl border-2 border-amber-100">
+                    <div className="flex gap-2 items-center mb-4">
+                      <div className="flex justify-center items-center w-8 h-8 bg-amber-100 rounded-lg">
                         <ClipboardCheck className="w-5 h-5 text-amber-600" />
                       </div>
-                      <h3 className="text-lg font-semibold text-amber-700">待审批新增作业</h3>
+                      <h3 className="text-lg font-semibold text-amber-700">
+                        待审批新增作业
+                      </h3>
                     </div>
 
                     {pendingHomework.length > 0 ? (
@@ -836,31 +1228,31 @@ export default function ParentDashboard() {
                         {pendingHomework.map((item) => (
                           <div
                             key={item.id}
-                            className="flex flex-col p-3 bg-white border rounded-lg sm:flex-row sm:items-center sm:justify-between border-amber-200 hover:border-amber-300 hover:bg-amber-50"
+                            className="flex flex-col p-3 bg-white rounded-lg border border-amber-200 sm:flex-row sm:items-center sm:justify-between hover:border-amber-300 hover:bg-amber-50"
                           >
-                            <div className="flex items-center gap-4 mb-3 sm:mb-0">
-                              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-100">
+                            <div className="flex gap-4 items-center mb-3 sm:mb-0">
+                              <div className="flex justify-center items-center w-10 h-10 bg-amber-100 rounded-full">
                                 <AlertCircle className="w-5 h-5 text-amber-600" />
                               </div>
                               <div>
                                 <h4 className="font-medium">{item.title}</h4>
-                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                  <span className="flex items-center gap-1">
+                                <div className="flex gap-4 items-center text-sm text-muted-foreground">
+                                  <span className="flex gap-1 items-center">
                                     <User className="w-4 h-4" />
                                     {item.childName}
                                   </span>
-                                  <span className="flex items-center gap-1">
+                                  <span className="flex gap-1 items-center">
                                     <BookOpen className="w-4 h-4" />
                                     {item.subject}
                                   </span>
-                                  <span className="flex items-center gap-1">
+                                  <span className="flex gap-1 items-center">
                                     <Clock className="w-4 h-4" />
                                     {item.duration}
                                   </span>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-3 ml-14 sm:ml-0">
+                            <div className="flex gap-3 items-center ml-14 sm:ml-0">
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -869,13 +1261,18 @@ export default function ParentDashboard() {
                               >
                                 修改
                               </Button>
-                              <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
+                              <Badge
+                                variant="outline"
+                                className="flex gap-1 bg-yellow-50 border-yellow-300"
+                              >
                                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                 <span>{item.points}</span>
                               </Badge>
                               <Button
                                 size="sm"
-                                onClick={() => openApprovalDialog(item, "homework-add")}
+                                onClick={() =>
+                                  openApprovalDialog(item, "homework-add")
+                                }
                                 className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
                               >
                                 审批
@@ -885,18 +1282,20 @@ export default function ParentDashboard() {
                         ))}
                       </div>
                     ) : (
-                      <div className="p-6 text-center bg-white border border-dashed rounded-lg border-amber-200">
+                      <div className="p-6 text-center bg-white rounded-lg border border-amber-200 border-dashed">
                         <p className="text-muted-foreground">暂无待审批作业</p>
                       </div>
                     )}
                   </div>
 
-                  <div className="p-4 border-2 border-green-100 rounded-xl bg-green-50">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg">
+                  <div className="p-4 bg-green-50 rounded-xl border-2 border-green-100">
+                    <div className="flex gap-2 items-center mb-4">
+                      <div className="flex justify-center items-center w-8 h-8 bg-green-100 rounded-lg">
                         <ShieldCheck className="w-5 h-5 text-green-600" />
                       </div>
-                      <h3 className="text-lg font-semibold text-green-700">待审批完成作业</h3>
+                      <h3 className="text-lg font-semibold text-green-700">
+                        待审批完成作业
+                      </h3>
                     </div>
 
                     {completedHomework.length > 0 ? (
@@ -904,38 +1303,43 @@ export default function ParentDashboard() {
                         {completedHomework.map((item) => (
                           <div
                             key={item.id}
-                            className="flex flex-col p-3 bg-white border border-green-200 rounded-lg sm:flex-row sm:items-center sm:justify-between hover:border-green-300 hover:bg-green-50"
+                            className="flex flex-col p-3 bg-white rounded-lg border border-green-200 sm:flex-row sm:items-center sm:justify-between hover:border-green-300 hover:bg-green-50"
                           >
-                            <div className="flex items-center gap-4 mb-3 sm:mb-0">
-                              <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-full">
+                            <div className="flex gap-4 items-center mb-3 sm:mb-0">
+                              <div className="flex justify-center items-center w-10 h-10 bg-green-100 rounded-full">
                                 <Check className="w-5 h-5 text-green-600" />
                               </div>
                               <div>
                                 <h4 className="font-medium">{item.title}</h4>
-                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                  <span className="flex items-center gap-1">
+                                <div className="flex gap-4 items-center text-sm text-muted-foreground">
+                                  <span className="flex gap-1 items-center">
                                     <User className="w-4 h-4" />
                                     {item.childName}
                                   </span>
-                                  <span className="flex items-center gap-1">
+                                  <span className="flex gap-1 items-center">
                                     <BookOpen className="w-4 h-4" />
                                     {item.subject}
                                   </span>
-                                  <span className="flex items-center gap-1">
+                                  <span className="flex gap-1 items-center">
                                     <Clock className="w-4 h-4" />
                                     {item.duration}
                                   </span>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-3 ml-14 sm:ml-0">
-                              <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
+                            <div className="flex gap-3 items-center ml-14 sm:ml-0">
+                              <Badge
+                                variant="outline"
+                                className="flex gap-1 bg-yellow-50 border-yellow-300"
+                              >
                                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                 <span>{item.points}</span>
                               </Badge>
                               <Button
                                 size="sm"
-                                onClick={() => openApprovalDialog(item, "homework-complete")}
+                                onClick={() =>
+                                  openApprovalDialog(item, "homework-complete")
+                                }
                                 className="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600"
                               >
                                 审批完成
@@ -945,27 +1349,36 @@ export default function ParentDashboard() {
                         ))}
                       </div>
                     ) : (
-                      <div className="p-6 text-center bg-white border border-green-200 border-dashed rounded-lg">
-                        <p className="text-muted-foreground">暂无待审批完成作业</p>
+                      <div className="p-6 text-center bg-white rounded-lg border border-green-200 border-dashed">
+                        <p className="text-muted-foreground">
+                          暂无待审批完成作业
+                        </p>
                       </div>
                     )}
                   </div>
-                  <div className="p-4 mt-6 border-2 border-blue-100 rounded-xl bg-blue-50">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                  <div className="p-4 mt-6 bg-blue-50 rounded-xl border-2 border-blue-100">
+                    <div className="flex gap-2 items-center mb-4">
+                      <div className="flex justify-center items-center w-8 h-8 bg-blue-100 rounded-lg">
                         <BookOpen className="w-5 h-5 text-blue-600" />
                       </div>
-                      <h3 className="text-lg font-semibold text-blue-700">{selectedChildForHomework}的作业列表</h3>
+                      <h3 className="text-lg font-semibold text-blue-700">
+                        {selectedChild?.name}的作业列表
+                      </h3>
                     </div>
 
                     <div className="space-y-6">
                       {childHomework.map((subject) => (
-                        <div key={subject.id} className="p-4 border-2 rounded-xl border-primary/10">
-                          <div className="flex items-center gap-2 mb-4">
-                            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
+                        <div
+                          key={subject.id}
+                          className="p-4 rounded-xl border-2 border-primary/10"
+                        >
+                          <div className="flex gap-2 items-center mb-4">
+                            <div className="flex justify-center items-center w-8 h-8 rounded-lg bg-primary/10">
                               <BookOpen className="w-5 h-5 text-primary" />
                             </div>
-                            <h3 className="text-lg font-semibold text-primary">{subject.subject}</h3>
+                            <h3 className="text-lg font-semibold text-primary">
+                              {subject.subject}
+                            </h3>
                           </div>
                           <div className="space-y-3">
                             {subject.tasks.map((task) => (
@@ -977,10 +1390,12 @@ export default function ParentDashboard() {
                                     : "border-gray-200 bg-white hover:border-primary/30 hover:bg-blue-50"
                                 }`}
                               >
-                                <div className="flex items-center gap-4 mb-3 sm:mb-0">
+                                <div className="flex gap-4 items-center mb-3 sm:mb-0">
                                   <div
                                     className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                                      task.completed ? "bg-green-500" : "bg-primary/10"
+                                      task.completed
+                                        ? "bg-green-500"
+                                        : "bg-primary/10"
                                     }`}
                                   >
                                     {task.completed ? (
@@ -990,29 +1405,41 @@ export default function ParentDashboard() {
                                     )}
                                   </div>
                                   <div>
-                                    <h4 className="font-medium">{task.title}</h4>
-                                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                      <span className="flex items-center gap-1">
+                                    <h4 className="font-medium">
+                                      {task.title}
+                                    </h4>
+                                    <div className="flex gap-4 items-center text-sm text-muted-foreground">
+                                      <span className="flex gap-1 items-center">
                                         <Clock className="w-4 h-4" />
                                         {task.duration}
                                       </span>
-                                      <span className="flex items-center gap-1">
+                                      <span className="flex gap-1 items-center">
                                         <Calendar className="w-4 h-4" />
                                         截止 {task.deadline}
                                       </span>
-                                      {task.completed && task.wrongAnswers !== undefined && (
-                                        <span className="flex items-center gap-1">
-                                          <AlertCircle className="w-4 h-4 text-amber-500" />
-                                          <span className={task.wrongAnswers > 0 ? "text-amber-600" : "text-green-600"}>
-                                            错题: {task.wrongAnswers}
+                                      {task.completed &&
+                                        task.wrongAnswers !== undefined && (
+                                          <span className="flex gap-1 items-center">
+                                            <AlertCircle className="w-4 h-4 text-amber-500" />
+                                            <span
+                                              className={
+                                                task.wrongAnswers > 0
+                                                  ? "text-amber-600"
+                                                  : "text-green-600"
+                                              }
+                                            >
+                                              错题: {task.wrongAnswers}
+                                            </span>
                                           </span>
-                                        </span>
-                                      )}
+                                        )}
                                     </div>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-3 ml-14 sm:ml-0">
-                                  <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
+                                <div className="flex gap-3 items-center ml-14 sm:ml-0">
+                                  <Badge
+                                    variant="outline"
+                                    className="flex gap-1 bg-yellow-50 border-yellow-300"
+                                  >
                                     <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                     <span>{task.points}</span>
                                   </Badge>
@@ -1026,35 +1453,41 @@ export default function ParentDashboard() {
                     </div>
                   </div>
 
-                  <div className="p-4 mt-6 border-2 border-green-100 rounded-xl bg-green-50">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg">
+                  <div className="p-4 mt-6 bg-green-50 rounded-xl border-2 border-green-100">
+                    <div className="flex gap-2 items-center mb-4">
+                      <div className="flex justify-center items-center w-8 h-8 bg-green-100 rounded-lg">
                         <Award className="w-5 h-5 text-green-600" />
                       </div>
-                      <h3 className="text-lg font-semibold text-green-700">作业完成进度</h3>
+                      <h3 className="text-lg font-semibold text-green-700">
+                        作业完成进度
+                      </h3>
                     </div>
 
                     <div className="space-y-6">
                       {childHomework.map((subject) => {
-                        const totalTasks = subject.tasks.length
-                        const completedTasks = subject.tasks.filter((t) => t.completed).length
-                        const progress = (completedTasks / totalTasks) * 100
+                        const totalTasks = subject.tasks.length;
+                        const completedTasks = subject.tasks.filter(
+                          (t) => t.completed
+                        ).length;
+                        const progress = (completedTasks / totalTasks) * 100;
 
                         return (
                           <div key={subject.id} className="space-y-2">
                             <div className="flex justify-between">
-                              <span className="font-medium">{subject.subject}</span>
+                              <span className="font-medium">
+                                {subject.subject}
+                              </span>
                               <span className="text-sm text-muted-foreground">
                                 {completedTasks}/{totalTasks}
                               </span>
                             </div>
                             <Progress
                               value={progress}
-                              className="h-3 rounded-full bg-gradient-to-r from-blue-200 to-purple-200"
+                              className="h-3 bg-gradient-to-r from-blue-200 to-purple-200 rounded-full"
                               indicatorClassName="bg-gradient-to-r from-blue-500 to-purple-500"
                             />
                           </div>
-                        )
+                        );
                       })}
                     </div>
                   </div>
@@ -1064,20 +1497,24 @@ export default function ParentDashboard() {
           </TabsContent>
 
           <TabsContent value="tasks" className="space-y-4">
-            <Card className="overflow-hidden bg-white border-2 rounded-2xl border-primary/20">
+            <Card className="overflow-hidden bg-white rounded-2xl border-2 border-primary/20">
               <CardHeader className="bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20">
-                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
+                <div className="flex flex-col gap-2 justify-between items-start sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
-                    <BookOpen className="w-6 h-6 mr-2 text-primary" />
-                    {selectedTaskDate.toLocaleDateString("zh-CN", { month: "long", day: "numeric" })}任务管理
+                    <BookOpen className="mr-2 w-6 h-6 text-primary" />
+                    {selectedTaskDate.toLocaleDateString("zh-CN", {
+                      month: "long",
+                      day: "numeric",
+                    })}
+                    任务管理
                   </CardTitle>
-                  <div className="flex items-center gap-4">
+                  <div className="flex gap-4 items-center">
                     <Button
                       onClick={() => setIsAddTaskOpen(true)}
-                      className="rounded-full bg-gradient-to-r from-primary to-purple-600"
+                      className="bg-gradient-to-r to-purple-600 rounded-full from-primary"
                       size="sm"
                     >
-                      <Plus className="w-4 h-4 mr-2" />
+                      <Plus className="mr-2 w-4 h-4" />
                       添加任务
                     </Button>
                     <Button
@@ -1086,60 +1523,80 @@ export default function ParentDashboard() {
                       className="rounded-full"
                       onClick={() => setShowTaskCalendar(!showTaskCalendar)}
                     >
-                      <Calendar className="w-4 h-4 mr-2" />
+                      <Calendar className="mr-2 w-4 h-4" />
                       {showTaskCalendar ? "隐藏日历" : "查看日历"}
                     </Button>
-                    <div className="flex items-center gap-2">
+                    <div className="flex gap-2 items-center">
                       <Clock className="w-5 h-5 text-primary" />
                       <span className="text-sm text-muted-foreground">
-                        {new Date().toLocaleDateString("zh-CN", { weekday: "long", month: "long", day: "numeric" })}
+                        {new Date().toLocaleDateString("zh-CN", {
+                          weekday: "long",
+                          month: "long",
+                          day: "numeric",
+                        })}
                       </span>
                     </div>
                   </div>
                 </div>
-                <CardDescription>管理小朋友的日常任务，审批任务添加和完成</CardDescription>
+                <CardDescription>
+                  管理小朋友的日常任务，审批任务添加和完成
+                </CardDescription>
               </CardHeader>
               <CardContent className="p-6">
                 {showTaskCalendar && (
                   <div className="mb-6">
-                    <TaskCalendar selectedDate={selectedTaskDate} onDateSelect={handleTaskDateSelect} />
+                    <TaskCalendar
+                      selectedDate={selectedTaskDate}
+                      onDateSelect={handleTaskDateSelect}
+                    />
                   </div>
                 )}
                 <div className="space-y-6">
-                  <div className="p-4 border-2 rounded-xl border-amber-100 bg-amber-50">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100">
+                  <div className="p-4 bg-amber-50 rounded-xl border-2 border-amber-100">
+                    <div className="flex gap-2 items-center mb-4">
+                      <div className="flex justify-center items-center w-8 h-8 bg-amber-100 rounded-lg">
                         <ClipboardCheck className="w-5 h-5 text-amber-600" />
                       </div>
-                      <h3 className="text-lg font-semibold text-amber-700">待审批新增任务</h3>
+                      <h3 className="text-lg font-semibold text-amber-700">
+                        待审批新增任务
+                      </h3>
                     </div>
 
-                    {pendingTasks.length > 0 ? (
+                    {isLoading ? (
+                      <div className="p-6 text-center bg-white rounded-lg border border-amber-200 border-dashed">
+                        <div className="flex flex-col justify-center items-center">
+                          <div className="w-8 h-8 rounded-full border-4 animate-spin border-t-amber-500 border-r-transparent border-b-transparent border-l-transparent"></div>
+                          <p className="mt-2 text-muted-foreground">
+                            正在加载数据...
+                          </p>
+                        </div>
+                      </div>
+                    ) : pendingTasks.length > 0 ? (
                       <div className="space-y-3">
                         {pendingTasks.map((item) => (
                           <div
                             key={item.id}
-                            className="flex flex-col p-3 bg-white border rounded-lg sm:flex-row sm:items-center sm:justify-between border-amber-200 hover:border-amber-300 hover:bg-amber-50"
+                            className="flex flex-col p-3 bg-white rounded-lg border border-amber-200 sm:flex-row sm:items-center sm:justify-between hover:border-amber-300 hover:bg-amber-50"
                           >
-                            <div className="flex items-center gap-4 mb-3 sm:mb-0">
-                              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-100">
+                            <div className="flex gap-4 items-center mb-3 sm:mb-0">
+                              <div className="flex justify-center items-center w-10 h-10 bg-amber-100 rounded-full">
                                 <AlertCircle className="w-5 h-5 text-amber-600" />
                               </div>
                               <div>
                                 <h4 className="font-medium">{item.title}</h4>
-                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                  <span className="flex items-center gap-1">
+                                <div className="flex gap-4 items-center text-sm text-muted-foreground">
+                                  <span className="flex gap-1 items-center">
                                     <User className="w-4 h-4" />
                                     {item.childName}
                                   </span>
-                                  <span className="flex items-center gap-1">
+                                  <span className="flex gap-1 items-center">
                                     <Clock className="w-4 h-4" />
                                     {item.createdAt}
                                   </span>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-3 ml-14 sm:ml-0">
+                            <div className="flex gap-3 items-center ml-14 sm:ml-0">
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -1148,13 +1605,18 @@ export default function ParentDashboard() {
                               >
                                 修改
                               </Button>
-                              <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
+                              <Badge
+                                variant="outline"
+                                className="flex gap-1 bg-yellow-50 border-yellow-300"
+                              >
                                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                 <span>{item.points}</span>
                               </Badge>
                               <Button
                                 size="sm"
-                                onClick={() => openApprovalDialog(item, "task-add")}
+                                onClick={() =>
+                                  openApprovalDialog(item, "task-add")
+                                }
                                 className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
                               >
                                 审批
@@ -1164,18 +1626,20 @@ export default function ParentDashboard() {
                         ))}
                       </div>
                     ) : (
-                      <div className="p-6 text-center bg-white border border-dashed rounded-lg border-amber-200">
+                      <div className="p-6 text-center bg-white rounded-lg border border-amber-200 border-dashed">
                         <p className="text-muted-foreground">暂无待审批任务</p>
                       </div>
                     )}
                   </div>
 
-                  <div className="p-4 border-2 border-green-100 rounded-xl bg-green-50">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg">
+                  <div className="p-4 bg-green-50 rounded-xl border-2 border-green-100">
+                    <div className="flex gap-2 items-center mb-4">
+                      <div className="flex justify-center items-center w-8 h-8 bg-green-100 rounded-lg">
                         <ShieldCheck className="w-5 h-5 text-green-600" />
                       </div>
-                      <h3 className="text-lg font-semibold text-green-700">待审批完成任务</h3>
+                      <h3 className="text-lg font-semibold text-green-700">
+                        待审批完成任务
+                      </h3>
                     </div>
 
                     {completedTasks.length > 0 ? (
@@ -1183,34 +1647,39 @@ export default function ParentDashboard() {
                         {completedTasks.map((item) => (
                           <div
                             key={item.id}
-                            className="flex flex-col p-3 bg-white border border-green-200 rounded-lg sm:flex-row sm:items-center sm:justify-between hover:border-green-300 hover:bg-green-50"
+                            className="flex flex-col p-3 bg-white rounded-lg border border-green-200 sm:flex-row sm:items-center sm:justify-between hover:border-green-300 hover:bg-green-50"
                           >
-                            <div className="flex items-center gap-4 mb-3 sm:mb-0">
-                              <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-full">
+                            <div className="flex gap-4 items-center mb-3 sm:mb-0">
+                              <div className="flex justify-center items-center w-10 h-10 bg-green-100 rounded-full">
                                 <Check className="w-5 h-5 text-green-600" />
                               </div>
                               <div>
                                 <h4 className="font-medium">{item.title}</h4>
-                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                  <span className="flex items-center gap-1">
+                                <div className="flex gap-4 items-center text-sm text-muted-foreground">
+                                  <span className="flex gap-1 items-center">
                                     <User className="w-4 h-4" />
                                     {item.childName}
                                   </span>
-                                  <span className="flex items-center gap-1">
+                                  <span className="flex gap-1 items-center">
                                     <Clock className="w-4 h-4" />
                                     {item.completedAt}
                                   </span>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-3 ml-14 sm:ml-0">
-                              <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
+                            <div className="flex gap-3 items-center ml-14 sm:ml-0">
+                              <Badge
+                                variant="outline"
+                                className="flex gap-1 bg-yellow-50 border-yellow-300"
+                              >
                                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                 <span>{item.points}</span>
                               </Badge>
                               <Button
                                 size="sm"
-                                onClick={() => openApprovalDialog(item, "task-complete")}
+                                onClick={() =>
+                                  openApprovalDialog(item, "task-complete")
+                                }
                                 className="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600"
                               >
                                 审批完成
@@ -1220,18 +1689,22 @@ export default function ParentDashboard() {
                         ))}
                       </div>
                     ) : (
-                      <div className="p-6 text-center bg-white border border-green-200 border-dashed rounded-lg">
-                        <p className="text-muted-foreground">暂无待审批完成任务</p>
+                      <div className="p-6 text-center bg-white rounded-lg border border-green-200 border-dashed">
+                        <p className="text-muted-foreground">
+                          暂无待审批完成任务
+                        </p>
                       </div>
                     )}
                   </div>
 
-                  <div className="p-4 mt-6 border-2 border-blue-100 rounded-xl bg-blue-50">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                  <div className="p-4 mt-6 bg-blue-50 rounded-xl border-2 border-blue-100">
+                    <div className="flex gap-2 items-center mb-4">
+                      <div className="flex justify-center items-center w-8 h-8 bg-blue-100 rounded-lg">
                         <BookOpen className="w-5 h-5 text-blue-600" />
                       </div>
-                      <h3 className="text-lg font-semibold text-blue-700">{selectedChildForTasks}的任务列表</h3>
+                      <h3 className="text-lg font-semibold text-blue-700">
+                        {selectedChild?.name}的任务列表
+                      </h3>
                     </div>
 
                     <div className="space-y-4">
@@ -1244,25 +1717,34 @@ export default function ParentDashboard() {
                               : "border-primary/20 bg-white hover:border-primary/50 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
                           }`}
                         >
-                          <div className="flex items-center gap-3 mb-3 sm:mb-0">
+                          <div className="flex gap-3 items-center mb-3 sm:mb-0">
                             <div
                               className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                                task.completed ? "bg-green-500" : "bg-primary/20"
+                                task.completed
+                                  ? "bg-green-500"
+                                  : "bg-primary/20"
                               }`}
                             >
                               {task.completed ? (
                                 <Check className="w-6 h-6 text-white" />
                               ) : (
-                                <span className="text-lg font-bold text-primary">{task.id}</span>
+                                <span className="text-lg font-bold text-primary">
+                                  {task.id}
+                                </span>
                               )}
                             </div>
                             <div>
                               <h3 className="font-semibold">{task.title}</h3>
-                              <p className="text-sm text-muted-foreground">{task.time}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {task.time}
+                              </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-3 ml-14 sm:ml-0">
-                            <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
+                          <div className="flex gap-3 items-center ml-14 sm:ml-0">
+                            <Badge
+                              variant="outline"
+                              className="flex gap-1 bg-yellow-50 border-yellow-300"
+                            >
                               <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                               <span>{task.points}</span>
                             </Badge>
@@ -1272,37 +1754,45 @@ export default function ParentDashboard() {
                     </div>
                   </div>
 
-                  <div className="p-4 mt-6 border-2 border-green-100 rounded-xl bg-green-50">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg">
+                  <div className="p-4 mt-6 bg-green-50 rounded-xl border-2 border-green-100">
+                    <div className="flex gap-2 items-center mb-4">
+                      <div className="flex justify-center items-center w-8 h-8 bg-green-100 rounded-lg">
                         <Award className="w-5 h-5 text-green-600" />
                       </div>
-                      <h3 className="text-lg font-semibold text-green-700">小朋友的成就进度</h3>
+                      <h3 className="text-lg font-semibold text-green-700">
+                        小朋友的成就进度
+                      </h3>
                     </div>
 
                     <div className="space-y-6">
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span className="font-medium">阅读小达人</span>
-                          <span className="text-sm text-muted-foreground">7/10</span>
+                          <span className="text-sm text-muted-foreground">
+                            7/10
+                          </span>
                         </div>
                         <Progress
                           value={70}
-                          className="h-3 rounded-full bg-gradient-to-r from-blue-200 to-purple-200"
+                          className="h-3 bg-gradient-to-r from-blue-200 to-purple-200 rounded-full"
                           indicatorClassName="bg-gradient-to-r from-blue-500 to-purple-500"
                         />
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span className="font-medium">数学小能手</span>
-                          <span className="text-sm text-muted-foreground">5/10</span>
+                          <span className="text-sm text-muted-foreground">
+                            5/10
+                          </span>
                         </div>
                         <Progress value={50} className="h-3 rounded-full" />
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span className="font-medium">整理小能手</span>
-                          <span className="text-sm text-muted-foreground">3/5</span>
+                          <span className="text-sm text-muted-foreground">
+                            3/5
+                          </span>
                         </div>
                         <Progress value={60} className="h-3 rounded-full" />
                       </div>
@@ -1314,34 +1804,38 @@ export default function ParentDashboard() {
           </TabsContent>
 
           <TabsContent value="rewards" className="space-y-4">
-            <Card className="overflow-hidden bg-white border-2 rounded-2xl border-primary/20">
+            <Card className="overflow-hidden bg-white rounded-2xl border-2 border-primary/20">
               <CardHeader className="bg-gradient-to-r from-pink-400/20 via-orange-400/20 to-yellow-400/20">
-                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
+                <div className="flex flex-col gap-2 justify-between items-start sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
-                    <Gift className="w-6 h-6 mr-2 text-primary" />
+                    <Gift className="mr-2 w-6 h-6 text-primary" />
                     奖励管理
                   </CardTitle>
-                  <div className="flex items-center gap-4">
+                  <div className="flex gap-4 items-center">
                     <Button
                       onClick={() => setIsAddRewardOpen(true)}
-                      className="rounded-full bg-gradient-to-r from-primary to-purple-600"
+                      className="bg-gradient-to-r to-purple-600 rounded-full from-primary"
                       size="sm"
                     >
-                      <Plus className="w-4 h-4 mr-2" />
+                      <Plus className="mr-2 w-4 h-4" />
                       添加奖励
                     </Button>
                   </div>
                 </div>
-                <CardDescription>管理奖励项目，审批小朋友的兑换请求</CardDescription>
+                <CardDescription>
+                  管理奖励项目，审批小朋友的兑换请求
+                </CardDescription>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-6">
-                  <div className="p-4 border-2 rounded-xl border-amber-100 bg-amber-50">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100">
+                  <div className="p-4 bg-amber-50 rounded-xl border-2 border-amber-100">
+                    <div className="flex gap-2 items-center mb-4">
+                      <div className="flex justify-center items-center w-8 h-8 bg-amber-100 rounded-lg">
                         <ClipboardCheck className="w-5 h-5 text-amber-600" />
                       </div>
-                      <h3 className="text-lg font-semibold text-amber-700">待审批兑换</h3>
+                      <h3 className="text-lg font-semibold text-amber-700">
+                        待审批兑换
+                      </h3>
                     </div>
 
                     {pendingRewards.length > 0 ? (
@@ -1349,34 +1843,41 @@ export default function ParentDashboard() {
                         {pendingRewards.map((item) => (
                           <div
                             key={item.id}
-                            className="flex flex-col p-3 bg-white border rounded-lg sm:flex-row sm:items-center sm:justify-between border-amber-200 hover:border-amber-300 hover:bg-amber-50"
+                            className="flex flex-col p-3 bg-white rounded-lg border border-amber-200 sm:flex-row sm:items-center sm:justify-between hover:border-amber-300 hover:bg-amber-50"
                           >
-                            <div className="flex items-center gap-4 mb-3 sm:mb-0">
-                              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-100">
+                            <div className="flex gap-4 items-center mb-3 sm:mb-0">
+                              <div className="flex justify-center items-center w-10 h-10 bg-amber-100 rounded-full">
                                 <Gift className="w-5 h-5 text-amber-600" />
                               </div>
                               <div>
-                                <h4 className="font-medium">{item.rewardTitle}</h4>
-                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                  <span className="flex items-center gap-1">
+                                <h4 className="font-medium">
+                                  {item.rewardTitle}
+                                </h4>
+                                <div className="flex gap-4 items-center text-sm text-muted-foreground">
+                                  <span className="flex gap-1 items-center">
                                     <User className="w-4 h-4" />
                                     {item.childName}
                                   </span>
-                                  <span className="flex items-center gap-1">
+                                  <span className="flex gap-1 items-center">
                                     <Clock className="w-4 h-4" />
                                     {item.requestedAt}
                                   </span>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-3 ml-14 sm:ml-0">
-                              <Badge variant="outline" className="flex gap-1 border-yellow-300 bg-yellow-50">
+                            <div className="flex gap-3 items-center ml-14 sm:ml-0">
+                              <Badge
+                                variant="outline"
+                                className="flex gap-1 bg-yellow-50 border-yellow-300"
+                              >
                                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                 <span>{item.points}</span>
                               </Badge>
                               <Button
                                 size="sm"
-                                onClick={() => openApprovalDialog(item, "reward-redeem")}
+                                onClick={() =>
+                                  openApprovalDialog(item, "reward-redeem")
+                                }
                                 className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
                               >
                                 审批兑换
@@ -1386,28 +1887,30 @@ export default function ParentDashboard() {
                         ))}
                       </div>
                     ) : (
-                      <div className="p-6 text-center bg-white border border-dashed rounded-lg border-amber-200">
+                      <div className="p-6 text-center bg-white rounded-lg border border-amber-200 border-dashed">
                         <p className="text-muted-foreground">暂无待审批兑换</p>
                       </div>
                     )}
                   </div>
 
-                  <div className="p-4 border-2 border-blue-100 rounded-xl bg-blue-50">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                  <div className="p-4 bg-blue-50 rounded-xl border-2 border-blue-100">
+                    <div className="flex gap-2 items-center mb-4">
+                      <div className="flex justify-center items-center w-8 h-8 bg-blue-100 rounded-lg">
                         <Gift className="w-5 h-5 text-blue-600" />
                       </div>
-                      <h3 className="text-lg font-semibold text-blue-700">当前奖励列表</h3>
+                      <h3 className="text-lg font-semibold text-blue-700">
+                        当前奖励列表
+                      </h3>
                     </div>
 
                     <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
                       {rewards.map((reward) => (
                         <div
                           key={reward.id}
-                          className="flex flex-col overflow-hidden transition-all border-2 rounded-xl border-primary/20 bg-gradient-to-br from-white to-purple-50 hover:border-primary/50 hover:shadow-xl"
+                          className="flex overflow-hidden flex-col bg-gradient-to-br from-white to-purple-50 rounded-xl border-2 transition-all border-primary/20 hover:border-primary/50 hover:shadow-xl"
                         >
-                          <div className="flex items-center gap-4 p-4">
-                            <div className="flex items-center justify-center w-20 h-20 rounded-xl bg-primary/10">
+                          <div className="flex gap-4 items-center p-4">
+                            <div className="flex justify-center items-center w-20 h-20 rounded-xl bg-primary/10">
                               <img
                                 src={reward.image || "/placeholder.svg"}
                                 alt={reward.title}
@@ -1416,10 +1919,14 @@ export default function ParentDashboard() {
                             </div>
                             <div className="flex-1">
                               <h3 className="font-semibold">{reward.title}</h3>
-                              <div className="flex items-center gap-1 mt-1">
+                              <div className="flex gap-1 items-center mt-1">
                                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
-                                <span className="font-bold text-primary">{reward.points}</span>
-                                <span className="text-sm text-muted-foreground">积分</span>
+                                <span className="font-bold text-primary">
+                                  {reward.points}
+                                </span>
+                                <span className="text-sm text-muted-foreground">
+                                  积分
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -1433,11 +1940,11 @@ export default function ParentDashboard() {
           </TabsContent>
 
           <TabsContent value="history" className="space-y-4">
-            <Card className="overflow-hidden border-2 rounded-2xl border-primary/20 bg-gradient-to-br from-blue-50 to-green-50">
+            <Card className="overflow-hidden bg-gradient-to-br from-blue-50 to-green-50 rounded-2xl border-2 border-primary/20">
               <CardHeader className="bg-gradient-to-r from-blue-400/20 via-teal-400/20 to-green-400/20">
-                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
+                <div className="flex flex-col gap-2 justify-between items-start sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
-                    <History className="w-6 h-6 mr-2 text-primary" />
+                    <History className="mr-2 w-6 h-6 text-primary" />
                     积分记录
                   </CardTitle>
                 </div>
@@ -1446,53 +1953,67 @@ export default function ParentDashboard() {
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div className="space-y-3 transition-all duration-300 ease-in-out">
-                    {history.slice(0, showAllRecords ? history.length : 4).map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between p-4 bg-white border-2 rounded-xl border-primary/20"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                              item.type === "earn" ? "bg-green-100" : "bg-red-100"
-                            }`}
-                          >
-                            {item.type === "earn" ? (
-                              <Plus className="w-5 h-5 text-green-600" />
-                            ) : (
-                              <Gift className="w-5 h-5 text-red-600" />
-                            )}
-                          </div>
-                          <div>
-                            <h3 className="font-semibold">{item.title}</h3>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <User className="w-4 h-4" />
-                                {item.childName}
-                              </span>
-                              <span className="text-muted-foreground">|</span>
-                              <span>{item.date}</span>
-                              {item.wrongAnswers !== undefined && (
-                                <>
-                                  <span className="text-muted-foreground">|</span>
-                                  <span className={item.wrongAnswers > 0 ? "text-amber-600" : "text-green-600"}>
-                                    错题: {item.wrongAnswers}
-                                  </span>
-                                </>
+                    {history
+                      .slice(0, showAllRecords ? history.length : 4)
+                      .map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex justify-between items-center p-4 bg-white rounded-xl border-2 border-primary/20"
+                        >
+                          <div className="flex gap-3 items-center">
+                            <div
+                              className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                                item.type === "earn"
+                                  ? "bg-green-100"
+                                  : "bg-red-100"
+                              }`}
+                            >
+                              {item.type === "earn" ? (
+                                <Plus className="w-5 h-5 text-green-600" />
+                              ) : (
+                                <Gift className="w-5 h-5 text-red-600" />
                               )}
                             </div>
+                            <div>
+                              <h3 className="font-semibold">{item.title}</h3>
+                              <div className="flex gap-2 items-center text-sm text-muted-foreground">
+                                <span className="flex gap-1 items-center">
+                                  <User className="w-4 h-4" />
+                                  {item.childName}
+                                </span>
+                                <span className="text-muted-foreground">|</span>
+                                <span>{item.date}</span>
+                                {item.wrongAnswers !== undefined && (
+                                  <>
+                                    <span className="text-muted-foreground">
+                                      |
+                                    </span>
+                                    <span
+                                      className={
+                                        item.wrongAnswers > 0
+                                          ? "text-amber-600"
+                                          : "text-green-600"
+                                      }
+                                    >
+                                      错题: {item.wrongAnswers}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div
+                            className={`flex items-center gap-1 font-bold ${
+                              item.type === "earn"
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {item.type === "earn" ? "+" : "-"}
+                            {item.points}
                           </div>
                         </div>
-                        <div
-                          className={`flex items-center gap-1 font-bold ${
-                            item.type === "earn" ? "text-green-600" : "text-red-600"
-                          }`}
-                        >
-                          {item.type === "earn" ? "+" : "-"}
-                          {item.points}
-                        </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 </div>
               </CardContent>
@@ -1504,7 +2025,8 @@ export default function ParentDashboard() {
                 >
                   {showAllRecords ? "收起记录" : "查看更多记录"}
                   <ChevronRight
-                    className={`ml-2 h-4 w-4 transition-transform duration-300 ${showAllRecords ? "rotate-90" : ""}`}
+                    className={`ml-2 h-4 w-4 transition-transform duration-300 ${
+                      showAllRecords ? "rotate-90" : ""}`}
                   />
                 </Button>
               </CardFooter>
@@ -1516,8 +2038,8 @@ export default function ParentDashboard() {
       <AddHomeworkDialog
         isOpen={isAddHomeworkOpen}
         onClose={() => {
-          setIsAddHomeworkOpen(false)
-          setEditingHomework(null)
+          setIsAddHomeworkOpen(false);
+          setEditingHomework(null);
         }}
         onAdd={handleAddHomework}
         initialData={editingHomework}
@@ -1527,15 +2049,19 @@ export default function ParentDashboard() {
       <AddTaskDialog
         isOpen={isAddTaskOpen}
         onClose={() => {
-          setIsAddTaskOpen(false)
-          setEditingTask(null)
+          setIsAddTaskOpen(false);
+          setEditingTask(null);
         }}
         onAdd={handleAddTask}
         initialData={editingTask}
         childrenList={childrenList}
       />
 
-      <AddRewardDialog isOpen={isAddRewardOpen} onClose={() => setIsAddRewardOpen(false)} onAdd={handleAddReward} />
+      <AddRewardDialog
+        isOpen={isAddRewardOpen}
+        onClose={() => setIsAddRewardOpen(false)}
+        onAdd={handleAddReward}
+      />
 
       <ApprovalDialog
         isOpen={approvalDialogOpen}
@@ -1559,6 +2085,5 @@ export default function ParentDashboard() {
         currentSettings={deadlineSettings}
       />
     </div>
-  )
+  );
 }
-
