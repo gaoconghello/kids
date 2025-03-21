@@ -63,6 +63,8 @@ export default function ParentDashboard() {
 
   const [pendingHomework, setPendingHomework] = useState([]);
   const [completedHomework, setCompletedHomework] = useState([]);
+  const [childHomework, setChildHomework] = useState([]);
+
   const [pendingTasks, setPendingTasks] = useState([
     {
       id: 1,
@@ -209,77 +211,8 @@ export default function ParentDashboard() {
       date: "2025-02-19",
     },
   ]);
-  const [childHomework, setChildHomework] = useState([
-    {
-      id: 1,
-      subject: "语文",
-      tasks: [
-        {
-          id: 1,
-          title: "阅读课文《春天》",
-          duration: "20分钟",
-          points: 15,
-          completed: false,
-          deadline: "15:30",
-        },
-        {
-          id: 2,
-          title: "完成练习册第12页",
-          duration: "30分钟",
-          points: 20,
-          completed: true,
-          deadline: "16:00",
-          wrongAnswers: 2,
-        },
-      ],
-    },
-    {
-      id: 2,
-      subject: "数学",
-      tasks: [
-        {
-          id: 3,
-          title: "完成乘法练习",
-          duration: "25分钟",
-          points: 15,
-          completed: false,
-          deadline: "16:30",
-        },
-        {
-          id: 4,
-          title: "解决应用题5道",
-          duration: "20分钟",
-          points: 15,
-          completed: true,
-          deadline: "17:00",
-          wrongAnswers: 1,
-        },
-      ],
-    },
-    {
-      id: 3,
-      subject: "英语",
-      tasks: [
-        {
-          id: 5,
-          title: "背诵单词列表",
-          duration: "15分钟",
-          points: 10,
-          completed: false,
-          deadline: "17:30",
-        },
-        {
-          id: 6,
-          title: "完成听力练习",
-          duration: "20分钟",
-          points: 15,
-          completed: true,
-          deadline: "18:00",
-          wrongAnswers: 0,
-        },
-      ],
-    },
-  ]);
+
+
 
   const [isAddHomeworkOpen, setIsAddHomeworkOpen] = useState(false);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
@@ -393,6 +326,49 @@ export default function ParentDashboard() {
     }
   };
 
+  const fetchChildHomework = async () => {
+    try {
+      setIsLoading(true);
+      console.log('获取孩子作业');
+      const response = await get(`/api/homework?childId=${selectedChild.id}`);
+      const result = await response.json();
+
+      if (result.code === 200 && result.data) {
+        // 将API返回的数据按科目分组
+        const groupedHomework = result.data.reduce((acc, homework) => {
+          const subject = acc.find(s => s.id === homework.subject_id);
+          const task = {
+            id: homework.id,
+            title: homework.name,
+            duration: `${homework.estimated_duration}分钟`,
+            points: homework.integral || 0,
+            completed: homework.is_complete === '1',
+            deadline: homework.deadline?.split(' ')[1] || '',
+            wrongAnswers: homework.incorrect || 0
+          };
+
+          if (subject) {
+            subject.tasks.push(task);
+          } else {
+            acc.push({
+              id: homework.subject_id,
+              subject: homework.subject_name,
+              tasks: [task]
+            });
+          }
+          return acc;
+        }, []);
+
+        setChildHomework(groupedHomework);
+      }
+    } catch (error) {
+      console.error('获取作业数据失败:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
   // 页面加载时获取数据
   useEffect(() => {
     // 首先获取孩子列表
@@ -406,7 +382,8 @@ export default function ParentDashboard() {
       fetchPendingHomeworks();
       // 获取已完成作业
       fetchCompletedHomeworks();
-      // 这里可以添加其他需要根据childId获取的数据
+      // 获取作业数据
+      fetchChildHomework();
     }
   }, [selectedChild]);  // 添加selectedChild依赖
 
@@ -1029,7 +1006,7 @@ export default function ParentDashboard() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-white/80">
-                      小明的总积分
+                      {selectedChild?.name}的总积分
                     </p>
                     <h3 className="text-2xl font-bold text-white">
                       {childPoints.total}

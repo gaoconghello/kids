@@ -18,9 +18,52 @@ export const GET = withAuth(["parent", "child"], async (request) => {
     // 如果是孩子角色，只能查看自己的作业
     if (request.user.role === "child") {
       where.child_id = request.user.id;
-    } else if (childId) {
+    } else if (request.user.role === "parent") {
+      // 如果没有提供childId，直接返回空数据
+      if (!childId) {
+        return NextResponse.json(
+          {
+            code: 400,
+            message: "缺少必要参数childId",
+            data: [],
+          },
+          { status: 400 }
+        );
+      }
+      // 获取当前家长信息
+      const parent = await prisma.account.findUnique({
+        where: { id: request.user.id },
+        select: { family_id: true },
+      });
+
+      if (!parent) {
+        return NextResponse.json(
+          { code: 403, message: "无法验证家长身份" },
+          { status: 403 }
+        );
+      }
+
+      // 验证child是否属于该family
+      const child = await prisma.account.findUnique({
+        where: { id: parseInt(childId) },
+        select: { family_id: true },
+      });
+
+      if (!child || child.family_id !== parent.family_id) {
+        return NextResponse.json(
+          { code: 403, message: "无权查看此孩子的作业" },
+          { status: 403 }
+        );
+      }
       where.child_id = parseInt(childId);
+    } else {
+      return NextResponse.json(
+        { code: 403, message: "无法验证家长身份" },
+        { status: 403 }
+      );
     }
+
+    
 
     if (subjectId) {
       where.subject_id = parseInt(subjectId);
@@ -29,16 +72,16 @@ export const GET = withAuth(["parent", "child"], async (request) => {
     // 日期过滤 - 修改为正确的 Prisma 查询条件格式
     if (homeworkDate) {
       // 将 yyyy-mm-dd 格式转换为 Date 对象
-      const [year, month, day] = homeworkDate.split('-').map(Number);
-      
+      const [year, month, day] = homeworkDate.split("-").map(Number);
+
       // 创建当天开始和结束的时间点（使用上海时区）
       const startDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
       const endDate = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
-      
+
       // 使用 Prisma 的日期范围查询
       where.homework_date = {
         gte: startDate,
-        lte: endDate
+        lte: endDate,
       };
     } else {
       // 如果没有提供日期，查询当天的作业
@@ -46,13 +89,13 @@ export const GET = withAuth(["parent", "child"], async (request) => {
       const year = now.getFullYear();
       const month = now.getMonth();
       const day = now.getDate();
-      
+
       const startDate = new Date(Date.UTC(year, month, day, 0, 0, 0));
       const endDate = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
-      
+
       where.homework_date = {
         gte: startDate,
-        lte: endDate
+        lte: endDate,
       };
     }
 
