@@ -212,8 +212,6 @@ export default function ParentDashboard() {
     },
   ]);
 
-
-
   const [isAddHomeworkOpen, setIsAddHomeworkOpen] = useState(false);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [isAddRewardOpen, setIsAddRewardOpen] = useState(false);
@@ -329,22 +327,22 @@ export default function ParentDashboard() {
   const fetchChildHomework = async () => {
     try {
       setIsLoading(true);
-      console.log('获取孩子作业');
+      console.log("获取孩子作业");
       const response = await get(`/api/homework?childId=${selectedChild.id}`);
       const result = await response.json();
 
       if (result.code === 200 && result.data) {
         // 将API返回的数据按科目分组
         const groupedHomework = result.data.reduce((acc, homework) => {
-          const subject = acc.find(s => s.id === homework.subject_id);
+          const subject = acc.find((s) => s.id === homework.subject_id);
           const task = {
             id: homework.id,
             title: homework.name,
             duration: `${homework.estimated_duration}分钟`,
             points: homework.integral || 0,
-            completed: homework.is_complete === '1',
-            deadline: homework.deadline?.split(' ')[1] || '',
-            wrongAnswers: homework.incorrect || 0
+            completed: homework.is_complete === "1",
+            deadline: homework.deadline?.split(" ")[1] || "",
+            wrongAnswers: homework.incorrect || 0,
           };
 
           if (subject) {
@@ -353,7 +351,7 @@ export default function ParentDashboard() {
             acc.push({
               id: homework.subject_id,
               subject: homework.subject_name,
-              tasks: [task]
+              tasks: [task],
             });
           }
           return acc;
@@ -362,12 +360,11 @@ export default function ParentDashboard() {
         setChildHomework(groupedHomework);
       }
     } catch (error) {
-      console.error('获取作业数据失败:', error);
+      console.error("获取作业数据失败:", error);
     } finally {
       setIsLoading(false);
     }
   };
-
 
   // 页面加载时获取数据
   useEffect(() => {
@@ -377,7 +374,8 @@ export default function ParentDashboard() {
 
   // 当选择的孩子ID变化时，重新获取相关数据
   useEffect(() => {
-    if (selectedChild) {  // 添加selectedChild检查
+    if (selectedChild) {
+      // 添加selectedChild检查
       // 获取待处理任务
       fetchPendingHomeworks();
       // 获取已完成作业
@@ -385,27 +383,27 @@ export default function ParentDashboard() {
       // 获取作业数据
       fetchChildHomework();
     }
-  }, [selectedChild]);  // 添加selectedChild依赖
+  }, [selectedChild]); // 添加selectedChild依赖
 
   useEffect(() => {
-      const fetchChild = async () => {
-        try {
-          console.log('获取孩子信息');
-          const response = await get(`/api/family/children/${selectedChildId}`);
-          const result = await response.json();
-          if (result.code === 200 && result.data) {
-            setChildPoints({
-              total: result.data.total,
-              thisWeek: result.data.thisWeek,
-              thisWeekSpent: result.data.thisWeekSpent,
-            });
-            console.log(result.data);
-            setSelectedChild(result.data); // 保存完整的孩子信息
-          }
-        } catch (error) {
-          console.error("获取孩子积分信息失败:", error);
+    const fetchChild = async () => {
+      try {
+        console.log("获取孩子信息");
+        const response = await get(`/api/family/children/${selectedChildId}`);
+        const result = await response.json();
+        if (result.code === 200 && result.data) {
+          setChildPoints({
+            total: result.data.total,
+            thisWeek: result.data.thisWeek,
+            thisWeekSpent: result.data.thisWeekSpent,
+          });
+          console.log(result.data);
+          setSelectedChild(result.data); // 保存完整的孩子信息
         }
-      };
+      } catch (error) {
+        console.error("获取孩子积分信息失败:", error);
+      }
+    };
 
     if (selectedChildId) {
       fetchChild();
@@ -580,9 +578,41 @@ export default function ParentDashboard() {
     setApprovalDialogOpen(true);
   };
 
-  const handleApproval = (approved, wrongAnswers = 0) => {
+  const handleApproval = async (approved, wrongAnswers = 0) => {
     if (approvalType === "homework-add") {
       if (approved) {
+        try {
+          // 调用API批准作业
+          setIsLoading(true);
+          
+          const response = await put(`/api/homework/pending`, {
+            id: approvalItem.id,
+          });
+          
+          const result = await response.json();
+          
+          if (result.code === 200) {
+            // 批准成功，从待处理列表中移除该作业
+            setPendingHomework(
+              pendingHomework.filter((item) => item.id !== approvalItem.id)
+            );
+            console.log("作业审批成功:", approvalItem.title);
+            // 刷新数据
+            fetchPendingHomeworks();
+          } else {
+            console.error("作业审批失败:", result.message);
+            alert(`审批失败: ${result.message || '未知错误'}`);
+          }
+        } catch (error) {
+          console.error("作业审批请求出错:", error);
+          alert(`审批请求出错: ${error.message}`);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        // 作业被拒绝，暂时仅在前端处理
+        console.log("作业被拒绝:", approvalItem.title);
+        // 从待处理列表中移除
         setPendingHomework(
           pendingHomework.filter((item) => item.id !== approvalItem.id)
         );
@@ -885,11 +915,11 @@ export default function ParentDashboard() {
   };
 
   return (
-    <div className="p-3 min-h-screen bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 sm:p-4 md:p-8">
-      <div className="mx-auto max-w-5xl">
+    <div className="min-h-screen p-3 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 sm:p-4 md:p-8">
+      <div className="max-w-5xl mx-auto">
         <header className="flex flex-col gap-3 mb-4 sm:mb-6 sm:gap-4">
-          <div className="flex flex-col gap-3 justify-between items-start p-3 rounded-2xl border-2 shadow-lg backdrop-blur-sm sm:flex-row sm:items-center sm:gap-0 bg-white/90 sm:p-4 border-white/50">
-            <div className="flex gap-3 items-center">
+          <div className="flex flex-col items-start justify-between gap-3 p-3 border-2 shadow-lg rounded-2xl backdrop-blur-sm sm:flex-row sm:items-center sm:gap-0 bg-white/90 sm:p-4 border-white/50">
+            <div className="flex items-center gap-3">
               <div className="relative">
                 <div className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 animate-pulse blur"></div>
                 <Avatar className="relative w-12 h-12 border-2 border-white">
@@ -906,8 +936,8 @@ export default function ParentDashboard() {
                 <p className="text-gray-600">欢迎使用家长管理界面</p>
               </div>
             </div>
-            <div className="flex gap-4 items-center">
-              <div className="flex gap-2 items-center mr-3">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 mr-3">
                 <User className="w-5 h-5 text-blue-500" />
                 <Select
                   value={
@@ -915,7 +945,6 @@ export default function ParentDashboard() {
                       ?.name || ""
                   }
                   onValueChange={(value) => {
-
                     // 根据选择的名字查找对应的孩子ID
                     const selectedChild = childrenList.find(
                       (child) => child.name === value
@@ -951,7 +980,7 @@ export default function ParentDashboard() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full transition-colors hover:bg-blue-100 hover:text-blue-600"
+                className="transition-colors rounded-full hover:bg-blue-100 hover:text-blue-600"
                 onClick={() => setIsChangePasswordOpen(true)}
               >
                 <Settings className="w-5 h-5" />
@@ -960,7 +989,7 @@ export default function ParentDashboard() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full transition-colors hover:bg-red-100 hover:text-red-600"
+                className="transition-colors rounded-full hover:bg-red-100 hover:text-red-600"
                 onClick={logout}
               >
                 <LogOut className="w-5 h-5" />
@@ -970,10 +999,10 @@ export default function ParentDashboard() {
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4 sm:gap-4">
-            <div className="p-4 bg-gradient-to-br rounded-2xl border-2 shadow-lg from-green-400/90 to-teal-500/90 border-white/50">
-              <div className="flex justify-between items-center">
-                <div className="flex gap-3 items-center">
-                  <div className="flex justify-center items-center w-12 h-12 rounded-xl backdrop-blur-sm bg-white/20">
+            <div className="p-4 border-2 shadow-lg bg-gradient-to-br rounded-2xl from-green-400/90 to-teal-500/90 border-white/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-12 h-12 rounded-xl backdrop-blur-sm bg-white/20">
                     <Clock className="w-6 h-6 text-white" />
                   </div>
                   <div>
@@ -998,10 +1027,10 @@ export default function ParentDashboard() {
               </div>
             </div>
 
-            <div className="p-4 bg-gradient-to-br rounded-2xl border-2 shadow-lg from-yellow-400/90 to-amber-500/90 border-white/50">
-              <div className="flex justify-between items-center">
-                <div className="flex gap-3 items-center">
-                  <div className="flex justify-center items-center w-12 h-12 rounded-xl backdrop-blur-sm bg-white/20">
+            <div className="p-4 border-2 shadow-lg bg-gradient-to-br rounded-2xl from-yellow-400/90 to-amber-500/90 border-white/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-12 h-12 rounded-xl backdrop-blur-sm bg-white/20">
                     <Star className="w-6 h-6 text-white" />
                   </div>
                   <div>
@@ -1017,10 +1046,10 @@ export default function ParentDashboard() {
               </div>
             </div>
 
-            <div className="p-4 bg-gradient-to-br rounded-2xl border-2 shadow-lg from-blue-400/90 to-cyan-500/90 border-white/50">
-              <div className="flex justify-between items-center">
-                <div className="flex gap-3 items-center">
-                  <div className="flex justify-center items-center w-12 h-12 rounded-xl backdrop-blur-sm bg-white/20">
+            <div className="p-4 border-2 shadow-lg bg-gradient-to-br rounded-2xl from-blue-400/90 to-cyan-500/90 border-white/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-12 h-12 rounded-xl backdrop-blur-sm bg-white/20">
                     <Calendar className="w-6 h-6 text-white" />
                   </div>
                   <div>
@@ -1036,10 +1065,10 @@ export default function ParentDashboard() {
               </div>
             </div>
 
-            <div className="p-4 bg-gradient-to-br rounded-2xl border-2 shadow-lg from-purple-400/90 to-pink-500/90 border-white/50">
-              <div className="flex justify-between items-center">
-                <div className="flex gap-3 items-center">
-                  <div className="flex justify-center items-center w-12 h-12 rounded-xl backdrop-blur-sm bg-white/20">
+            <div className="p-4 border-2 shadow-lg bg-gradient-to-br rounded-2xl from-purple-400/90 to-pink-500/90 border-white/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-12 h-12 rounded-xl backdrop-blur-sm bg-white/20">
                     <History className="w-6 h-6 text-white" />
                   </div>
                   <div>
@@ -1058,13 +1087,13 @@ export default function ParentDashboard() {
         </header>
 
         <Tabs defaultValue="homework" className="space-y-4">
-          <TabsList className="grid grid-cols-4 p-1 w-full text-xs rounded-xl shadow-xl bg-white/80 sm:text-sm md:text-lg">
+          <TabsList className="grid w-full grid-cols-4 p-1 text-xs shadow-xl rounded-xl bg-white/80 sm:text-sm md:text-lg">
             <TabsTrigger
               value="homework"
               className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
             >
               <div className="flex items-center">
-                <PenLine className="mr-2 w-5 h-5" />
+                <PenLine className="w-5 h-5 mr-2" />
                 <span>作业</span>
                 {pendingHomework.length > 0 && (
                   <span className="ml-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
@@ -1078,7 +1107,7 @@ export default function ParentDashboard() {
               className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
             >
               <div className="flex items-center">
-                <BookOpen className="mr-2 w-5 h-5" />
+                <BookOpen className="w-5 h-5 mr-2" />
                 <span>任务</span>
                 {pendingTasks.length > 0 && (
                   <span className="ml-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
@@ -1092,7 +1121,7 @@ export default function ParentDashboard() {
               className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
             >
               <div className="flex items-center">
-                <Gift className="mr-2 w-5 h-5" />
+                <Gift className="w-5 h-5 mr-2" />
                 <span>兑奖</span>
                 {pendingRewards.length > 0 && (
                   <span className="ml-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
@@ -1106,31 +1135,31 @@ export default function ParentDashboard() {
               className="relative rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
             >
               <div className="flex items-center">
-                <History className="mr-2 w-5 h-5" />
+                <History className="w-5 h-5 mr-2" />
                 <span>记录</span>
               </div>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="homework" className="space-y-4">
-            <Card className="overflow-hidden bg-white rounded-2xl border-2 border-primary/20">
+            <Card className="overflow-hidden bg-white border-2 rounded-2xl border-primary/20">
               <CardHeader className="bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20">
-                <div className="flex flex-col gap-2 justify-between items-start sm:flex-row sm:items-center sm:gap-0">
+                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
-                    <BookOpen className="mr-2 w-6 h-6 text-primary" />
+                    <BookOpen className="w-6 h-6 mr-2 text-primary" />
                     {selectedHomeworkDate.toLocaleDateString("zh-CN", {
                       month: "long",
                       day: "numeric",
                     })}
                     作业管理
                   </CardTitle>
-                  <div className="flex gap-4 items-center">
+                  <div className="flex items-center gap-4">
                     <Button
                       onClick={() => setIsAddHomeworkOpen(true)}
-                      className="bg-gradient-to-r to-purple-600 rounded-full from-primary"
+                      className="rounded-full bg-gradient-to-r to-purple-600 from-primary"
                       size="sm"
                     >
-                      <Plus className="mr-2 w-4 h-4" />
+                      <Plus className="w-4 h-4 mr-2" />
                       添加作业
                     </Button>
                     <Button
@@ -1141,15 +1170,15 @@ export default function ParentDashboard() {
                         setShowHomeworkCalendar(!showHomeworkCalendar)
                       }
                     >
-                      <Calendar className="mr-2 w-4 h-4" />
+                      <Calendar className="w-4 h-4 mr-2" />
                       {showHomeworkCalendar ? "隐藏日历" : "查看日历"}
                     </Button>
                     <Button
                       size="sm"
-                      className="text-white bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full hover:from-teal-600 hover:to-cyan-600"
+                      className="text-white rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600"
                       onClick={() => setShowStatistics(!showStatistics)}
                     >
-                      <BarChart3 className="mr-2 w-4 h-4" />
+                      <BarChart3 className="w-4 h-4 mr-2" />
                       {showStatistics ? "隐藏统计" : "查看统计"}
                     </Button>
                   </div>
@@ -1169,9 +1198,9 @@ export default function ParentDashboard() {
                 )}
                 {showStatistics && (
                   <div className="mt-4 mb-6">
-                    <div className="p-4 bg-purple-50 rounded-xl border-2 border-purple-100">
-                      <div className="flex gap-2 items-center mb-4">
-                        <div className="flex justify-center items-center w-8 h-8 bg-purple-100 rounded-lg">
+                    <div className="p-4 border-2 border-purple-100 bg-purple-50 rounded-xl">
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="flex items-center justify-center w-8 h-8 bg-purple-100 rounded-lg">
                           <BarChart3 className="w-5 h-5 text-purple-600" />
                         </div>
                         <h3 className="text-lg font-semibold text-purple-700">
@@ -1188,9 +1217,9 @@ export default function ParentDashboard() {
                   </div>
                 )}
                 <div className="space-y-6">
-                  <div className="p-4 bg-amber-50 rounded-xl border-2 border-amber-100">
-                    <div className="flex gap-2 items-center mb-4">
-                      <div className="flex justify-center items-center w-8 h-8 bg-amber-100 rounded-lg">
+                  <div className="p-4 border-2 bg-amber-50 rounded-xl border-amber-100">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100">
                         <ClipboardCheck className="w-5 h-5 text-amber-600" />
                       </div>
                       <h3 className="text-lg font-semibold text-amber-700">
@@ -1203,31 +1232,31 @@ export default function ParentDashboard() {
                         {pendingHomework.map((item) => (
                           <div
                             key={item.id}
-                            className="flex flex-col p-3 bg-white rounded-lg border border-amber-200 sm:flex-row sm:items-center sm:justify-between hover:border-amber-300 hover:bg-amber-50"
+                            className="flex flex-col p-3 bg-white border rounded-lg border-amber-200 sm:flex-row sm:items-center sm:justify-between hover:border-amber-300 hover:bg-amber-50"
                           >
-                            <div className="flex gap-4 items-center mb-3 sm:mb-0">
-                              <div className="flex justify-center items-center w-10 h-10 bg-amber-100 rounded-full">
+                            <div className="flex items-center gap-4 mb-3 sm:mb-0">
+                              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-100">
                                 <AlertCircle className="w-5 h-5 text-amber-600" />
                               </div>
                               <div>
                                 <h4 className="font-medium">{item.title}</h4>
-                                <div className="flex gap-4 items-center text-sm text-muted-foreground">
-                                  <span className="flex gap-1 items-center">
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1">
                                     <User className="w-4 h-4" />
                                     {item.childName}
                                   </span>
-                                  <span className="flex gap-1 items-center">
+                                  <span className="flex items-center gap-1">
                                     <BookOpen className="w-4 h-4" />
                                     {item.subject}
                                   </span>
-                                  <span className="flex gap-1 items-center">
+                                  <span className="flex items-center gap-1">
                                     <Clock className="w-4 h-4" />
                                     {item.duration}
                                   </span>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex gap-3 items-center ml-14 sm:ml-0">
+                            <div className="flex items-center gap-3 ml-14 sm:ml-0">
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -1238,7 +1267,7 @@ export default function ParentDashboard() {
                               </Button>
                               <Badge
                                 variant="outline"
-                                className="flex gap-1 bg-yellow-50 border-yellow-300"
+                                className="flex gap-1 border-yellow-300 bg-yellow-50"
                               >
                                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                 <span>{item.points}</span>
@@ -1257,15 +1286,15 @@ export default function ParentDashboard() {
                         ))}
                       </div>
                     ) : (
-                      <div className="p-6 text-center bg-white rounded-lg border border-amber-200 border-dashed">
+                      <div className="p-6 text-center bg-white border border-dashed rounded-lg border-amber-200">
                         <p className="text-muted-foreground">暂无待审批作业</p>
                       </div>
                     )}
                   </div>
 
-                  <div className="p-4 bg-green-50 rounded-xl border-2 border-green-100">
-                    <div className="flex gap-2 items-center mb-4">
-                      <div className="flex justify-center items-center w-8 h-8 bg-green-100 rounded-lg">
+                  <div className="p-4 border-2 border-green-100 bg-green-50 rounded-xl">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg">
                         <ShieldCheck className="w-5 h-5 text-green-600" />
                       </div>
                       <h3 className="text-lg font-semibold text-green-700">
@@ -1278,34 +1307,34 @@ export default function ParentDashboard() {
                         {completedHomework.map((item) => (
                           <div
                             key={item.id}
-                            className="flex flex-col p-3 bg-white rounded-lg border border-green-200 sm:flex-row sm:items-center sm:justify-between hover:border-green-300 hover:bg-green-50"
+                            className="flex flex-col p-3 bg-white border border-green-200 rounded-lg sm:flex-row sm:items-center sm:justify-between hover:border-green-300 hover:bg-green-50"
                           >
-                            <div className="flex gap-4 items-center mb-3 sm:mb-0">
-                              <div className="flex justify-center items-center w-10 h-10 bg-green-100 rounded-full">
+                            <div className="flex items-center gap-4 mb-3 sm:mb-0">
+                              <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-full">
                                 <Check className="w-5 h-5 text-green-600" />
                               </div>
                               <div>
                                 <h4 className="font-medium">{item.title}</h4>
-                                <div className="flex gap-4 items-center text-sm text-muted-foreground">
-                                  <span className="flex gap-1 items-center">
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1">
                                     <User className="w-4 h-4" />
                                     {item.childName}
                                   </span>
-                                  <span className="flex gap-1 items-center">
+                                  <span className="flex items-center gap-1">
                                     <BookOpen className="w-4 h-4" />
                                     {item.subject}
                                   </span>
-                                  <span className="flex gap-1 items-center">
+                                  <span className="flex items-center gap-1">
                                     <Clock className="w-4 h-4" />
                                     {item.duration}
                                   </span>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex gap-3 items-center ml-14 sm:ml-0">
+                            <div className="flex items-center gap-3 ml-14 sm:ml-0">
                               <Badge
                                 variant="outline"
-                                className="flex gap-1 bg-yellow-50 border-yellow-300"
+                                className="flex gap-1 border-yellow-300 bg-yellow-50"
                               >
                                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                 <span>{item.points}</span>
@@ -1324,16 +1353,16 @@ export default function ParentDashboard() {
                         ))}
                       </div>
                     ) : (
-                      <div className="p-6 text-center bg-white rounded-lg border border-green-200 border-dashed">
+                      <div className="p-6 text-center bg-white border border-green-200 border-dashed rounded-lg">
                         <p className="text-muted-foreground">
                           暂无待审批完成作业
                         </p>
                       </div>
                     )}
                   </div>
-                  <div className="p-4 mt-6 bg-blue-50 rounded-xl border-2 border-blue-100">
-                    <div className="flex gap-2 items-center mb-4">
-                      <div className="flex justify-center items-center w-8 h-8 bg-blue-100 rounded-lg">
+                  <div className="p-4 mt-6 border-2 border-blue-100 bg-blue-50 rounded-xl">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
                         <BookOpen className="w-5 h-5 text-blue-600" />
                       </div>
                       <h3 className="text-lg font-semibold text-blue-700">
@@ -1345,10 +1374,10 @@ export default function ParentDashboard() {
                       {childHomework.map((subject) => (
                         <div
                           key={subject.id}
-                          className="p-4 rounded-xl border-2 border-primary/10"
+                          className="p-4 border-2 rounded-xl border-primary/10"
                         >
-                          <div className="flex gap-2 items-center mb-4">
-                            <div className="flex justify-center items-center w-8 h-8 rounded-lg bg-primary/10">
+                          <div className="flex items-center gap-2 mb-4">
+                            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
                               <BookOpen className="w-5 h-5 text-primary" />
                             </div>
                             <h3 className="text-lg font-semibold text-primary">
@@ -1365,7 +1394,7 @@ export default function ParentDashboard() {
                                     : "border-gray-200 bg-white hover:border-primary/30 hover:bg-blue-50"
                                 }`}
                               >
-                                <div className="flex gap-4 items-center mb-3 sm:mb-0">
+                                <div className="flex items-center gap-4 mb-3 sm:mb-0">
                                   <div
                                     className={`flex h-10 w-10 items-center justify-center rounded-full ${
                                       task.completed
@@ -1383,18 +1412,18 @@ export default function ParentDashboard() {
                                     <h4 className="font-medium">
                                       {task.title}
                                     </h4>
-                                    <div className="flex gap-4 items-center text-sm text-muted-foreground">
-                                      <span className="flex gap-1 items-center">
+                                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                      <span className="flex items-center gap-1">
                                         <Clock className="w-4 h-4" />
                                         {task.duration}
                                       </span>
-                                      <span className="flex gap-1 items-center">
+                                      <span className="flex items-center gap-1">
                                         <Calendar className="w-4 h-4" />
                                         截止 {task.deadline}
                                       </span>
                                       {task.completed &&
                                         task.wrongAnswers !== undefined && (
-                                          <span className="flex gap-1 items-center">
+                                          <span className="flex items-center gap-1">
                                             <AlertCircle className="w-4 h-4 text-amber-500" />
                                             <span
                                               className={
@@ -1410,10 +1439,10 @@ export default function ParentDashboard() {
                                     </div>
                                   </div>
                                 </div>
-                                <div className="flex gap-3 items-center ml-14 sm:ml-0">
+                                <div className="flex items-center gap-3 ml-14 sm:ml-0">
                                   <Badge
                                     variant="outline"
-                                    className="flex gap-1 bg-yellow-50 border-yellow-300"
+                                    className="flex gap-1 border-yellow-300 bg-yellow-50"
                                   >
                                     <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                     <span>{task.points}</span>
@@ -1428,9 +1457,9 @@ export default function ParentDashboard() {
                     </div>
                   </div>
 
-                  <div className="p-4 mt-6 bg-green-50 rounded-xl border-2 border-green-100">
-                    <div className="flex gap-2 items-center mb-4">
-                      <div className="flex justify-center items-center w-8 h-8 bg-green-100 rounded-lg">
+                  <div className="p-4 mt-6 border-2 border-green-100 bg-green-50 rounded-xl">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg">
                         <Award className="w-5 h-5 text-green-600" />
                       </div>
                       <h3 className="text-lg font-semibold text-green-700">
@@ -1458,7 +1487,7 @@ export default function ParentDashboard() {
                             </div>
                             <Progress
                               value={progress}
-                              className="h-3 bg-gradient-to-r from-blue-200 to-purple-200 rounded-full"
+                              className="h-3 rounded-full bg-gradient-to-r from-blue-200 to-purple-200"
                               indicatorClassName="bg-gradient-to-r from-blue-500 to-purple-500"
                             />
                           </div>
@@ -1472,24 +1501,24 @@ export default function ParentDashboard() {
           </TabsContent>
 
           <TabsContent value="tasks" className="space-y-4">
-            <Card className="overflow-hidden bg-white rounded-2xl border-2 border-primary/20">
+            <Card className="overflow-hidden bg-white border-2 rounded-2xl border-primary/20">
               <CardHeader className="bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20">
-                <div className="flex flex-col gap-2 justify-between items-start sm:flex-row sm:items-center sm:gap-0">
+                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
-                    <BookOpen className="mr-2 w-6 h-6 text-primary" />
+                    <BookOpen className="w-6 h-6 mr-2 text-primary" />
                     {selectedTaskDate.toLocaleDateString("zh-CN", {
                       month: "long",
                       day: "numeric",
                     })}
                     任务管理
                   </CardTitle>
-                  <div className="flex gap-4 items-center">
+                  <div className="flex items-center gap-4">
                     <Button
                       onClick={() => setIsAddTaskOpen(true)}
-                      className="bg-gradient-to-r to-purple-600 rounded-full from-primary"
+                      className="rounded-full bg-gradient-to-r to-purple-600 from-primary"
                       size="sm"
                     >
-                      <Plus className="mr-2 w-4 h-4" />
+                      <Plus className="w-4 h-4 mr-2" />
                       添加任务
                     </Button>
                     <Button
@@ -1498,10 +1527,10 @@ export default function ParentDashboard() {
                       className="rounded-full"
                       onClick={() => setShowTaskCalendar(!showTaskCalendar)}
                     >
-                      <Calendar className="mr-2 w-4 h-4" />
+                      <Calendar className="w-4 h-4 mr-2" />
                       {showTaskCalendar ? "隐藏日历" : "查看日历"}
                     </Button>
-                    <div className="flex gap-2 items-center">
+                    <div className="flex items-center gap-2">
                       <Clock className="w-5 h-5 text-primary" />
                       <span className="text-sm text-muted-foreground">
                         {new Date().toLocaleDateString("zh-CN", {
@@ -1527,9 +1556,9 @@ export default function ParentDashboard() {
                   </div>
                 )}
                 <div className="space-y-6">
-                  <div className="p-4 bg-amber-50 rounded-xl border-2 border-amber-100">
-                    <div className="flex gap-2 items-center mb-4">
-                      <div className="flex justify-center items-center w-8 h-8 bg-amber-100 rounded-lg">
+                  <div className="p-4 border-2 bg-amber-50 rounded-xl border-amber-100">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100">
                         <ClipboardCheck className="w-5 h-5 text-amber-600" />
                       </div>
                       <h3 className="text-lg font-semibold text-amber-700">
@@ -1538,9 +1567,9 @@ export default function ParentDashboard() {
                     </div>
 
                     {isLoading ? (
-                      <div className="p-6 text-center bg-white rounded-lg border border-amber-200 border-dashed">
-                        <div className="flex flex-col justify-center items-center">
-                          <div className="w-8 h-8 rounded-full border-4 animate-spin border-t-amber-500 border-r-transparent border-b-transparent border-l-transparent"></div>
+                      <div className="p-6 text-center bg-white border border-dashed rounded-lg border-amber-200">
+                        <div className="flex flex-col items-center justify-center">
+                          <div className="w-8 h-8 border-4 rounded-full animate-spin border-t-amber-500 border-r-transparent border-b-transparent border-l-transparent"></div>
                           <p className="mt-2 text-muted-foreground">
                             正在加载数据...
                           </p>
@@ -1551,27 +1580,27 @@ export default function ParentDashboard() {
                         {pendingTasks.map((item) => (
                           <div
                             key={item.id}
-                            className="flex flex-col p-3 bg-white rounded-lg border border-amber-200 sm:flex-row sm:items-center sm:justify-between hover:border-amber-300 hover:bg-amber-50"
+                            className="flex flex-col p-3 bg-white border rounded-lg border-amber-200 sm:flex-row sm:items-center sm:justify-between hover:border-amber-300 hover:bg-amber-50"
                           >
-                            <div className="flex gap-4 items-center mb-3 sm:mb-0">
-                              <div className="flex justify-center items-center w-10 h-10 bg-amber-100 rounded-full">
+                            <div className="flex items-center gap-4 mb-3 sm:mb-0">
+                              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-100">
                                 <AlertCircle className="w-5 h-5 text-amber-600" />
                               </div>
                               <div>
                                 <h4 className="font-medium">{item.title}</h4>
-                                <div className="flex gap-4 items-center text-sm text-muted-foreground">
-                                  <span className="flex gap-1 items-center">
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1">
                                     <User className="w-4 h-4" />
                                     {item.childName}
                                   </span>
-                                  <span className="flex gap-1 items-center">
+                                  <span className="flex items-center gap-1">
                                     <Clock className="w-4 h-4" />
                                     {item.createdAt}
                                   </span>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex gap-3 items-center ml-14 sm:ml-0">
+                            <div className="flex items-center gap-3 ml-14 sm:ml-0">
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -1582,7 +1611,7 @@ export default function ParentDashboard() {
                               </Button>
                               <Badge
                                 variant="outline"
-                                className="flex gap-1 bg-yellow-50 border-yellow-300"
+                                className="flex gap-1 border-yellow-300 bg-yellow-50"
                               >
                                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                 <span>{item.points}</span>
@@ -1601,15 +1630,15 @@ export default function ParentDashboard() {
                         ))}
                       </div>
                     ) : (
-                      <div className="p-6 text-center bg-white rounded-lg border border-amber-200 border-dashed">
+                      <div className="p-6 text-center bg-white border border-dashed rounded-lg border-amber-200">
                         <p className="text-muted-foreground">暂无待审批任务</p>
                       </div>
                     )}
                   </div>
 
-                  <div className="p-4 bg-green-50 rounded-xl border-2 border-green-100">
-                    <div className="flex gap-2 items-center mb-4">
-                      <div className="flex justify-center items-center w-8 h-8 bg-green-100 rounded-lg">
+                  <div className="p-4 border-2 border-green-100 bg-green-50 rounded-xl">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg">
                         <ShieldCheck className="w-5 h-5 text-green-600" />
                       </div>
                       <h3 className="text-lg font-semibold text-green-700">
@@ -1622,30 +1651,30 @@ export default function ParentDashboard() {
                         {completedTasks.map((item) => (
                           <div
                             key={item.id}
-                            className="flex flex-col p-3 bg-white rounded-lg border border-green-200 sm:flex-row sm:items-center sm:justify-between hover:border-green-300 hover:bg-green-50"
+                            className="flex flex-col p-3 bg-white border border-green-200 rounded-lg sm:flex-row sm:items-center sm:justify-between hover:border-green-300 hover:bg-green-50"
                           >
-                            <div className="flex gap-4 items-center mb-3 sm:mb-0">
-                              <div className="flex justify-center items-center w-10 h-10 bg-green-100 rounded-full">
+                            <div className="flex items-center gap-4 mb-3 sm:mb-0">
+                              <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-full">
                                 <Check className="w-5 h-5 text-green-600" />
                               </div>
                               <div>
                                 <h4 className="font-medium">{item.title}</h4>
-                                <div className="flex gap-4 items-center text-sm text-muted-foreground">
-                                  <span className="flex gap-1 items-center">
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1">
                                     <User className="w-4 h-4" />
                                     {item.childName}
                                   </span>
-                                  <span className="flex gap-1 items-center">
+                                  <span className="flex items-center gap-1">
                                     <Clock className="w-4 h-4" />
                                     {item.completedAt}
                                   </span>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex gap-3 items-center ml-14 sm:ml-0">
+                            <div className="flex items-center gap-3 ml-14 sm:ml-0">
                               <Badge
                                 variant="outline"
-                                className="flex gap-1 bg-yellow-50 border-yellow-300"
+                                className="flex gap-1 border-yellow-300 bg-yellow-50"
                               >
                                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                 <span>{item.points}</span>
@@ -1664,7 +1693,7 @@ export default function ParentDashboard() {
                         ))}
                       </div>
                     ) : (
-                      <div className="p-6 text-center bg-white rounded-lg border border-green-200 border-dashed">
+                      <div className="p-6 text-center bg-white border border-green-200 border-dashed rounded-lg">
                         <p className="text-muted-foreground">
                           暂无待审批完成任务
                         </p>
@@ -1672,9 +1701,9 @@ export default function ParentDashboard() {
                     )}
                   </div>
 
-                  <div className="p-4 mt-6 bg-blue-50 rounded-xl border-2 border-blue-100">
-                    <div className="flex gap-2 items-center mb-4">
-                      <div className="flex justify-center items-center w-8 h-8 bg-blue-100 rounded-lg">
+                  <div className="p-4 mt-6 border-2 border-blue-100 bg-blue-50 rounded-xl">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
                         <BookOpen className="w-5 h-5 text-blue-600" />
                       </div>
                       <h3 className="text-lg font-semibold text-blue-700">
@@ -1692,7 +1721,7 @@ export default function ParentDashboard() {
                               : "border-primary/20 bg-white hover:border-primary/50 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
                           }`}
                         >
-                          <div className="flex gap-3 items-center mb-3 sm:mb-0">
+                          <div className="flex items-center gap-3 mb-3 sm:mb-0">
                             <div
                               className={`flex h-10 w-10 items-center justify-center rounded-full ${
                                 task.completed
@@ -1715,10 +1744,10 @@ export default function ParentDashboard() {
                               </p>
                             </div>
                           </div>
-                          <div className="flex gap-3 items-center ml-14 sm:ml-0">
+                          <div className="flex items-center gap-3 ml-14 sm:ml-0">
                             <Badge
                               variant="outline"
-                              className="flex gap-1 bg-yellow-50 border-yellow-300"
+                              className="flex gap-1 border-yellow-300 bg-yellow-50"
                             >
                               <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                               <span>{task.points}</span>
@@ -1729,9 +1758,9 @@ export default function ParentDashboard() {
                     </div>
                   </div>
 
-                  <div className="p-4 mt-6 bg-green-50 rounded-xl border-2 border-green-100">
-                    <div className="flex gap-2 items-center mb-4">
-                      <div className="flex justify-center items-center w-8 h-8 bg-green-100 rounded-lg">
+                  <div className="p-4 mt-6 border-2 border-green-100 bg-green-50 rounded-xl">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg">
                         <Award className="w-5 h-5 text-green-600" />
                       </div>
                       <h3 className="text-lg font-semibold text-green-700">
@@ -1749,7 +1778,7 @@ export default function ParentDashboard() {
                         </div>
                         <Progress
                           value={70}
-                          className="h-3 bg-gradient-to-r from-blue-200 to-purple-200 rounded-full"
+                          className="h-3 rounded-full bg-gradient-to-r from-blue-200 to-purple-200"
                           indicatorClassName="bg-gradient-to-r from-blue-500 to-purple-500"
                         />
                       </div>
@@ -1779,20 +1808,20 @@ export default function ParentDashboard() {
           </TabsContent>
 
           <TabsContent value="rewards" className="space-y-4">
-            <Card className="overflow-hidden bg-white rounded-2xl border-2 border-primary/20">
+            <Card className="overflow-hidden bg-white border-2 rounded-2xl border-primary/20">
               <CardHeader className="bg-gradient-to-r from-pink-400/20 via-orange-400/20 to-yellow-400/20">
-                <div className="flex flex-col gap-2 justify-between items-start sm:flex-row sm:items-center sm:gap-0">
+                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
-                    <Gift className="mr-2 w-6 h-6 text-primary" />
+                    <Gift className="w-6 h-6 mr-2 text-primary" />
                     奖励管理
                   </CardTitle>
-                  <div className="flex gap-4 items-center">
+                  <div className="flex items-center gap-4">
                     <Button
                       onClick={() => setIsAddRewardOpen(true)}
-                      className="bg-gradient-to-r to-purple-600 rounded-full from-primary"
+                      className="rounded-full bg-gradient-to-r to-purple-600 from-primary"
                       size="sm"
                     >
-                      <Plus className="mr-2 w-4 h-4" />
+                      <Plus className="w-4 h-4 mr-2" />
                       添加奖励
                     </Button>
                   </div>
@@ -1803,9 +1832,9 @@ export default function ParentDashboard() {
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-6">
-                  <div className="p-4 bg-amber-50 rounded-xl border-2 border-amber-100">
-                    <div className="flex gap-2 items-center mb-4">
-                      <div className="flex justify-center items-center w-8 h-8 bg-amber-100 rounded-lg">
+                  <div className="p-4 border-2 bg-amber-50 rounded-xl border-amber-100">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100">
                         <ClipboardCheck className="w-5 h-5 text-amber-600" />
                       </div>
                       <h3 className="text-lg font-semibold text-amber-700">
@@ -1818,32 +1847,32 @@ export default function ParentDashboard() {
                         {pendingRewards.map((item) => (
                           <div
                             key={item.id}
-                            className="flex flex-col p-3 bg-white rounded-lg border border-amber-200 sm:flex-row sm:items-center sm:justify-between hover:border-amber-300 hover:bg-amber-50"
+                            className="flex flex-col p-3 bg-white border rounded-lg border-amber-200 sm:flex-row sm:items-center sm:justify-between hover:border-amber-300 hover:bg-amber-50"
                           >
-                            <div className="flex gap-4 items-center mb-3 sm:mb-0">
-                              <div className="flex justify-center items-center w-10 h-10 bg-amber-100 rounded-full">
+                            <div className="flex items-center gap-4 mb-3 sm:mb-0">
+                              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-100">
                                 <Gift className="w-5 h-5 text-amber-600" />
                               </div>
                               <div>
                                 <h4 className="font-medium">
                                   {item.rewardTitle}
                                 </h4>
-                                <div className="flex gap-4 items-center text-sm text-muted-foreground">
-                                  <span className="flex gap-1 items-center">
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1">
                                     <User className="w-4 h-4" />
                                     {item.childName}
                                   </span>
-                                  <span className="flex gap-1 items-center">
+                                  <span className="flex items-center gap-1">
                                     <Clock className="w-4 h-4" />
                                     {item.requestedAt}
                                   </span>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex gap-3 items-center ml-14 sm:ml-0">
+                            <div className="flex items-center gap-3 ml-14 sm:ml-0">
                               <Badge
                                 variant="outline"
-                                className="flex gap-1 bg-yellow-50 border-yellow-300"
+                                className="flex gap-1 border-yellow-300 bg-yellow-50"
                               >
                                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                 <span>{item.points}</span>
@@ -1862,15 +1891,15 @@ export default function ParentDashboard() {
                         ))}
                       </div>
                     ) : (
-                      <div className="p-6 text-center bg-white rounded-lg border border-amber-200 border-dashed">
+                      <div className="p-6 text-center bg-white border border-dashed rounded-lg border-amber-200">
                         <p className="text-muted-foreground">暂无待审批兑换</p>
                       </div>
                     )}
                   </div>
 
-                  <div className="p-4 bg-blue-50 rounded-xl border-2 border-blue-100">
-                    <div className="flex gap-2 items-center mb-4">
-                      <div className="flex justify-center items-center w-8 h-8 bg-blue-100 rounded-lg">
+                  <div className="p-4 border-2 border-blue-100 bg-blue-50 rounded-xl">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
                         <Gift className="w-5 h-5 text-blue-600" />
                       </div>
                       <h3 className="text-lg font-semibold text-blue-700">
@@ -1882,10 +1911,10 @@ export default function ParentDashboard() {
                       {rewards.map((reward) => (
                         <div
                           key={reward.id}
-                          className="flex overflow-hidden flex-col bg-gradient-to-br from-white to-purple-50 rounded-xl border-2 transition-all border-primary/20 hover:border-primary/50 hover:shadow-xl"
+                          className="flex flex-col overflow-hidden transition-all border-2 bg-gradient-to-br from-white to-purple-50 rounded-xl border-primary/20 hover:border-primary/50 hover:shadow-xl"
                         >
-                          <div className="flex gap-4 items-center p-4">
-                            <div className="flex justify-center items-center w-20 h-20 rounded-xl bg-primary/10">
+                          <div className="flex items-center gap-4 p-4">
+                            <div className="flex items-center justify-center w-20 h-20 rounded-xl bg-primary/10">
                               <img
                                 src={reward.image || "/placeholder.svg"}
                                 alt={reward.title}
@@ -1894,7 +1923,7 @@ export default function ParentDashboard() {
                             </div>
                             <div className="flex-1">
                               <h3 className="font-semibold">{reward.title}</h3>
-                              <div className="flex gap-1 items-center mt-1">
+                              <div className="flex items-center gap-1 mt-1">
                                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                 <span className="font-bold text-primary">
                                   {reward.points}
@@ -1915,11 +1944,11 @@ export default function ParentDashboard() {
           </TabsContent>
 
           <TabsContent value="history" className="space-y-4">
-            <Card className="overflow-hidden bg-gradient-to-br from-blue-50 to-green-50 rounded-2xl border-2 border-primary/20">
+            <Card className="overflow-hidden border-2 bg-gradient-to-br from-blue-50 to-green-50 rounded-2xl border-primary/20">
               <CardHeader className="bg-gradient-to-r from-blue-400/20 via-teal-400/20 to-green-400/20">
-                <div className="flex flex-col gap-2 justify-between items-start sm:flex-row sm:items-center sm:gap-0">
+                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
                   <CardTitle className="flex items-center text-2xl">
-                    <History className="mr-2 w-6 h-6 text-primary" />
+                    <History className="w-6 h-6 mr-2 text-primary" />
                     积分记录
                   </CardTitle>
                 </div>
@@ -1933,9 +1962,9 @@ export default function ParentDashboard() {
                       .map((item) => (
                         <div
                           key={item.id}
-                          className="flex justify-between items-center p-4 bg-white rounded-xl border-2 border-primary/20"
+                          className="flex items-center justify-between p-4 bg-white border-2 rounded-xl border-primary/20"
                         >
-                          <div className="flex gap-3 items-center">
+                          <div className="flex items-center gap-3">
                             <div
                               className={`flex h-10 w-10 items-center justify-center rounded-full ${
                                 item.type === "earn"
@@ -1951,8 +1980,8 @@ export default function ParentDashboard() {
                             </div>
                             <div>
                               <h3 className="font-semibold">{item.title}</h3>
-                              <div className="flex gap-2 items-center text-sm text-muted-foreground">
-                                <span className="flex gap-1 items-center">
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1">
                                   <User className="w-4 h-4" />
                                   {item.childName}
                                 </span>
@@ -2001,7 +2030,8 @@ export default function ParentDashboard() {
                   {showAllRecords ? "收起记录" : "查看更多记录"}
                   <ChevronRight
                     className={`ml-2 h-4 w-4 transition-transform duration-300 ${
-                      showAllRecords ? "rotate-90" : ""}`}
+                      showAllRecords ? "rotate-90" : ""
+                    }`}
                   />
                 </Button>
               </CardFooter>

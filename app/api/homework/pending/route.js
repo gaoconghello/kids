@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 import { formatDateTime } from "@/lib/utils";
 
+
 // 获取作业列表(添加待审核作业)
 export const GET = withAuth(["parent"], async (request) => {
   try {
@@ -144,91 +145,8 @@ export const GET = withAuth(["parent"], async (request) => {
   }
 });
 
-// 创建新作业
-export const POST = withAuth(["parent", "child"], async (request) => {
-  try {
-    const data = await request.json();
-
-    // 验证必填字段
-    if (!data.name) {
-      return NextResponse.json(
-        { code: 400, message: "缺少必要字段" },
-        { status: 400 }
-      );
-    }
-
-    console.log(data);
-    data.child_id = request.user.id;
-
-    // 创建新作业
-    const newHomework = await prisma.homework.create({
-      data: {
-        name: data.name,
-        subject_id: data.subject_id ? parseInt(data.subject_id) : null,
-        estimated_duration: data.estimated_duration
-          ? parseInt(data.estimated_duration)
-          : null,
-        deadline: data.deadline ? new Date(data.deadline) : null,
-        integral: data.integral ? parseInt(data.integral) : 0,
-        incorrect: data.incorrect ? parseInt(data.incorrect) : 0,
-        homework_date: new Date(
-          new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
-        ),
-        create_review: "0",
-        complete_review: "0",
-        create_review_time: null,
-        create_review_user_id: null,
-        complete_review_time: null,
-        complete_review_user_id: null,
-        complete_time: null,
-        is_complete: "0",
-        pomodoro: data.pomodoro ? parseInt(data.pomodoro) : null,
-
-        child_id: request.user.id,
-
-        created_at: new Date(
-          new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
-        ),
-        updated_at: new Date(
-          new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
-        ),
-        created_user_id: request.user.id,
-      },
-    });
-
-    return NextResponse.json({
-      code: 200,
-      message: "作业添加成功",
-      data: {
-        id: newHomework.id,
-        name: newHomework.name,
-        subject_id: newHomework.subject_id,
-        estimated_duration: newHomework.estimated_duration,
-        deadline: newHomework.deadline
-          ? formatDateTime(newHomework.deadline)
-          : null,
-        integral: newHomework.integral || 0,
-        incorrect: newHomework.incorrect || 0,
-        homework_date: newHomework.homework_date
-          ? formatDateTime(newHomework.homework_date, "YYYY-MM-DD")
-          : null,
-        create_review: newHomework.create_review,
-        complete_review: newHomework.complete_review,
-        is_complete: newHomework.is_complete,
-        child_id: newHomework.child_id,
-      },
-    });
-  } catch (error) {
-    console.error("添加作业失败:", error);
-    return NextResponse.json(
-      { code: 500, message: "添加作业失败", error: error.message },
-      { status: 500 }
-    );
-  }
-});
-
-// 更新作业信息
-export const PUT = withAuth(["parent", "child"], async (request) => {
+// 审批增加作业信息
+export const PUT = withAuth(["parent"], async (request) => {
   try {
     const data = await request.json();
 
@@ -252,13 +170,22 @@ export const PUT = withAuth(["parent", "child"], async (request) => {
       );
     }
 
-    // 权限检查：孩子只能更新自己的作业完成状态
-    if (
-      request.user.role === "child" &&
-      existingHomework.child_id !== request.user.id
-    ) {
+    // 权限检查：家长只能审核同一家庭孩子的作业
+    // 获取当前家长和孩子的family_id
+    const [parent, child] = await Promise.all([
+      prisma.account.findUnique({
+        where: { id: request.user.id },
+        select: { family_id: true },
+      }),
+      prisma.account.findUnique({
+        where: { id: existingHomework.child_id },
+        select: { family_id: true },
+      })
+    ]);
+
+    if (!parent || !child || parent.family_id !== child.family_id) {
       return NextResponse.json(
-        { code: 403, message: "没有权限更新此作业" },
+        { code: 403, message: "没有权限审核此作业" },
         { status: 403 }
       );
     }
@@ -305,6 +232,15 @@ export const PUT = withAuth(["parent", "child"], async (request) => {
           new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
         );
         updateData.complete_review_user_id = request.user.id;
+      }
+
+      // 作业添加审批
+      if (data.create_review !== undefined) {
+        updateData.create_review = data.create_review;
+        updateData.create_review_time = new Date(
+          new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
+        );
+        updateData.create_review_user_id = request.user.id;
       }
     }
 
