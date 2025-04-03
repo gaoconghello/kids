@@ -7,19 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 
-// 修改 AddHomeworkDialog 组件，添加 childrenList 参数
 export function AddHomeworkDialog({
   isOpen,
   onClose,
   onAdd,
   initialData,
-  childId = "",
   subjects = [],
 }) {
-  const [subject, setSubject] = useState(initialData?.subject || "");
+  const [subjectId, setSubjectId] = useState(initialData?.subject_id || "");
   const [name, setName] = useState(initialData?.name || "");
   const [duration, setDuration] = useState(
-    initialData?.duration?.replace("分钟", "") || "30"
+    initialData?.duration|| "30"
   );
   const [deadline, setDeadline] = useState(initialData?.deadline || "");
   const [points, setPoints] = useState(initialData?.points?.toString() || "10");
@@ -27,27 +25,54 @@ export function AddHomeworkDialog({
 
   useEffect(() => {
     if (initialData) {
-      setSubject(initialData.subject || "");
-      setName(initialData.name || "");
-      setDuration(initialData.duration?.replace("分钟", "") || "");
-      setDeadline(initialData.deadline || "");
+      // 如果initialData中的subject是科目名称而非ID，则需要查找对应的ID
+      if (initialData.subject && subjects.length > 0) {
+        // 查找名称匹配的科目，并设置其ID
+        const matchedSubject = subjects.find(s => s.name === initialData.subject);
+        if (matchedSubject) {
+          setSubjectId(matchedSubject.id);
+        } else {
+          setSubjectId(initialData.subject_id || "");
+        }
+      } else {
+        setSubjectId(initialData.subject_id || "");
+      }
+      
+      setName(initialData.title || "");
+      setDuration(initialData.duration || "");
+      
+      // 处理deadline格式
+      if (initialData.deadline) {
+        // 从日期时间字符串中提取时间部分 (HH:MM)
+        const timeMatch = initialData.deadline.match(/\d{2}:\d{2}/);
+        setDeadline(timeMatch ? timeMatch[0] : "");
+      } else {
+        setDeadline("");
+      }
+      
       setPoints(initialData.points?.toString() || "");
     }
-  }, [initialData]);
+  }, [initialData, subjects]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // 根据选择的subjectId找到对应的科目名称
+    const selectedSubject = subjects.find(s => s.id === subjectId);
+    const subjectName = selectedSubject ? selectedSubject.name : "";
+    
     onAdd({
-      subject,
+      subject: subjectName,
+      subject_id: subjectId,
       name,
-      duration: `${duration}分钟`,
+      title: name,
+      duration,
       deadline,
       points: Number.parseInt(points),
       completed: false,
     });
 
     // Reset form
-    setSubject("");
+    setSubjectId("");
     setName("");
     setDuration("20");
     setDeadline("");
@@ -89,9 +114,9 @@ export function AddHomeworkDialog({
                   <Button
                     key={s.id}
                     type="button"
-                    variant={subject === s.id ? "default" : "outline"}
+                    variant={subjectId === s.id ? "default" : "outline"}
                     className="h-10 text-sm sm:h-12 sm:text-base"
-                    onClick={() => setSubject(s.id)}
+                    onClick={() => setSubjectId(s.id)}
                   >
                     {s.name}
                   </Button>

@@ -61,6 +61,7 @@ export default function ParentDashboard() {
     thisWeekSpent: 0,
   });
 
+  const [subjects, setSubjects] = useState([]);
   const [pendingHomework, setPendingHomework] = useState([]);
   const [completedHomework, setCompletedHomework] = useState([]);
   const [childHomework, setChildHomework] = useState([]);
@@ -251,6 +252,23 @@ export default function ParentDashboard() {
   const [editingTask, setEditingTask] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // 获取科目数据
+  const fetchSubjects = async () => {
+    try {
+      const response = await get("/api/subject");
+      const result = await response.json();
+
+      if (result.code === 200 && result.data) {
+        setSubjects(result.data);
+        console.log("获取科目列表成功:", result.data);
+      } else {
+        console.error("获取科目列表失败:", result.message);
+      }
+    } catch (error) {
+      console.error("获取科目数据出错:", error);
+    }
+  };
+
   // 获取待新增作业
   const fetchPendingHomeworks = async () => {
     try {
@@ -272,7 +290,8 @@ export default function ParentDashboard() {
           childName: selectedChild?.name || "未知",
           subject: homework.subject_name,
           title: homework.name,
-          duration: `${homework.estimated_duration}分钟`,
+          duration: homework.estimated_duration || 0,
+          deadline: homework.deadline || "",
           points: homework.integral || 0,
           status: "pending",
           completedAt: homework.complete_time,
@@ -324,11 +343,11 @@ export default function ParentDashboard() {
     }
   };
 
-  const fetchChildHomework = async () => {
+  const fetchChildHomeworks = async () => {
     try {
       setIsLoading(true);
       console.log("获取孩子作业");
-      const response = await get(`/api/homework?childId=${selectedChild.id}`);
+      const response = await get(`/api/homework/parent?childId=${selectedChild.id}`);
       const result = await response.json();
 
       if (result.code === 200 && result.data) {
@@ -370,6 +389,8 @@ export default function ParentDashboard() {
   useEffect(() => {
     // 首先获取孩子列表
     fetchChildrenList();
+    // 获取科目列表
+    fetchSubjects();
   }, []);
 
   // 当选择的孩子ID变化时，重新获取相关数据
@@ -381,7 +402,7 @@ export default function ParentDashboard() {
       // 获取已完成作业
       fetchCompletedHomeworks();
       // 获取作业数据
-      fetchChildHomework();
+      fetchChildHomeworks();
     }
   }, [selectedChild]); // 添加selectedChild依赖
 
@@ -446,53 +467,105 @@ export default function ParentDashboard() {
     try {
       if (editingHomework) {
         console.log("修改作业:", newHomework);
+
+        // 首先更新本地UI状态
         setPendingHomework(
           pendingHomework.map((item) =>
             item.id === editingHomework.id ? { ...item, ...newHomework } : item
           )
         );
+
+        // 设置加载状态
+        setIsLoading(true);
+
+        // 调用API保存修改到服务器
+        (async () => {
+          try {
+            // 准备要发送的数据
+            const homeworkData = {
+              id: editingHomework.id,
+              // 可以添加其他需要更新的字段
+              name: newHomework.name,
+              subject_id: newHomework.subject_id,
+              duration: newHomework.duration,
+              deadline: newHomework.deadline,
+              integral: newHomework.points,
+            };
+
+            // 调用POST接口保存修改
+            const response = await post("/api/homework/pending", homeworkData);
+            const result = await response.json();
+
+            if (result.code === 200) {
+              console.log("作业修改成功:", result.data);
+              // 刷新数据以确保显示最新状态
+              // fetchPendingHomeworks();
+            } else {
+              console.error("作业修改失败:", result.message);
+              alert(`修改失败: ${result.message || "未知错误"}`);
+            }
+          } catch (error) {
+            console.error("作业修改请求失败:", error);
+            alert(`修改请求失败: ${error.message}`);
+          } finally {
+            setIsLoading(false);
+          }
+        })();
+
         setEditingHomework(null);
       } else {
         console.log("添加新作业:", newHomework);
-        // 如果是数组（多个小朋友的作业），则添加多个
-        if (Array.isArray(newHomework)) {
-          const nextId =
-            pendingHomework.length > 0
-              ? Math.max(...pendingHomework.map((hw) => hw.id)) + 1
-              : 1;
-          const newHomeworks = newHomework.map((hw, index) => ({
-            ...hw,
-            id: nextId + index,
-            status: "pending",
-            createdAt: new Date().toISOString().slice(0, 16).replace("T", " "),
-          }));
-          setPendingHomework([...pendingHomework, ...newHomeworks]);
-        } else {
-          // 单个作业的情况
-          const nextId =
-            pendingHomework.length > 0
-              ? Math.max(...pendingHomework.map((hw) => hw.id)) + 1
-              : 1;
-          setPendingHomework([
-            ...pendingHomework,
-            {
-              ...newHomework,
-              id: nextId,
-              status: "pending",
-              createdAt: new Date()
-                .toISOString()
-                .slice(0, 16)
-                .replace("T", " "),
-            },
-          ]);
-        }
+
+        // 设置加载状态
+        setIsLoading(true);
+
+        // 异步函数处理API调用
+        (async () => {
+          try {
+            // 准备API请求数据
+            const homeworkData = {
+              name: newHomework.name,
+              subject_id: newHomework.subject_id,
+              estimated_duration: parseInt(newHomework.duration) || null,
+              deadline: newHomework.deadline
+                ? `${new Date().toISOString().split("T")[0]} ${
+                    newHomework.deadline
+                  }`
+                : null,
+              integral: parseInt(newHomework.points) || 0,
+              homework_date: new Date().toISOString().split("T")[0],
+              child_id: selectedChild.id, // 添加孩子ID，家长版本需要指定哪个孩子
+            };
+
+            // 调用API添加作业
+            const response = await post("/api/homework/parent", homeworkData);
+            const result = await response.json();
+
+            if (result.code === 200 && result.data) {
+              console.log("作业添加成功:", result.data);
+
+              // 添加成功后刷新作业列表
+              fetchChildHomeworks();
+            } else {
+              console.error("添加作业失败:", result.message);
+              alert(`添加失败: ${result.message || "未知错误"}`);
+            }
+          } catch (error) {
+            console.error("添加作业出错:", error);
+            alert(`添加作业失败: ${error.message}`);
+          } finally {
+            setIsLoading(false);
+          }
+        })();
       }
     } catch (error) {
       alert("操作失败：" + error.message);
+      setIsLoading(false);
     }
   };
 
   const handleEditHomework = (item) => {
+    console.log("修改作业:", item);
     setEditingHomework(item);
     setIsAddHomeworkOpen(true);
   };
@@ -584,13 +657,13 @@ export default function ParentDashboard() {
         try {
           // 调用API批准作业
           setIsLoading(true);
-          
+
           const response = await put(`/api/homework/pending`, {
             id: approvalItem.id,
           });
-          
+
           const result = await response.json();
-          
+
           if (result.code === 200) {
             // 批准成功，从待处理列表中移除该作业
             setPendingHomework(
@@ -601,7 +674,7 @@ export default function ParentDashboard() {
             fetchPendingHomeworks();
           } else {
             console.error("作业审批失败:", result.message);
-            alert(`审批失败: ${result.message || '未知错误'}`);
+            alert(`审批失败: ${result.message || "未知错误"}`);
           }
         } catch (error) {
           console.error("作业审批请求出错:", error);
@@ -1251,7 +1324,7 @@ export default function ParentDashboard() {
                                   </span>
                                   <span className="flex items-center gap-1">
                                     <Clock className="w-4 h-4" />
-                                    {item.duration}
+                                    {item.duration}分钟
                                   </span>
                                 </div>
                               </div>
@@ -2048,7 +2121,7 @@ export default function ParentDashboard() {
         }}
         onAdd={handleAddHomework}
         initialData={editingHomework}
-        childrenList={childrenList}
+        subjects={subjects}
       />
 
       <AddTaskDialog
