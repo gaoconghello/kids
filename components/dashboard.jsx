@@ -478,7 +478,6 @@ export default function Dashboard() {
     if (task?.completed) return;
 
     try {
-      // 使用封装的put方法替代fetch
       const response = await post("/api/homework/complete", {
         homeworkId: taskId,
       });

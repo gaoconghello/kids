@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 import { formatDateTime } from "@/lib/utils";
+import { INTEGRAL_TYPE } from "@/lib/constants";
 
 // 获取待审核的已完成作业
 // 获取作业列表(添加待审核作业)
@@ -212,40 +213,6 @@ export const POST = withAuth(["child"], async (request) => {
         },
       });
 
-      // 查询账户
-      const account = await tx.account.findUnique({
-        where: {
-          id: request.user.id,
-        },
-      });
-
-      if (!account) {
-        return NextResponse.json(
-          { code: 404, message: "账户不存在" },
-          { status: 404 }
-        );
-      }
-
-      // 更新账户积分
-      await tx.account.update({
-        where: { id: account.id },
-        data: {
-          integral: account.integral + homework.integral,
-          updated_at: now,
-          updated_user_id: request.user.id,
-        },
-      });
-
-      // 创建积分历史记录
-      await tx.integral_history.create({
-        data: {
-          integral_id: homeworkId,
-          integral_type: "1", // 1表示作业
-          child_id: request.user.id,
-          family_id: account.family_id, // 从账户中获取家庭ID
-        },
-      });
-
       return NextResponse.json({
         code: 200,
         message: "作业完成成功",
@@ -284,111 +251,142 @@ export const PUT = withAuth(["parent"], async (request) => {
     const data = await request.json();
 
     // 验证必填字段
-    if (!data.homeworkId || !data.reviewStatus) {
+    if (!data.id) {
       return NextResponse.json(
-        { code: 400, message: "缺少必要参数" },
+        { code: 400, message: "缺少作业ID" },
         { status: 400 }
       );
     }
 
-    const homeworkId = parseInt(data.homeworkId);
-    const reviewStatus = data.reviewStatus; // "1" 为通过, "2" 为拒绝
-
     // 检查作业是否存在
-    const homework = await prisma.homework.findUnique({
-      where: { id: homeworkId },
-      include: {
-        subject: true,
-        child: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
+    const existingHomework = await prisma.homework.findUnique({
+      where: { id: parseInt(data.id) },
     });
 
-    if (!homework) {
+    if (!existingHomework) {
       return NextResponse.json(
         { code: 404, message: "作业不存在" },
         { status: 404 }
       );
     }
 
-    // 检查作业是否已完成
-    if (!homework.complete_time) {
+    // 权限检查：家长只能审核同一家庭孩子的作业
+    // 获取当前家长和孩子的family_id
+    const [parent, child] = await Promise.all([
+      prisma.account.findUnique({
+        where: { id: request.user.id },
+        select: { family_id: true },
+      }),
+      prisma.account.findUnique({
+        where: { id: existingHomework.child_id },
+        select: { family_id: true, integral: true },
+      }),
+    ]);
+
+    if (!parent || !child || parent.family_id !== child.family_id) {
       return NextResponse.json(
-        { code: 400, message: "该作业尚未完成，无法审核" },
-        { status: 400 }
+        { code: 403, message: "没有权限审核此作业" },
+        { status: 403 }
       );
     }
 
-    // 获取当前时间（上海时区）
+    // 当前上海时间
     const now = new Date(
       new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
     );
+    
+    let statusCode;
+    let statusMessage;
+    let updatedHomework;
 
-    // 更新作业审核状态
-    const updatedHomework = await prisma.homework.update({
-      where: { id: homeworkId },
-      data: {
-        complete_review: reviewStatus,
-        complete_review_time: now,
-        complete_review_user_id: request.user.id,
-        updated_at: now,
-        updated_user_id: request.user.id,
-        review_comment: data.comment || null,
-      },
-    });
-
-    // 如果审核拒绝，需要撤销之前的积分奖励
-    if (reviewStatus === "2") {
-      // 查找之前的积分记录
-      const previousIntegral = await prisma.integral.findFirst({
-        where: {
-          source: "homework",
-          source_id: homeworkId,
-          type: "income",
+    if (!data.approved) {
+      // 如果approved为false，则将作业状态改为未完成
+      updatedHomework = await prisma.homework.update({
+        where: { id: parseInt(data.id) },
+        data: {
+          is_complete: "0",
+          updated_at: now,
+          updated_user_id: request.user.id,
         },
       });
-
-      if (previousIntegral) {
-        // 创建积分撤销记录
-        await prisma.integral.create({
+      statusCode = 400;
+      statusMessage = "作业审核未通过";
+    } else {
+      // 审核通过 - 使用事务处理
+      const result = await prisma.$transaction(async (tx) => {
+        // 1. 更新作业状态
+        const updatedHomework = await tx.homework.update({
+          where: { id: parseInt(data.id) },
           data: {
-            child_id: homework.child_id,
-            amount: -previousIntegral.amount, // 负值表示扣除
-            type: "expense",
-            source: "homework_rejected",
-            source_id: homeworkId,
-            description: `作业《${homework.name}》审核未通过，撤销积分`,
-            created_at: now,
+            complete_review: "1",
+            complete_review_time: now,
+            complete_review_user_id: request.user.id,
+            incorrect: data.incorrect ? parseInt(data.incorrect) : 0,
             updated_at: now,
-            created_user_id: request.user.id,
+            updated_user_id: request.user.id,
           },
         });
-      }
+        
+        // 2. 更新孩子的积分账户
+        await tx.account.update({
+          where: { id: existingHomework.child_id },
+          data: {
+            integral: child.integral + existingHomework.integral,
+            updated_at: now,
+            updated_user_id: request.user.id,
+          },
+        });
+        
+        // 3. 创建积分历史记录
+        await tx.integral_history.create({
+          data: {
+            integral_id: existingHomework.id,
+            integral_type: INTEGRAL_TYPE.HOMEWORK,
+            child_id: existingHomework.child_id,
+            family_id: child.family_id,
+            integral: existingHomework.integral,
+            integral_date: now,
+          },
+        });
+        
+        return updatedHomework;
+      });
+      
+      updatedHomework = result;
+      statusCode = 200;
+      statusMessage = "作业审核通过";
     }
 
+    // 返回响应
     return NextResponse.json({
-      code: 200,
-      message: reviewStatus === "1" ? "作业审核通过" : "作业审核未通过",
+      code: statusCode,
+      message: statusMessage,
       data: {
         id: updatedHomework.id,
         name: updatedHomework.name,
-        subject_name: homework.subject?.name || "",
+        subject_id: updatedHomework.subject_id,
+        estimated_duration: updatedHomework.estimated_duration,
+        deadline: updatedHomework.deadline
+          ? formatDateTime(updatedHomework.deadline)
+          : null,
+        integral: updatedHomework.integral || 0,
+        incorrect: updatedHomework.incorrect || 0,
+        homework_date: updatedHomework.homework_date
+          ? formatDateTime(updatedHomework.homework_date, "YYYY-MM-DD")
+          : null,
+        create_review: updatedHomework.create_review,
         complete_review: updatedHomework.complete_review,
-        complete_review_time: formatDateTime(
-          updatedHomework.complete_review_time
-        ),
-        child_name: homework.child?.name || "",
-        review_comment: updatedHomework.review_comment,
+        complete_time: updatedHomework.complete_time
+          ? formatDateTime(updatedHomework.complete_time)
+          : null,
+        is_complete: updatedHomework.is_complete,
+        child_id: updatedHomework.child_id,
       },
     });
   } catch (error) {
-    console.error("审核作业失败:", error);
+    console.error("作业审核失败:", error);
     return NextResponse.json(
-      { code: 500, message: "审核作业失败", error: error.message },
+      { code: 500, message: "作业审核失败", error: error.message },
       { status: 500 }
     );
   }

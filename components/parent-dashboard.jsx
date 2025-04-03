@@ -691,55 +691,87 @@ export default function ParentDashboard() {
         );
       }
     } else if (approvalType === "homework-complete") {
-      if (approved) {
-        const updatedCompletedHomework = completedHomework.filter(
-          (item) => item.id !== approvalItem.id
-        );
-        setCompletedHomework(updatedCompletedHomework);
+      try {
+        // 调用API批准作业完成（无论是批准还是拒绝）
+        setIsLoading(true);
 
-        setChildHomework(
-          childHomework.map((subject) => {
-            if (subject.subject === approvalItem.subject) {
-              return {
-                ...subject,
-                tasks: subject.tasks.map((task) => {
-                  if (task.title === approvalItem.title) {
-                    return {
-                      ...task,
-                      completed: true,
-                      wrongAnswers: wrongAnswers,
-                    };
-                  }
-                  return task;
-                }),
-              };
-            }
-            return subject;
-          })
-        );
-
-        console.log(
-          `作业 ${approvalItem.title} 完成，错题数量: ${wrongAnswers}`
-        );
-
-        setHistory([
-          {
-            id: Date.now(),
-            childName: approvalItem.childName,
-            title: `完成${approvalItem.subject}作业: ${approvalItem.title}`,
-            points: approvalItem.points,
-            type: "earn",
-            date: new Date().toISOString().split("T")[0],
-            wrongAnswers: wrongAnswers,
-          },
-          ...history,
-        ]);
-
-        setChildPoints({
-          ...childPoints,
-          total: childPoints.total + approvalItem.points,
-          thisWeek: childPoints.thisWeek + approvalItem.points,
+        const response = await put(`/api/homework/complete`, {
+          id: approvalItem.id,
+          incorrect: wrongAnswers || 0,
+          approved: approved,
         });
+
+        const result = await response.json();
+
+        if (result.code === 200) {
+          // 批准成功，从待完成列表中移除该作业
+          const updatedCompletedHomework = completedHomework.filter(
+            (item) => item.id !== approvalItem.id
+          );
+          setCompletedHomework(updatedCompletedHomework);
+
+          if (approved) {
+            // 更新作业列表中对应作业的状态
+            setChildHomework(
+              childHomework.map((subject) => {
+                if (subject.subject === approvalItem.subject) {
+                  return {
+                    ...subject,
+                    tasks: subject.tasks.map((task) => {
+                      if (task.title === approvalItem.title) {
+                        return {
+                          ...task,
+                          completed: true,
+                          wrongAnswers: wrongAnswers || 0,
+                        };
+                      }
+                      return task;
+                    }),
+                  };
+                }
+                return subject;
+              })
+            );
+
+            console.log(
+              `作业 ${approvalItem.title} 完成，错题数量: ${wrongAnswers}`
+            );
+
+            // 添加到历史记录
+            setHistory([
+              {
+                id: Date.now(),
+                childName: approvalItem.childName,
+                title: `完成${approvalItem.subject}作业: ${approvalItem.title}`,
+                points: approvalItem.points,
+                type: "earn",
+                date: new Date().toISOString().split("T")[0],
+                wrongAnswers: wrongAnswers,
+              },
+              ...history,
+            ]);
+
+            // 更新积分
+            setChildPoints({
+              ...childPoints,
+              total: childPoints.total + approvalItem.points,
+              thisWeek: childPoints.thisWeek + approvalItem.points,
+            });
+          } else {
+            console.log(`作业 ${approvalItem.title} 被拒绝`);
+          }
+          
+          // 刷新数据
+          fetchCompletedHomeworks();
+        } else {
+          console.error("作业完成审批失败:", result.message);
+          alert(`审批失败: ${result.message || "未知错误"}`);
+        }
+      } catch (error) {
+        console.error("作业完成审批请求出错:", error);
+        alert(`审批请求出错: ${error.message}`);
+      } finally {
+        setIsLoading(false);
       }
     } else if (approvalType === "task-add") {
       if (approved) {
