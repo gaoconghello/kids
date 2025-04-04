@@ -106,6 +106,7 @@ export const GET = withAuth(["parent"], async (request) => {
       create_review_time: task.create_review_time ? formatDateTime(task.create_review_time) : null,
       complete_review_time: task.complete_review_time ? formatDateTime(task.complete_review_time) : null,
       complete_time: task.complete_time ? formatDateTime(task.complete_time) : null,
+      is_complete: task.is_complete,
       created_at: task.created_at ? formatDateTime(task.created_at) : null,
       updated_at: task.updated_at ? formatDateTime(task.updated_at) : null,
     }));
