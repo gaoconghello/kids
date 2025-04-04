@@ -42,6 +42,39 @@ import { ChangePasswordDialog } from "./change-password-dialog";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { get, post, put } from "@/lib/http";
 
+// 计算错题统计的辅助函数
+const calculateWrongAnswersStats = (homeworks) => {
+  // 计算总错题数
+  const totalWrongAnswers = homeworks.reduce(
+    (sum, subject) =>
+      sum +
+      subject.tasks.reduce(
+        (subSum, task) =>
+          subSum +
+          (task.completed ? task.incorrect || 0 : 0),
+        0
+      ),
+    0
+  );
+  
+  // 计算总作业数
+  const totalTasks = homeworks.reduce(
+    (sum, subject) => sum + subject.tasks.length,
+    0
+  );
+  
+  // 计算平均错题数
+  const avgWrongAnswers = totalTasks > 0 
+    ? (totalWrongAnswers / totalTasks).toFixed(1) 
+    : "0.0";
+  
+  return {
+    totalWrongAnswers,
+    totalTasks,
+    avgWrongAnswers
+  };
+};
+
 // 庆祝组件
 function CompletionCelebration({ onClose }) {
   return (
@@ -1108,17 +1141,17 @@ export default function Dashboard() {
                                       截止 {task.deadline}
                                     </span>
                                     {task.completed &&
-                                      task.wrongAnswers !== undefined && (
+                                      task.incorrect !== undefined && (
                                         <span className="flex items-center gap-1">
                                           <AlertCircle className="w-4 h-4 text-amber-500" />
                                           <span
                                             className={
-                                              task.wrongAnswers > 0
+                                              task.incorrect > 0
                                                 ? "text-amber-600"
                                                 : "text-green-600"
                                             }
                                           >
-                                            错题: {task.wrongAnswers}
+                                            错题: {task.incorrect}
                                           </span>
                                         </span>
                                       )}
@@ -1246,20 +1279,28 @@ export default function Dashboard() {
                         <div className="flex justify-between mt-1 text-xs">
                           <span className="text-gray-500">
                             总错题:{" "}
-                            {subject.tasks.reduce(
-                              (sum, t) => sum + (t.wrongAnswers || 0),
-                              0
-                            )}
+                            {(() => {
+                              // 为单个科目计算错题统计
+                              const totalWrongAnswers = subject.tasks.reduce(
+                                (sum, t) => sum + (t.incorrect || 0),
+                                0
+                              );
+                              return totalWrongAnswers;
+                            })()}
                             个
                           </span>
                           <span className="text-gray-500">
                             平均:{" "}
-                            {(
-                              subject.tasks.reduce(
-                                (sum, t) => sum + (t.wrongAnswers || 0),
+                            {(() => {
+                              // 为单个科目计算平均错题
+                              const totalWrongAnswers = subject.tasks.reduce(
+                                (sum, t) => sum + (t.incorrect || 0),
                                 0
-                              ) / subject.tasks.length
-                            ).toFixed(1)}
+                              );
+                              return subject.tasks.length > 0
+                                ? (totalWrongAnswers / subject.tasks.length).toFixed(1)
+                                : "0.0";
+                            })()}
                             个/题
                           </span>
                         </div>
@@ -1378,19 +1419,24 @@ export default function Dashboard() {
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="text-4xl font-bold text-amber-500">
-                        {homeworks.reduce(
-                          (sum, subject) =>
-                            sum +
-                            subject.tasks.reduce(
-                              (subSum, task) =>
-                                subSum +
-                                (task.completed ? task.wrongAnswers || 0 : 0),
-                              0
-                            ),
-                          0
-                        )}
+                        {calculateWrongAnswersStats(homeworks).totalWrongAnswers}
                       </div>
                       <span className="text-2xl">📝</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 border rounded-lg bg-amber-50/70 border-amber-200">
+                    <div>
+                      <h3 className="font-medium text-md">平均错题数</h3>
+                      <p className="text-xs text-muted-foreground">
+                        每道题平均错题数
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="text-2xl font-bold text-amber-500">
+                        {calculateWrongAnswersStats(homeworks).avgWrongAnswers}
+                      </div>
+                      <span className="text-xl">📊</span>
                     </div>
                   </div>
 
@@ -1416,7 +1462,7 @@ export default function Dashboard() {
                       {homeworks.map((subject) => {
                         const subjectWrongAnswers = subject.tasks.reduce(
                           (sum, task) =>
-                            sum + (task.completed ? task.wrongAnswers || 0 : 0),
+                            sum + (task.completed ? task.incorrect || 0 : 0),
                           0
                         );
 
