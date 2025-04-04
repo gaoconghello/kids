@@ -99,46 +99,9 @@ export default function ParentDashboard() {
   const [completedHomework, setCompletedHomework] = useState([]);
   const [childHomework, setChildHomework] = useState([]);
 
-  const [pendingTasks, setPendingTasks] = useState([
-    {
-      id: 1,
-      childName: "小明",
-      title: "整理玩具",
-      points: 10,
-      status: "pending",
-      createdAt: "2025-03-01 10:15",
-    },
-    {
-      id: 2,
-      childName: "小明",
-      title: "帮妈妈洗碗",
-      points: 25,
-      status: "pending",
-      createdAt: "2025-03-01 11:30",
-    },
-  ]);
-  const [completedTasks, setCompletedTasks] = useState([
-    {
-      id: 3,
-      childName: "小明",
-      title: "阅读30分钟",
-      points: 15,
-      status: "completed",
-      completedAt: "2025-03-01 09:45",
-    },
-  ]);
-  const [childTasks, setChildTasks] = useState([
-    {
-      id: 1,
-      title: "完成数学作业",
-      points: 20,
-      completed: false,
-      time: "今天",
-    },
-    { id: 2, title: "阅读30分钟", points: 15, completed: true, time: "今天" },
-    { id: 3, title: "整理玩具", points: 10, completed: false, time: "今天" },
-    { id: 4, title: "帮妈妈洗碗", points: 25, completed: true, time: "今天" },
-  ]);
+  const [pendingTasks, setPendingTasks] = useState([]);
+  const [completedTasks, setCompletedTasks] = useState([]);
+  const [childTasks, setChildTasks] = useState([]);
 
   const [rewards, setRewards] = useState([
     {
@@ -456,6 +419,73 @@ export default function ParentDashboard() {
     }
   };
 
+  // 获取已完成任务
+  const fetchCompletedTasks = async () => {
+    try {
+      setIsLoading(true);
+
+      console.log("获取已完成任务");
+
+      const response = await get(
+        `/api/task/complete?childId=${selectedChild.id}`
+      );
+      const result = await response.json();
+
+      if (result.code === 200 && result.data) {
+        const formattedTasks = result.data.map((task) => ({
+          id: task.id,
+          childName: selectedChild?.name || "未知",
+          title: task.name,
+          points: task.integral || 0,
+          status: "completed",
+          completedAt: task.complete_time || new Date().toISOString().slice(0, 16).replace("T", " "),
+        }));
+
+        setCompletedTasks(formattedTasks);
+      } else {
+        console.error("获取已完成任务失败:", result.message);
+      }
+    } catch (error) {
+      console.error("获取已完成任务数据出错:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 获取孩子任务
+  const fetchChildTasks = async () => {
+    try {
+      setIsLoading(true);
+      console.log("获取孩子任务");
+      
+      const response = await get(`/api/task/parent?childId=${selectedChild.id}`);
+      const result = await response.json();
+
+      if (result.code === 200 && result.data) {
+        // 将API返回的数据转换为组件需要的格式
+        const formattedTasks = result.data.map((task) => ({
+          id: task.id,
+          title: task.name,
+          points: task.integral || 0,
+          completed: task.is_complete === "1",
+          time: task.create_time ? 
+            new Date(task.create_time).toLocaleDateString("zh-CN", {month: "numeric", day: "numeric"}) + "日" : 
+            "今天"
+        }));
+
+        setChildTasks(formattedTasks);
+      } else {
+        console.error("获取孩子任务列表失败:", result.message);
+        setChildTasks([]);
+      }
+    } catch (error) {
+      console.error("获取孩子任务数据出错:", error);
+      setChildTasks([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // 页面加载时获取数据
   useEffect(() => {
     // 首先获取孩子列表
@@ -468,7 +498,7 @@ export default function ParentDashboard() {
   useEffect(() => {
     if (selectedChild) {
       // 添加selectedChild检查
-      // 获取待处理任务
+      // 获取待处理作业
       fetchPendingHomeworks();
       // 获取已完成作业
       fetchCompletedHomeworks();
@@ -476,6 +506,10 @@ export default function ParentDashboard() {
       fetchChildHomeworks();
       // 获取待处理任务
       fetchPendingTasks();
+      // 获取已完成任务
+      fetchCompletedTasks();
+      // 获取孩子任务列表
+      fetchChildTasks();
     }
   }, [selectedChild]); // 添加selectedChild依赖
 
@@ -885,29 +919,63 @@ export default function ParentDashboard() {
       }
     } else if (approvalType === "task-complete") {
       if (approved) {
+        try {
+          // 调用API批准任务完成
+          setIsLoading(true);
+
+          const response = await put(`/api/task/complete`, {
+            id: approvalItem.id,
+            approved: approved
+          });
+
+          const result = await response.json();
+
+          if (result.code === 200) {
+            // 批准成功，从待完成列表中移除该任务
+            setCompletedTasks(
+              completedTasks.filter((item) => item.id !== approvalItem.id)
+            );
+            
+            setHistory([
+              {
+                id: Date.now(),
+                childName: approvalItem.childName,
+                title: `完成任务: ${approvalItem.title}`,
+                points: approvalItem.points,
+                type: "earn",
+                date: new Date().toISOString().split("T")[0],
+              },
+              ...history,
+            ]);
+            
+            setChildPoints({
+              ...childPoints,
+              total: childPoints.total + approvalItem.points,
+              thisWeek: childPoints.thisWeek + approvalItem.points,
+            });
+
+            console.log("任务完成审批成功:", approvalItem.title);
+            // 刷新数据
+            fetchCompletedTasks();
+          } else {
+            console.error("任务完成审批失败:", result.message);
+            alert(`审批失败: ${result.message || "未知错误"}`);
+          }
+        } catch (error) {
+          console.error("任务完成审批请求出错:", error);
+          alert(`审批请求出错: ${error.message}`);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        // 任务完成被拒绝
+        console.log("任务完成被拒绝:", approvalItem.title);
         setCompletedTasks(
           completedTasks.filter((item) => item.id !== approvalItem.id)
         );
-        setHistory([
-          {
-            id: Date.now(),
-            childName: approvalItem.childName,
-            title: `完成任务: ${approvalItem.title}`,
-            points: approvalItem.points,
-            type: "earn",
-            date: new Date().toISOString().split("T")[0],
-          },
-          ...history,
-        ]);
-        setChildPoints({
-          ...childPoints,
-          total: childPoints.total + approvalItem.points,
-          thisWeek: childPoints.thisWeek + approvalItem.points,
-          thisMonth: childPoints.thisMonth + approvalItem.points,
-        });
-
+        
         // 刷新数据
-        fetchPendingHomeworks();
+        fetchCompletedTasks();
       }
     } else if (approvalType === "reward-redeem") {
       if (approved) {
@@ -1024,60 +1092,65 @@ export default function ParentDashboard() {
     }
   };
 
-  const handleTaskDateSelect = (date) => {
+  const handleTaskDateSelect = async (date) => {
     setSelectedTaskDate(date);
-    console.log("选择的任务日期:", date.toISOString().split("T")[0]);
+    
+    // 使用本地日期格式，避免时区问题
+    // 创建一个新的日期对象避免修改原始对象
+    const localDate = new Date(date);
+    
+    // 格式化为YYYY-MM-DD格式
+    const formattedDate = localDate.getFullYear() + '-' + 
+                         String(localDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                         String(localDate.getDate()).padStart(2, '0');
+    
+    console.log("选择的任务日期:", formattedDate);
+    
+    try {
+      // 显示加载状态
+      setIsLoading(true);
+      
+      // 如果没有选中的孩子，则返回
+      if (!selectedChild || !selectedChild.id) {
+        console.error("未选择孩子");
+        return;
+      }
+      
+      // 调用API获取该日期的任务数据
+      const apiUrl = `/api/task/parent?childId=${selectedChild.id}&taskDate=${formattedDate}`;
+      console.log("API请求URL:", apiUrl);
+      
+      const response = await get(apiUrl);
+      const result = await response.json();
 
-    const formattedDate = date.toISOString().split("T")[0];
+      console.log("API响应:", result);
 
-    if (formattedDate === new Date().toISOString().split("T")[0]) {
-      setChildTasks([
-        {
-          id: 1,
-          title: "完成数学作业",
-          points: 20,
-          completed: false,
-          time: "今天",
-        },
-        {
-          id: 2,
-          title: "阅读30分钟",
-          points: 15,
-          completed: true,
-          time: "今天",
-        },
-        {
-          id: 3,
-          title: "整理玩具",
-          points: 10,
-          completed: false,
-          time: "今天",
-        },
-        {
-          id: 4,
-          title: "帮妈妈洗碗",
-          points: 25,
-          completed: true,
-          time: "今天",
-        },
-      ]);
-    } else {
-      setChildTasks([
-        {
-          id: 1,
-          title: `${date.getMonth() + 1}月${date.getDate()}日任务1`,
-          points: Math.floor(Math.random() * 20) + 10,
-          completed: false,
-          time: `${date.getMonth() + 1}月${date.getDate()}日`,
-        },
-        {
-          id: 2,
-          title: `${date.getMonth() + 1}月${date.getDate()}日任务2`,
-          points: Math.floor(Math.random() * 20) + 10,
-          completed: true,
-          time: `${date.getMonth() + 1}月${date.getDate()}日`,
-        },
-      ]);
+      if (result.code === 200 && result.data) {
+        // 将API返回的数据转换为组件需要的格式
+        const formattedTasks = result.data.map((task) => ({
+          id: task.id,
+          title: task.name,
+          points: task.integral || 0,
+          completed: task.is_complete === "1",
+          time: formattedDate === new Date().toISOString().split("T")[0] ? 
+            "今天" : 
+            localDate.getMonth() + 1 + "月" + localDate.getDate() + "日"
+        }));
+
+        setChildTasks(formattedTasks);
+        console.log(`已获取${formattedDate}的任务数据，共${result.data.length}条记录`);
+      } else {
+        console.error("获取任务数据失败:", result.message);
+        
+        // 如果API调用失败或无数据，设置空的任务列表
+        setChildTasks([]);
+      }
+    } catch (error) {
+      console.error("获取任务数据出错:", error);
+      // 出错时设置空的任务列表
+      setChildTasks([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
