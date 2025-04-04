@@ -4,7 +4,7 @@ import { withAuth } from "@/lib/auth";
 import { formatDateTime } from "@/lib/utils";
 
 // 获取任务列表
-export const GET = withAuth(["parent", "child"], async (request) => {
+export const GET = withAuth(["parent"], async (request) => {
   try {
     // 从URL获取查询参数
     const { searchParams } = new URL(request.url);
@@ -14,12 +14,45 @@ export const GET = withAuth(["parent", "child"], async (request) => {
     // 构建查询条件
     const where = {};
     
-    // 如果是孩子角色，只能查看自己的任务
-    if (request.user.role === "child") {
-      where.child_id = request.user.id;
-    } else if (childId) {
-      where.child_id = parseInt(childId);
+    // 如果没有提供childId，直接返回空数据
+    if (!childId) {
+      return NextResponse.json(
+        {
+          code: 400,
+          message: "缺少必要参数childId",
+          data: [],
+        },
+        { status: 400 }
+      );
     }
+    
+    // 获取当前家长信息
+    const parent = await prisma.account.findUnique({
+      where: { id: request.user.id },
+      select: { family_id: true },
+    });
+
+    if (!parent) {
+      return NextResponse.json(
+        { code: 403, message: "无法验证家长身份" },
+        { status: 403 }
+      );
+    }
+
+    // 验证child是否属于该family
+    const child = await prisma.account.findUnique({
+      where: { id: parseInt(childId) },
+      select: { family_id: true },
+    });
+
+    if (!child || child.family_id !== parent.family_id) {
+      return NextResponse.json(
+        { code: 403, message: "无权查看此孩子的任务" },
+        { status: 403 }
+      );
+    }
+    
+    where.child_id = parseInt(childId);
 
     // 日期过滤
     if (taskDate) {
@@ -58,9 +91,6 @@ export const GET = withAuth(["parent", "child"], async (request) => {
       where,
       orderBy: {
         created_at: "desc",
-      },
-      include: {
-        // 可以根据需要关联其他表
       }
     });
 
@@ -76,7 +106,6 @@ export const GET = withAuth(["parent", "child"], async (request) => {
       create_review_time: task.create_review_time ? formatDateTime(task.create_review_time) : null,
       complete_review_time: task.complete_review_time ? formatDateTime(task.complete_review_time) : null,
       complete_time: task.complete_time ? formatDateTime(task.complete_time) : null,
-      is_complete: task.is_complete,
       created_at: task.created_at ? formatDateTime(task.created_at) : null,
       updated_at: task.updated_at ? formatDateTime(task.updated_at) : null,
     }));
@@ -117,11 +146,11 @@ export const POST = withAuth(["parent", "child"], async (request) => {
         task_date: new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })),
         create_review: "0",
         complete_review: "0",
-        is_complete: "0",
+        create_review_time: null,
+        create_review_user_id: null,
         created_at: new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })),
         updated_at: new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })),
         created_user_id: request.user.id,
-        updated_user_id: request.user.id,
       },
     });
 

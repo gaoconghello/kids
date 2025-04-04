@@ -127,6 +127,19 @@ export default function ParentDashboard() {
       completedAt: "2025-03-01 09:45",
     },
   ]);
+  const [childTasks, setChildTasks] = useState([
+    {
+      id: 1,
+      title: "完成数学作业",
+      points: 20,
+      completed: false,
+      time: "今天",
+    },
+    { id: 2, title: "阅读30分钟", points: 15, completed: true, time: "今天" },
+    { id: 3, title: "整理玩具", points: 10, completed: false, time: "今天" },
+    { id: 4, title: "帮妈妈洗碗", points: 25, completed: true, time: "今天" },
+  ]);
+
   const [rewards, setRewards] = useState([
     {
       id: 1,
@@ -250,18 +263,7 @@ export default function ParentDashboard() {
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [isAddRewardOpen, setIsAddRewardOpen] = useState(false);
   const [showAllRecords, setShowAllRecords] = useState(false);
-  const [childTasks, setChildTasks] = useState([
-    {
-      id: 1,
-      title: "完成数学作业",
-      points: 20,
-      completed: false,
-      time: "今天",
-    },
-    { id: 2, title: "阅读30分钟", points: 15, completed: true, time: "今天" },
-    { id: 3, title: "整理玩具", points: 10, completed: false, time: "今天" },
-    { id: 4, title: "帮妈妈洗碗", points: 25, completed: true, time: "今天" },
-  ]);
+
   const [selectedTaskDate, setSelectedTaskDate] = useState(new Date());
   const [showTaskCalendar, setShowTaskCalendar] = useState(false);
   const [childrenList, setChildrenList] = useState([]);
@@ -418,6 +420,42 @@ export default function ParentDashboard() {
     }
   };
 
+  // 获取待新增任务
+  const fetchPendingTasks = async () => {
+    try {
+      // 显示加载状态
+      setIsLoading(true);
+
+      console.log("获取待审批新增任务");
+
+      // 调用API获取待处理任务
+      const response = await get(
+        `/api/task/pending?childId=${selectedChild.id}`
+      );
+      const result = await response.json();
+
+      if (result.code === 200 && result.data) {
+        // 将API返回的数据转换为组件需要的格式
+        const formattedTasks = result.data.map((task) => ({
+          id: task.id,
+          childName: selectedChild?.name || "未知",
+          title: task.name,
+          points: task.integral || 0,
+          status: "pending",
+          createdAt: task.create_time || new Date().toISOString().slice(0, 16).replace("T", " "),
+        }));
+
+        setPendingTasks(formattedTasks);
+      } else {
+        console.error("获取待处理任务失败:", result.message);
+      }
+    } catch (error) {
+      console.error("获取待处理任务数据出错:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // 页面加载时获取数据
   useEffect(() => {
     // 首先获取孩子列表
@@ -436,6 +474,8 @@ export default function ParentDashboard() {
       fetchCompletedHomeworks();
       // 获取作业数据
       fetchChildHomeworks();
+      // 获取待处理任务
+      fetchPendingTasks();
     }
   }, [selectedChild]); // 添加selectedChild依赖
 
@@ -622,7 +662,7 @@ export default function ParentDashboard() {
         // 这里应该调用API更新数据
         // 之后刷新数据
         setTimeout(() => {
-          fetchPendingHomeworks();
+          fetchPendingTasks();
         }, 500);
       } else {
         console.log("添加新任务:", newTask);
@@ -662,7 +702,7 @@ export default function ParentDashboard() {
         // 这里应该调用API添加数据
         // 之后刷新数据
         setTimeout(() => {
-          fetchPendingHomeworks();
+          fetchPendingTasks();
         }, 500);
       }
     } catch (error) {
@@ -808,15 +848,40 @@ export default function ParentDashboard() {
       }
     } else if (approvalType === "task-add") {
       if (approved) {
+        try {
+          // 调用API批准任务
+          setIsLoading(true);
+
+          const response = await put(`/api/task/pending`, {
+            id: approvalItem.id,
+          });
+
+          const result = await response.json();
+
+          if (result.code === 200) {
+            // 批准成功，从待处理列表中移除该任务
+            setPendingTasks(
+              pendingTasks.filter((item) => item.id !== approvalItem.id)
+            );
+            console.log("任务审批成功:", approvalItem.title);
+            // 刷新数据
+            fetchPendingTasks();
+          } else {
+            console.error("任务审批失败:", result.message);
+            alert(`审批失败: ${result.message || "未知错误"}`);
+          }
+        } catch (error) {
+          console.error("任务审批请求出错:", error);
+          alert(`审批请求出错: ${error.message}`);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        // 任务被拒绝，从待处理列表中移除
+        console.log("任务被拒绝:", approvalItem.title);
         setPendingTasks(
           pendingTasks.filter((item) => item.id !== approvalItem.id)
         );
-
-        // 这里应该调用API更新数据
-        // 之后刷新数据
-        setTimeout(() => {
-          fetchPendingHomeworks();
-        }, 500);
       }
     } else if (approvalType === "task-complete") {
       if (approved) {
