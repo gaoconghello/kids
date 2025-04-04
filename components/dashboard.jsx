@@ -370,7 +370,7 @@ export default function Dashboard() {
           id: task.id,
           title: task.name,
           points: task.integral || 0,
-          completed: task.complete_time ? true : false,
+          completed: task.is_complete === "1" ? true : false,
           time: task.task_date ? new Date(task.task_date).toLocaleDateString("zh-CN") : "今天"
         }));
         
@@ -784,7 +784,7 @@ export default function Dashboard() {
           id: task.id,
           title: task.name,
           points: task.integral || 0,
-          completed: task.complete_time ? true : false,
+          completed: task.is_complete === "1" ? true : false,
           time: task.task_date ? new Date(task.task_date).toLocaleDateString("zh-CN") : "今天"
         }));
         
