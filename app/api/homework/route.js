@@ -117,7 +117,7 @@ export const GET = withAuth(["parent", "child"], async (request) => {
       id: homework.id,
       name: homework.name,
       subject_id: homework.subject_id,
-      subject_name: homework.subject.name,
+      subject_name: homework.subject?.name,
       estimated_duration: homework.estimated_duration,
       deadline: homework.deadline ? formatDateTime(homework.deadline) : null,
       integral: homework.integral || 0,
