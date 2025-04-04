@@ -20,6 +20,8 @@ import {
   LogOut,
   Settings,
   BarChart3,
+  Sparkles,
+  ShoppingBag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -84,6 +86,32 @@ const calculateWrongAnswersStats = (homeworks) => {
     avgWrongAnswers
   };
 };
+
+// 根据任务标题返回适当的图标
+function getTaskIcon(title) {
+  // 添加对title是否存在的检查
+  if (!title) {
+    return <Sparkles className="w-5 h-5 text-primary" />;
+  }
+  
+  const titleLower = title.toLowerCase();
+  
+  if (titleLower.includes("阅读") || titleLower.includes("读")) {
+    return <BookOpen className="w-5 h-5 text-primary" />;
+  } else if (titleLower.includes("整理") || titleLower.includes("收拾") || titleLower.includes("打扫")) {
+    return <ShoppingBag className="w-5 h-5 text-primary" />;
+  } else if (titleLower.includes("帮") || titleLower.includes("协助")) {
+    return <Award className="w-5 h-5 text-primary" />;
+  } else if (titleLower.includes("完成") || titleLower.includes("作业") || titleLower.includes("习题")) {
+    return <PenLine className="w-5 h-5 text-primary" />;
+  } else if (titleLower.includes("运动") || titleLower.includes("锻炼")) {
+    return <Sparkles className="w-5 h-5 text-primary" />;
+  } else if (titleLower.includes("时间") || titleLower.includes("分钟") || titleLower.includes("点")) {
+    return <Clock className="w-5 h-5 text-primary" />;
+  } else {
+    return <Sparkles className="w-5 h-5 text-primary" />;
+  }
+}
 
 export default function ParentDashboard() {
   const { logout } = useAuth();
@@ -1645,7 +1673,8 @@ export default function ParentDashboard() {
                                     {task.completed ? (
                                       <Check className="w-6 h-6 text-white" />
                                     ) : (
-                                      <PenLine className="w-5 h-5 text-primary" />
+                                      // 使用getTaskIcon函数来选择图标
+                                      getTaskIcon(task.title)
                                     )}
                                   </div>
                                   <div>
@@ -2074,9 +2103,8 @@ export default function ParentDashboard() {
                               {task.completed ? (
                                 <Check className="w-6 h-6 text-white" />
                               ) : (
-                                <span className="text-lg font-bold text-primary">
-                                  {task.id}
-                                </span>
+                                // 使用getTaskIcon函数来选择图标
+                                getTaskIcon(task.title)
                               )}
                             </div>
                             <div>
