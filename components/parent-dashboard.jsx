@@ -52,6 +52,39 @@ import {
 import { useAuth } from "@/app/providers/AuthProvider";
 import { get, post, put } from "@/lib/http";
 
+// 计算错题统计的辅助函数
+const calculateWrongAnswersStats = (homeworks) => {
+  // 计算总错题数
+  const totalWrongAnswers = homeworks.reduce(
+    (sum, subject) =>
+      sum +
+      subject.tasks.reduce(
+        (subSum, task) =>
+          subSum +
+          (task.completed ? task.wrongAnswers || 0 : 0),
+        0
+      ),
+    0
+  );
+  
+  // 计算总作业数
+  const totalTasks = homeworks.reduce(
+    (sum, subject) => sum + subject.tasks.length,
+    0
+  );
+  
+  // 计算平均错题数
+  const avgWrongAnswers = totalTasks > 0 
+    ? (totalWrongAnswers / totalTasks).toFixed(1) 
+    : "0.0";
+  
+  return {
+    totalWrongAnswers,
+    totalTasks,
+    avgWrongAnswers
+  };
+};
+
 export default function ParentDashboard() {
   const { logout } = useAuth();
   const [points, setPoints] = useState(350);
@@ -1559,9 +1592,111 @@ export default function ParentDashboard() {
                               className="h-3 rounded-full bg-gradient-to-r from-blue-200 to-purple-200"
                               indicatorClassName="bg-gradient-to-r from-blue-500 to-purple-500"
                             />
+                            {/* 在 Progress 组件后添加错题统计 */}
+                            <div className="flex justify-between mt-1 text-xs">
+                              <span className="text-gray-500">
+                                总错题:{" "}
+                                {(() => {
+                                  // 为单个科目计算错题统计
+                                  const totalWrongAnswers = subject.tasks.reduce(
+                                    (sum, t) => sum + (t.wrongAnswers || 0),
+                                    0
+                                  );
+                                  return totalWrongAnswers;
+                                })()}
+                                个
+                              </span>
+                              <span className="text-gray-500">
+                                平均:{" "}
+                                {(() => {
+                                  // 为单个科目计算平均错题
+                                  const totalWrongAnswers = subject.tasks.reduce(
+                                    (sum, t) => sum + (t.wrongAnswers || 0),
+                                    0
+                                  );
+                                  return subject.tasks.length > 0
+                                    ? (totalWrongAnswers / subject.tasks.length).toFixed(1)
+                                    : "0.0";
+                                })()}
+                                个/题
+                              </span>
+                            </div>
                           </div>
                         );
                       })}
+                    </div>
+                  </div>
+
+                  <div className="p-4 mt-6 border-2 border-amber-100 bg-amber-50 rounded-xl">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100">
+                        <AlertCircle className="w-5 h-5 text-amber-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-amber-700">
+                        错题统计
+                      </h3>
+                    </div>
+
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-medium">今日错题总数</h3>
+                          <p className="text-sm text-muted-foreground">
+                            记录并分析错题，有助于查漏补缺
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-4xl font-bold text-amber-500">
+                            {calculateWrongAnswersStats(childHomework).totalWrongAnswers}
+                          </div>
+                          <span className="text-2xl">📝</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 border rounded-lg bg-amber-50/70 border-amber-200">
+                        <div>
+                          <h3 className="font-medium text-md">平均错题数</h3>
+                          <p className="text-xs text-muted-foreground">
+                            每道题平均错题数
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-2xl font-bold text-amber-500">
+                            {calculateWrongAnswersStats(childHomework).avgWrongAnswers}
+                          </div>
+                          <span className="text-xl">📊</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <h3 className="font-medium">科目错题分布</h3>
+                        <div className="grid grid-cols-3 gap-3">
+                          {childHomework.map((subject) => {
+                            const subjectWrongAnswers = subject.tasks.reduce(
+                              (sum, task) =>
+                                sum + (task.completed ? task.wrongAnswers || 0 : 0),
+                              0
+                            );
+
+                            return subjectWrongAnswers > 0 ? (
+                              <div
+                                key={subject.id}
+                                className="p-3 text-center border rounded-lg border-amber-200 bg-amber-50"
+                              >
+                                <div className="text-sm font-medium">
+                                  {subject.subject}
+                                </div>
+                                <div className="flex items-center justify-center gap-1 mt-1">
+                                  <span className="text-amber-500">📝</span>
+                                  <span className="text-lg font-bold text-amber-600">
+                                    {subjectWrongAnswers}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : null;
+                          })}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
