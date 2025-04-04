@@ -116,11 +116,11 @@ export const POST = withAuth(["parent", "child"], async (request) => {
         task_date: new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })),
         create_review: "0",
         complete_review: "0",
-        create_review_time: null,
-        create_review_user_id: null,
+        is_complete: "0",
         created_at: new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })),
         updated_at: new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })),
         created_user_id: request.user.id,
+        updated_user_id: request.user.id,
       },
     });
 
