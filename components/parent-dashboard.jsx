@@ -850,115 +850,79 @@ export default function ParentDashboard() {
     alert("设置保存成功！");
   };
 
-  const handleHomeworkDateSelect = (date) => {
+  const handleHomeworkDateSelect = async (date) => {
     setSelectedHomeworkDate(date);
-    console.log("选择的作业日期:", date.toISOString().split("T")[0]);
+    
+    // 使用本地日期格式，避免时区问题
+    // 创建一个新的日期对象避免修改原始对象
+    const localDate = new Date(date);
+    
+    // 格式化为YYYY-MM-DD格式
+    const formattedDate = localDate.getFullYear() + '-' + 
+                          String(localDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                          String(localDate.getDate()).padStart(2, '0');
+    
+    console.log("选择的作业日期:", formattedDate);
+    
+    try {
+      // 显示加载状态
+      setIsLoading(true);
+      
+      // 如果没有选中的孩子，则返回
+      if (!selectedChild || !selectedChild.id) {
+        console.error("未选择孩子");
+        return;
+      }
+      
+      // 调用API获取该日期的作业数据
+      const apiUrl = `/api/homework/parent?childId=${selectedChild.id}&homeworkDate=${formattedDate}`;
+      console.log("API请求URL:", apiUrl);
+      
+      const response = await get(apiUrl);
+      const result = await response.json();
 
-    const formattedDate = date.toISOString().split("T")[0];
+      console.log("API响应:", result);
 
-    if (formattedDate === new Date().toISOString().split("T")[0]) {
-      setChildHomework([
-        {
-          id: 1,
-          subject: "语文",
-          tasks: [
-            {
-              id: 1,
-              title: "阅读课文《春天》",
-              duration: "20分钟",
-              points: 15,
-              completed: false,
-              deadline: "15:30",
-            },
-            {
-              id: 2,
-              title: "完成练习册第12页",
-              duration: "30分钟",
-              points: 20,
-              completed: true,
-              deadline: "16:00",
-              wrongAnswers: 2,
-            },
-          ],
-        },
-        {
-          id: 2,
-          subject: "数学",
-          tasks: [
-            {
-              id: 3,
-              title: "完成乘法练习",
-              duration: "25分钟",
-              points: 15,
-              completed: false,
-              deadline: "16:30",
-            },
-            {
-              id: 4,
-              title: "解决应用题5道",
-              duration: "20分钟",
-              points: 15,
-              completed: true,
-              deadline: "17:00",
-              wrongAnswers: 1,
-            },
-          ],
-        },
-        {
-          id: 3,
-          subject: "英语",
-          tasks: [
-            {
-              id: 5,
-              title: "背诵单词列表",
-              duration: "15分钟",
-              points: 10,
-              completed: false,
-              deadline: "17:30",
-            },
-            {
-              id: 6,
-              title: "完成听力练习",
-              duration: "20分钟",
-              points: 15,
-              completed: true,
-              deadline: "18:00",
-              wrongAnswers: 0,
-            },
-          ],
-        },
-      ]);
-    } else {
-      setChildHomework([
-        {
-          id: 1,
-          subject: "语文",
-          tasks: [
-            {
-              id: 1,
-              title: `${date.getMonth() + 1}月${date.getDate()}日语文阅读`,
-              duration: "30分钟",
-              points: 20,
-              completed: false,
-              deadline: "16:00",
-            },
-          ],
-        },
-        {
-          id: 2,
-          subject: "数学",
-          tasks: [
-            {
-              id: 2,
-              title: `${date.getMonth() + 1}月${date.getDate()}日数学练习`,
-              duration: "25分钟",
-              points: 15,
-              completed: true,
-              deadline: "17:00",
-            },
-          ],
-        },
-      ]);
+      if (result.code === 200 && result.data) {
+        // 将API返回的数据按科目分组
+        const groupedHomework = result.data.reduce((acc, homework) => {
+          const subject = acc.find((s) => s.id === homework.subject_id);
+          const task = {
+            id: homework.id,
+            title: homework.name,
+            duration: `${homework.estimated_duration}分钟`,
+            points: homework.integral || 0,
+            completed: homework.is_complete === "1",
+            deadline: homework.deadline?.split(" ")[1] || "",
+            wrongAnswers: homework.incorrect || 0,
+          };
+
+          if (subject) {
+            subject.tasks.push(task);
+          } else {
+            acc.push({
+              id: homework.subject_id,
+              subject: homework.subject_name,
+              tasks: [task],
+            });
+          }
+          return acc;
+        }, []);
+
+        setChildHomework(groupedHomework);
+        console.log(`已获取${formattedDate}的作业数据，共${result.data.length}条记录`);
+      } else {
+        console.error("获取作业数据失败:", result.message);
+        
+        // 如果API调用失败或无数据，设置空的作业列表
+        setChildHomework([]);
+      }
+    } catch (error) {
+      console.error("获取作业数据出错:", error);
+      // 出错时设置空的作业列表
+      setChildHomework([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
