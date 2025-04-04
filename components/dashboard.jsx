@@ -548,7 +548,7 @@ export default function Dashboard() {
   const handleAddHomework = async (newHomework) => {
     try {
       // 准备API请求数据
-      const subjectId = newHomework.subject;
+      const subjectId = newHomework.subject_id;  // 修改这里，使用subject_id而不是subject
       const homeworkData = {
         name: newHomework.name,
         subject_id: subjectId,
