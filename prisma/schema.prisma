@@ -29,6 +29,8 @@ model account {
 model family {
   id              Int       @id @default(autoincrement())
   name            String?   @db.VarChar(50)
+  is_deadline     String?   @db.VarChar(1)
+  deadline        DateTime? @db.Timestamp(6)
   created_at      DateTime? @db.Timestamp(6)
   updated_at      DateTime? @db.Timestamp(6)
   created_user_id Int?
