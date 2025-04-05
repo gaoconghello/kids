@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 import { formatDateTime } from "@/lib/utils";
+import { INTEGRAL_TYPE } from "@/lib/constants";
 
 // 获取完成任务列表
 export const GET = withAuth(["parent"], async (request) => {
@@ -141,116 +142,223 @@ export const POST = withAuth(["child"], async (request) => {
     }
 
     const childId = request.user.id;
-
     const taskId = parseInt(data.taskId);
 
-    // 使用事务来确保数据一致性
-    return await prisma.$transaction(async (tx) => {
-      // 检查作业是否存在
-      const task = await tx.task.findUnique({
-        where: { id: taskId },
-        include: {},
-      });
+    // 检查作业是否存在
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+    });
 
-      if (!task) {
-        return NextResponse.json(
-          { code: 404, message: "任务不存在" },
-          { status: 404 }
-        );
-      }
-
-      // 检查是否是自己的任务
-      if (task.child_id !== childId) {
-        return NextResponse.json(
-          { code: 403, message: "没有权限完成此任务" },
-          { status: 403 }
-        );
-      }
-
-      // 检查作业是否已经完成
-      if (task.is_complete === "1") {
-        return NextResponse.json(
-          { code: 400, message: "该任务已经完成" },
-          { status: 400 }
-        );
-      }
-
-      // 获取当前时间（上海时区）
-      const now = new Date(
-        new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
+    if (!task) {
+      return NextResponse.json(
+        { code: 404, message: "任务不存在" },
+        { status: 404 }
       );
+    }
 
-      // 更新任务状态
-      const updatedTask = await tx.task.update({
-        where: { id: taskId },
-        data: {
-          is_complete: "1",
-          complete_time: now,
-          complete_review: "0", // 等待家长审核
-          updated_at: now,
-          updated_user_id: request.user.id,
-        },
-      });
+    // 检查是否是自己的任务
+    if (task.child_id !== childId) {
+      return NextResponse.json(
+        { code: 403, message: "没有权限完成此任务" },
+        { status: 403 }
+      );
+    }
 
-      // 查询账户
-      const account = await tx.account.findUnique({
-        where: {
-          id: request.user.id,
-        },
-      });
+    // 检查作业是否已经完成
+    if (task.is_complete === "1") {
+      return NextResponse.json(
+        { code: 400, message: "该任务已经完成" },
+        { status: 400 }
+      );
+    }
 
-      if (!account) {
-        return NextResponse.json(
-          { code: 404, message: "账户不存在" },
-          { status: 404 }
-        );
-      }
+    // 获取当前时间（上海时区）
+    const now = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
+    );
 
-      // 更新账户积分
-      await tx.account.update({
-        where: { id: account.id },
-        data: {
-          integral: account.integral + task.integral,
-          updated_at: now,
-          updated_user_id: request.user.id,
-        },
-      });
+    // 更新任务状态
+    const updatedTask = await prisma.task.update({
+      where: { id: taskId },
+      data: {
+        is_complete: "1",
+        complete_time: now,
+        complete_review: "0", // 等待家长审核
+        updated_at: now,
+        updated_user_id: request.user.id,
+      },
+    });
 
-      // 创建积分历史记录
-      await tx.integral_history.create({
-        data: {
-          integral_id: taskId,
-          integral_type: "2", // 1表示任务
-          child_id: request.user.id,
-          family_id: account.family_id, // 从账户中获取家庭ID
-        },
-      });
-
-      return NextResponse.json({
-        code: 200,
-        message: "任务完成成功",
-        data: {
-          id: updatedTask.id,
-          name: updatedTask.name,
-          integral: updatedTask.integral || 0,
-          task_date: updatedTask.task_date
-            ? formatDateTime(updatedTask.task_date, "YYYY-MM-DD")
-            : null,
-          complete_time: updatedTask.complete_time
-            ? formatDateTime(updatedTask.complete_time)
-            : null,
-          complete_review: updatedTask.complete_review,
-          complete_review_time: updatedTask.complete_review_time
-            ? formatDateTime(updatedTask.complete_review_time)
-            : null,
-          child_id: updatedTask.child_id,
-        },
-      });
+    return NextResponse.json({
+      code: 200,
+      message: "任务完成成功",
+      data: {
+        id: updatedTask.id,
+        name: updatedTask.name,
+        integral: updatedTask.integral || 0,
+        task_date: updatedTask.task_date
+          ? formatDateTime(updatedTask.task_date, "YYYY-MM-DD")
+          : null,
+        complete_time: updatedTask.complete_time
+          ? formatDateTime(updatedTask.complete_time)
+          : null,
+        complete_review: updatedTask.complete_review,
+        complete_review_time: updatedTask.complete_review_time
+          ? formatDateTime(updatedTask.complete_review_time)
+          : null,
+        child_id: updatedTask.child_id,
+      },
     });
   } catch (error) {
     console.error("完成任务失败:", error);
     return NextResponse.json(
       { code: 500, message: "完成任务失败", error: error.message },
+      { status: 500 }
+    );
+  }
+});
+
+// 审核任务信息
+export const PUT = withAuth(["parent"], async (request) => {
+  try {
+    const data = await request.json();
+
+    // 验证必填字段
+    if (!data.id) {
+      return NextResponse.json(
+        { code: 400, message: "缺少任务ID" },
+        { status: 400 }
+      );
+    }
+
+    // 检查任务是否存在
+    const existingTask = await prisma.task.findUnique({
+      where: { id: parseInt(data.id) },
+    });
+
+    if (!existingTask) {
+      return NextResponse.json(
+        { code: 404, message: "任务不存在" },
+        { status: 404 }
+      );
+    }
+
+    // 权限检查：家长只能审核同一家庭孩子的任务
+    // 获取当前家长和孩子的family_id
+    const [parent, child] = await Promise.all([
+      prisma.account.findUnique({
+        where: { id: request.user.id },
+        select: { family_id: true },
+      }),
+      prisma.account.findUnique({
+        where: { id: existingTask.child_id },
+        select: { family_id: true, integral: true },
+      }),
+    ]);
+
+    if (!parent || !child || parent.family_id !== child.family_id) {
+      return NextResponse.json(
+        { code: 403, message: "没有权限审核此任务" },
+        { status: 403 }
+      );
+    }
+
+    // 当前上海时间
+    const now = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
+    );
+    
+    let statusCode;
+    let statusMessage;
+    let updatedTask;
+
+    if (!data.approved) {
+      // 如果approved为false，则将任务状态改为未完成
+      updatedTask = await prisma.task.update({
+        where: { id: parseInt(data.id) },
+        data: {
+          is_complete: "0",
+          updated_at: now,
+          updated_user_id: request.user.id,
+        },
+      });
+      statusCode = 400;
+      statusMessage = "任务审核未通过";
+    } else {
+      // 审核通过 - 使用事务处理
+      const result = await prisma.$transaction(async (tx) => {
+        // 1. 更新任务状态
+        const updatedTask = await tx.task.update({
+          where: { id: parseInt(data.id) },
+          data: {
+            complete_review: "1",
+            complete_review_time: now,
+            complete_review_user_id: request.user.id,
+            updated_at: now,
+            updated_user_id: request.user.id,
+          },
+        });
+        
+        // 2. 更新孩子的积分账户
+        await tx.account.update({
+          where: { id: existingTask.child_id },
+          data: {
+            integral: child.integral + existingTask.integral,
+            updated_at: now,
+            updated_user_id: request.user.id,
+          },
+        });
+        
+        // 3. 创建积分历史记录
+        await tx.integral_history.create({
+          data: {
+            integral_id: existingTask.id,
+            integral_type: INTEGRAL_TYPE.TASK,
+            child_id: existingTask.child_id,
+            family_id: child.family_id,
+            integral: existingTask.integral,
+            integral_date: now,
+          },
+        });
+        
+        return updatedTask;
+      });
+      
+      updatedTask = result;
+      statusCode = 200;
+      statusMessage = "任务审核通过";
+    }
+
+    // 返回响应
+    return NextResponse.json({
+      code: statusCode,
+      message: statusMessage,
+      data: {
+        id: updatedTask.id,
+        name: updatedTask.name,
+        integral: updatedTask.integral || 0,
+        child_id: updatedTask.child_id,
+        task_date: updatedTask.task_date
+          ? formatDateTime(updatedTask.task_date)
+          : null,
+        create_review: updatedTask.create_review,
+        complete_review: updatedTask.complete_review,
+        create_review_time: updatedTask.create_review_time
+          ? formatDateTime(updatedTask.create_review_time)
+          : null,
+        complete_review_time: updatedTask.complete_review_time
+          ? formatDateTime(updatedTask.complete_review_time)
+          : null,
+        complete_time: updatedTask.complete_time
+          ? formatDateTime(updatedTask.complete_time)
+          : null,
+        is_complete: updatedTask.is_complete,
+      },
+    });
+  } catch (error) {
+    console.error("任务审核失败:", error);
+    return NextResponse.json(
+      { code: 500, message: "任务审核失败", error: error.message },
       { status: 500 }
     );
   }

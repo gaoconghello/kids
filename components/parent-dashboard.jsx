@@ -994,24 +994,30 @@ export default function ParentDashboard() {
         );
       }
     } else if (approvalType === "task-complete") {
-      if (approved) {
-        try {
-          // 调用API批准任务完成
-          setIsLoading(true);
+      try {
+        // 调用API批准任务完成（无论是批准还是拒绝）
+        setIsLoading(true);
 
-          const response = await put(`/api/task/complete`, {
-            id: approvalItem.id,
-            approved: approved,
-          });
+        const response = await put(`/api/task/complete`, {
+          id: approvalItem.id,
+          approved: approved,
+        });
 
-          const result = await response.json();
+        const result = await response.json();
+        
+        console.log("任务完成审批结果:", result);
 
-          if (result.code === 200) {
-            // 批准成功，从待完成列表中移除该任务
-            setCompletedTasks(
-              completedTasks.filter((item) => item.id !== approvalItem.id)
-            );
+        // 检查结果码：
+        // 1. code 200 表示审批成功
+        // 2. code 400 且 message 是"任务审核未通过"表示拒绝成功
+        // 3. 其他情况视为真正的错误
+        if (result.code === 200 || (result.code === 400 && result.message === "任务审核未通过" && !approved)) {
+          // 从待完成列表中移除该任务
+          setCompletedTasks(
+            completedTasks.filter((item) => item.id !== approvalItem.id)
+          );
 
+          if (approved && result.code === 200) {
             setHistory([
               {
                 id: Date.now(),
@@ -1031,27 +1037,21 @@ export default function ParentDashboard() {
             });
 
             console.log("任务完成审批成功:", approvalItem.title);
-            // 刷新数据
-            fetchCompletedTasks();
           } else {
-            console.error("任务完成审批失败:", result.message);
-            alert(`审批失败: ${result.message || "未知错误"}`);
+            console.log("任务完成被拒绝:", approvalItem.title);
           }
-        } catch (error) {
-          console.error("任务完成审批请求出错:", error);
-          alert(`审批请求出错: ${error.message}`);
-        } finally {
-          setIsLoading(false);
+          
+          // 刷新数据
+          fetchCompletedTasks();
+        } else {
+          console.error("任务完成审批失败:", result?.message || "未知错误");
+          alert(`审批失败: ${result?.message || "未知错误"}`);
         }
-      } else {
-        // 任务完成被拒绝
-        console.log("任务完成被拒绝:", approvalItem.title);
-        setCompletedTasks(
-          completedTasks.filter((item) => item.id !== approvalItem.id)
-        );
-
-        // 刷新数据
-        fetchCompletedTasks();
+      } catch (error) {
+        console.error("任务完成审批请求出错:", error);
+        alert(`审批请求出错: ${error?.message || "未知错误"}`);
+      } finally {
+        setIsLoading(false);
       }
     } else if (approvalType === "reward-redeem") {
       if (approved) {
