@@ -62,28 +62,26 @@ const calculateWrongAnswersStats = (homeworks) => {
       sum +
       subject.tasks.reduce(
         (subSum, task) =>
-          subSum +
-          (task.completed ? task.wrongAnswers || 0 : 0),
+          subSum + (task.completed ? task.wrongAnswers || 0 : 0),
         0
       ),
     0
   );
-  
+
   // 计算总作业数
   const totalTasks = homeworks.reduce(
     (sum, subject) => sum + subject.tasks.length,
     0
   );
-  
+
   // 计算平均错题数
-  const avgWrongAnswers = totalTasks > 0 
-    ? (totalWrongAnswers / totalTasks).toFixed(1) 
-    : "0.0";
-  
+  const avgWrongAnswers =
+    totalTasks > 0 ? (totalWrongAnswers / totalTasks).toFixed(1) : "0.0";
+
   return {
     totalWrongAnswers,
     totalTasks,
-    avgWrongAnswers
+    avgWrongAnswers,
   };
 };
 
@@ -93,20 +91,32 @@ function getTaskIcon(title) {
   if (!title) {
     return <Sparkles className="w-5 h-5 text-primary" />;
   }
-  
+
   const titleLower = title.toLowerCase();
-  
+
   if (titleLower.includes("阅读") || titleLower.includes("读")) {
     return <BookOpen className="w-5 h-5 text-primary" />;
-  } else if (titleLower.includes("整理") || titleLower.includes("收拾") || titleLower.includes("打扫")) {
+  } else if (
+    titleLower.includes("整理") ||
+    titleLower.includes("收拾") ||
+    titleLower.includes("打扫")
+  ) {
     return <ShoppingBag className="w-5 h-5 text-primary" />;
   } else if (titleLower.includes("帮") || titleLower.includes("协助")) {
     return <Award className="w-5 h-5 text-primary" />;
-  } else if (titleLower.includes("完成") || titleLower.includes("作业") || titleLower.includes("习题")) {
+  } else if (
+    titleLower.includes("完成") ||
+    titleLower.includes("作业") ||
+    titleLower.includes("习题")
+  ) {
     return <PenLine className="w-5 h-5 text-primary" />;
   } else if (titleLower.includes("运动") || titleLower.includes("锻炼")) {
     return <Sparkles className="w-5 h-5 text-primary" />;
-  } else if (titleLower.includes("时间") || titleLower.includes("分钟") || titleLower.includes("点")) {
+  } else if (
+    titleLower.includes("时间") ||
+    titleLower.includes("分钟") ||
+    titleLower.includes("点")
+  ) {
     return <Clock className="w-5 h-5 text-primary" />;
   } else {
     return <Sparkles className="w-5 h-5 text-primary" />;
@@ -373,7 +383,9 @@ export default function ParentDashboard() {
     try {
       setIsLoading(true);
       console.log("获取孩子作业");
-      const response = await get(`/api/homework/parent?childId=${selectedChild.id}`);
+      const response = await get(
+        `/api/homework/parent?childId=${selectedChild.id}`
+      );
       const result = await response.json();
 
       if (result.code === 200 && result.data) {
@@ -433,7 +445,9 @@ export default function ParentDashboard() {
           title: task.name,
           points: task.integral || 0,
           status: "pending",
-          createdAt: task.create_time || new Date().toISOString().slice(0, 16).replace("T", " "),
+          createdAt:
+            task.create_time ||
+            new Date().toISOString().slice(0, 16).replace("T", " "),
         }));
 
         setPendingTasks(formattedTasks);
@@ -466,7 +480,9 @@ export default function ParentDashboard() {
           title: task.name,
           points: task.integral || 0,
           status: "completed",
-          completedAt: task.complete_time || new Date().toISOString().slice(0, 16).replace("T", " "),
+          completedAt:
+            task.complete_time ||
+            new Date().toISOString().slice(0, 16).replace("T", " "),
         }));
 
         setCompletedTasks(formattedTasks);
@@ -485,8 +501,10 @@ export default function ParentDashboard() {
     try {
       setIsLoading(true);
       console.log("获取孩子任务");
-      
-      const response = await get(`/api/task/parent?childId=${selectedChild.id}`);
+
+      const response = await get(
+        `/api/task/parent?childId=${selectedChild.id}`
+      );
       const result = await response.json();
 
       if (result.code === 200 && result.data) {
@@ -496,9 +514,12 @@ export default function ParentDashboard() {
           title: task.name,
           points: task.integral || 0,
           completed: task.is_complete === "1",
-          time: task.create_time ? 
-            new Date(task.create_time).toLocaleDateString("zh-CN", {month: "numeric", day: "numeric"}) + "日" : 
-            "今天"
+          time: task.create_time
+            ? new Date(task.create_time).toLocaleDateString("zh-CN", {
+                month: "numeric",
+                day: "numeric",
+              }) + "日"
+            : "今天",
         }));
 
         setChildTasks(formattedTasks);
@@ -714,58 +735,85 @@ export default function ParentDashboard() {
     try {
       if (editingTask) {
         console.log("修改任务:", newTask);
+
+        // 首先更新本地UI状态
         setPendingTasks(
           pendingTasks.map((item) =>
             item.id === editingTask.id ? { ...item, ...newTask } : item
           )
         );
-        setEditingTask(null);
 
-        // 这里应该调用API更新数据
-        // 之后刷新数据
-        setTimeout(() => {
-          fetchPendingTasks();
-        }, 500);
+        // 设置加载状态
+        setIsLoading(true);
+
+        // 调用API保存修改到服务器
+        (async () => {
+          try {
+            // 准备要发送的数据
+            const taskData = {
+              id: editingTask.id,
+              name: newTask.title,
+              integral: newTask.points,
+            };
+
+            // 调用POST接口保存修改
+            const response = await post("/api/task/pending", taskData);
+            const result = await response.json();
+
+            if (result.code === 200) {
+              console.log("任务修改成功:", result.data);
+              // 刷新数据以确保显示最新状态
+              fetchPendingTasks();
+            } else {
+              console.error("任务修改失败:", result.message);
+              alert(`修改失败: ${result.message || "未知错误"}`);
+            }
+          } catch (error) {
+            console.error("任务修改请求失败:", error);
+            alert(`修改请求失败: ${error.message}`);
+          } finally {
+            setIsLoading(false);
+          }
+        })();
+
+        setEditingTask(null);
       } else {
         console.log("添加新任务:", newTask);
-        // 如果是数组（多个小朋友的任务），则添加多个
-        if (Array.isArray(newTask)) {
-          const nextId =
-            pendingTasks.length > 0
-              ? Math.max(...pendingTasks.map((task) => task.id)) + 1
-              : 1;
-          const newTasks = newTask.map((task, index) => ({
-            ...task,
-            id: nextId + index,
-            status: "pending",
-            createdAt: new Date().toISOString().slice(0, 16).replace("T", " "),
-          }));
-          setPendingTasks([...pendingTasks, ...newTasks]);
-        } else {
-          // 单个任务的情况
-          const nextId =
-            pendingTasks.length > 0
-              ? Math.max(...pendingTasks.map((task) => task.id)) + 1
-              : 1;
-          setPendingTasks([
-            ...pendingTasks,
-            {
-              ...newTask,
-              id: nextId,
-              status: "pending",
-              createdAt: new Date()
-                .toISOString()
-                .slice(0, 16)
-                .replace("T", " "),
-            },
-          ]);
-        }
-
-        // 这里应该调用API添加数据
-        // 之后刷新数据
-        setTimeout(() => {
-          fetchPendingTasks();
-        }, 500);
+        
+        // 设置加载状态
+        setIsLoading(true);
+        
+        // 异步函数处理API调用
+        (async () => {
+          try {
+            // 准备API请求数据
+            const taskData = {
+              name: newTask.title,
+              integral: parseInt(newTask.points) || 0,
+              child_id: selectedChild.id, // 添加孩子ID，家长版本需要指定哪个孩子
+              task_date: new Date().toISOString().split("T")[0],
+            };
+            
+            // 调用API添加任务
+            const response = await post("/api/task/parent", taskData);
+            const result = await response.json();
+            
+            if (result.code === 200 && result.data) {
+              console.log("任务添加成功:", result.data);
+              
+              // 添加成功后刷新任务列表
+              fetchChildTasks();
+            } else {
+              console.error("添加任务失败:", result.message);
+              alert(`添加失败: ${result.message || "未知错误"}`);
+            }
+          } catch (error) {
+            console.error("添加任务出错:", error);
+            alert(`添加任务失败: ${error.message}`);
+          } finally {
+            setIsLoading(false);
+          }
+        })();
       }
     } catch (error) {
       alert("操作失败：" + error.message);
@@ -895,7 +943,7 @@ export default function ParentDashboard() {
           } else {
             console.log(`作业 ${approvalItem.title} 被拒绝`);
           }
-          
+
           // 刷新数据
           fetchCompletedHomeworks();
         } else {
@@ -953,7 +1001,7 @@ export default function ParentDashboard() {
 
           const response = await put(`/api/task/complete`, {
             id: approvalItem.id,
-            approved: approved
+            approved: approved,
           });
 
           const result = await response.json();
@@ -963,7 +1011,7 @@ export default function ParentDashboard() {
             setCompletedTasks(
               completedTasks.filter((item) => item.id !== approvalItem.id)
             );
-            
+
             setHistory([
               {
                 id: Date.now(),
@@ -975,7 +1023,7 @@ export default function ParentDashboard() {
               },
               ...history,
             ]);
-            
+
             setChildPoints({
               ...childPoints,
               total: childPoints.total + approvalItem.points,
@@ -1001,7 +1049,7 @@ export default function ParentDashboard() {
         setCompletedTasks(
           completedTasks.filter((item) => item.id !== approvalItem.id)
         );
-        
+
         // 刷新数据
         fetchCompletedTasks();
       }
@@ -1046,32 +1094,35 @@ export default function ParentDashboard() {
 
   const handleHomeworkDateSelect = async (date) => {
     setSelectedHomeworkDate(date);
-    
+
     // 使用本地日期格式，避免时区问题
     // 创建一个新的日期对象避免修改原始对象
     const localDate = new Date(date);
-    
+
     // 格式化为YYYY-MM-DD格式
-    const formattedDate = localDate.getFullYear() + '-' + 
-                          String(localDate.getMonth() + 1).padStart(2, '0') + '-' + 
-                          String(localDate.getDate()).padStart(2, '0');
-    
+    const formattedDate =
+      localDate.getFullYear() +
+      "-" +
+      String(localDate.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(localDate.getDate()).padStart(2, "0");
+
     console.log("选择的作业日期:", formattedDate);
-    
+
     try {
       // 显示加载状态
       setIsLoading(true);
-      
+
       // 如果没有选中的孩子，则返回
       if (!selectedChild || !selectedChild.id) {
         console.error("未选择孩子");
         return;
       }
-      
+
       // 调用API获取该日期的作业数据
       const apiUrl = `/api/homework/parent?childId=${selectedChild.id}&homeworkDate=${formattedDate}`;
       console.log("API请求URL:", apiUrl);
-      
+
       const response = await get(apiUrl);
       const result = await response.json();
 
@@ -1104,10 +1155,12 @@ export default function ParentDashboard() {
         }, []);
 
         setChildHomework(groupedHomework);
-        console.log(`已获取${formattedDate}的作业数据，共${result.data.length}条记录`);
+        console.log(
+          `已获取${formattedDate}的作业数据，共${result.data.length}条记录`
+        );
       } else {
         console.error("获取作业数据失败:", result.message);
-        
+
         // 如果API调用失败或无数据，设置空的作业列表
         setChildHomework([]);
       }
@@ -1122,32 +1175,35 @@ export default function ParentDashboard() {
 
   const handleTaskDateSelect = async (date) => {
     setSelectedTaskDate(date);
-    
+
     // 使用本地日期格式，避免时区问题
     // 创建一个新的日期对象避免修改原始对象
     const localDate = new Date(date);
-    
+
     // 格式化为YYYY-MM-DD格式
-    const formattedDate = localDate.getFullYear() + '-' + 
-                         String(localDate.getMonth() + 1).padStart(2, '0') + '-' + 
-                         String(localDate.getDate()).padStart(2, '0');
-    
+    const formattedDate =
+      localDate.getFullYear() +
+      "-" +
+      String(localDate.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(localDate.getDate()).padStart(2, "0");
+
     console.log("选择的任务日期:", formattedDate);
-    
+
     try {
       // 显示加载状态
       setIsLoading(true);
-      
+
       // 如果没有选中的孩子，则返回
       if (!selectedChild || !selectedChild.id) {
         console.error("未选择孩子");
         return;
       }
-      
+
       // 调用API获取该日期的任务数据
       const apiUrl = `/api/task/parent?childId=${selectedChild.id}&taskDate=${formattedDate}`;
       console.log("API请求URL:", apiUrl);
-      
+
       const response = await get(apiUrl);
       const result = await response.json();
 
@@ -1160,16 +1216,19 @@ export default function ParentDashboard() {
           title: task.name,
           points: task.integral || 0,
           completed: task.is_complete === "1",
-          time: formattedDate === new Date().toISOString().split("T")[0] ? 
-            "今天" : 
-            localDate.getMonth() + 1 + "月" + localDate.getDate() + "日"
+          time:
+            formattedDate === new Date().toISOString().split("T")[0]
+              ? "今天"
+              : localDate.getMonth() + 1 + "月" + localDate.getDate() + "日",
         }));
 
         setChildTasks(formattedTasks);
-        console.log(`已获取${formattedDate}的任务数据，共${result.data.length}条记录`);
+        console.log(
+          `已获取${formattedDate}的任务数据，共${result.data.length}条记录`
+        );
       } else {
         console.error("获取任务数据失败:", result.message);
-        
+
         // 如果API调用失败或无数据，设置空的任务列表
         setChildTasks([]);
       }
@@ -1765,10 +1824,11 @@ export default function ParentDashboard() {
                                 总错题:{" "}
                                 {(() => {
                                   // 为单个科目计算错题统计
-                                  const totalWrongAnswers = subject.tasks.reduce(
-                                    (sum, t) => sum + (t.wrongAnswers || 0),
-                                    0
-                                  );
+                                  const totalWrongAnswers =
+                                    subject.tasks.reduce(
+                                      (sum, t) => sum + (t.wrongAnswers || 0),
+                                      0
+                                    );
                                   return totalWrongAnswers;
                                 })()}
                                 个
@@ -1777,12 +1837,15 @@ export default function ParentDashboard() {
                                 平均:{" "}
                                 {(() => {
                                   // 为单个科目计算平均错题
-                                  const totalWrongAnswers = subject.tasks.reduce(
-                                    (sum, t) => sum + (t.wrongAnswers || 0),
-                                    0
-                                  );
+                                  const totalWrongAnswers =
+                                    subject.tasks.reduce(
+                                      (sum, t) => sum + (t.wrongAnswers || 0),
+                                      0
+                                    );
                                   return subject.tasks.length > 0
-                                    ? (totalWrongAnswers / subject.tasks.length).toFixed(1)
+                                    ? (
+                                        totalWrongAnswers / subject.tasks.length
+                                      ).toFixed(1)
                                     : "0.0";
                                 })()}
                                 个/题
@@ -1814,7 +1877,10 @@ export default function ParentDashboard() {
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="text-4xl font-bold text-amber-500">
-                            {calculateWrongAnswersStats(childHomework).totalWrongAnswers}
+                            {
+                              calculateWrongAnswersStats(childHomework)
+                                .totalWrongAnswers
+                            }
                           </div>
                           <span className="text-2xl">📝</span>
                         </div>
@@ -1829,7 +1895,10 @@ export default function ParentDashboard() {
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="text-2xl font-bold text-amber-500">
-                            {calculateWrongAnswersStats(childHomework).avgWrongAnswers}
+                            {
+                              calculateWrongAnswersStats(childHomework)
+                                .avgWrongAnswers
+                            }
                           </div>
                           <span className="text-xl">📊</span>
                         </div>
@@ -1841,7 +1910,8 @@ export default function ParentDashboard() {
                           {childHomework.map((subject) => {
                             const subjectWrongAnswers = subject.tasks.reduce(
                               (sum, task) =>
-                                sum + (task.completed ? task.wrongAnswers || 0 : 0),
+                                sum +
+                                (task.completed ? task.wrongAnswers || 0 : 0),
                               0
                             );
 

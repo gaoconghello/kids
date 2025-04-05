@@ -126,7 +126,7 @@ export const GET = withAuth(["parent"], async (request) => {
 });
 
 // 创建新任务
-export const POST = withAuth(["parent", "child"], async (request) => {
+export const POST = withAuth(["parent"], async (request) => {
   try {
     const data = await request.json();
 
@@ -138,20 +138,46 @@ export const POST = withAuth(["parent", "child"], async (request) => {
       );
     }
 
+    // 获取当前家长信息
+    const parent = await prisma.account.findUnique({
+      where: { id: request.user.id },
+      select: { family_id: true },
+    });
+
+    if (!parent) {
+      return NextResponse.json(
+        { code: 403, message: "无法验证家长身份" },
+        { status: 403 }
+      );
+    }
+
+    // 验证child是否属于该family
+    const child = await prisma.account.findUnique({
+      where: { id: parseInt(data.child_id) },
+      select: { family_id: true },
+    });
+
+    if (!child || child.family_id !== parent.family_id) {
+      return NextResponse.json(
+        { code: 403, message: "无权为此孩子添加作业" },
+        { status: 403 }
+      );
+    }
+
     // 创建新任务
     const newTask = await prisma.task.create({
       data: {
         name: data.name,
         integral: data.integral ? parseInt(data.integral) : 0,
-        child_id: request.user.id,
+        child_id: data.child_id,
         task_date: new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })),
-        create_review: "0",
+        create_review: "1",
         complete_review: "0",
-        create_review_time: null,
-        create_review_user_id: null,
         created_at: new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })),
         updated_at: new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })),
         created_user_id: request.user.id,
+        updated_user_id: request.user.id,
+        is_complete: "0",
       },
     });
 
