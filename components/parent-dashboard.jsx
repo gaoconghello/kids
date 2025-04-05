@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Star,
   Gift,
@@ -288,6 +288,24 @@ export default function ParentDashboard() {
   const [editingTask, setEditingTask] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // 初始化截止时间设置
+  const fetchDeadlineSettings = async () => {
+    try {
+      const response = await get("/api/family/deadline");
+      const result = await response.json();
+      
+      if (result.code === 200 && result.data) {
+        setDeadlineSettings({
+          enabled: result.data.is_deadline,
+          time: result.data.deadline,
+          bonusPoints: result.data.integral,
+        });
+      }
+    } catch (error) {
+      console.error("获取截止时间设置失败:", error);
+    }
+  };
+
   // 获取科目数据
   const fetchSubjects = async () => {
     try {
@@ -539,6 +557,8 @@ export default function ParentDashboard() {
   useEffect(() => {
     // 首先获取孩子列表
     fetchChildrenList();
+    // 获取截止时间设置
+    fetchDeadlineSettings();
     // 获取科目列表
     fetchSubjects();
   }, []);
@@ -1086,10 +1106,30 @@ export default function ParentDashboard() {
     alert("密码修改成功！");
   };
 
-  const handleSaveDeadlineSettings = (settings) => {
-    console.log("保存截止时间设置:", settings);
-    setDeadlineSettings(settings);
-    alert("设置保存成功！");
+  const handleSaveDeadlineSettings = async (settings) => {
+    try {
+      console.log("保存截止时间设置:", settings);
+      
+      // 构建请求数据
+      const deadlineData = {
+        is_deadline: settings.enabled ? "1" : "0",
+        deadline: settings.time,
+        integral: settings.bonusPoints
+      };
+      
+      // 调用API保存设置
+      const response = await put("/api/family/deadline", deadlineData);
+      const result = await response.json();
+      
+      if (result.code === 200) {
+        setDeadlineSettings(settings);
+        console.log("截止时间设置保存成功");
+      } else {
+        console.error("保存截止时间设置失败:", result.message);
+      }
+    } catch (error) {
+      console.error("保存截止时间设置出错:", error);
+    }
   };
 
   const handleHomeworkDateSelect = async (date) => {

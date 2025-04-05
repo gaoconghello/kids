@@ -328,16 +328,122 @@ export const PUT = withAuth(["parent"], async (request) => {
         });
         
         // 2. 更新孩子的积分账户
+        let addedIntegral = existingHomework.integral;
+        
+        // 3. 获取当天的时间范围（上海时区）
+        const today = new Date(
+          new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
+        );
+        const year = today.getFullYear();
+        const month = today.getMonth();
+        const day = today.getDate();
+        
+        const startDate = new Date(Date.UTC(year, month, day, 0, 0, 0));
+        const endDate = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
+        
+        // 4. 检查当天所有作业是否都已完成并审核通过
+        // 直接获取所有当天作业（包括刚刚更新的）
+        const todaysHomeworks = await tx.homework.findMany({
+          where: {
+            child_id: existingHomework.child_id,
+            homework_date: {
+              gte: startDate,
+              lte: endDate,
+            },
+          },
+        });
+        
+        // 注意：现在我们已经更新了当前作业的状态，所以直接检查所有作业
+        // 包括当前已经更新的作业
+        const allCompletedAndReviewed = todaysHomeworks.every(
+          hw => {
+            // 如果是当前作业，使用更新后的状态
+            if (hw.id === parseInt(data.id)) {
+              return true; // 当前作业已经审核通过
+            }
+            // 其他作业检查数据库状态
+            return hw.is_complete === "1" && hw.complete_review === "1";
+          }
+        );
+        
+        // 如果所有作业都已完成并审核通过，检查家庭设置
+        if (allCompletedAndReviewed) {
+          // 获取家庭设置
+          const family = await tx.family.findUnique({
+            where: { id: child.family_id },
+            select: { is_deadline: true, integral: true, deadline: true },
+          });
+          
+          // 如果家庭设置了deadline奖励
+          if (family && family.is_deadline === "1") {
+            // 获取当天的deadline时间
+            const deadlineTime = family.deadline;
+            if (deadlineTime) {
+              // 提取小时和分钟
+              let hours = 0;
+              let minutes = 0;
+              
+              // 处理不同类型的deadline
+              if (typeof deadlineTime === 'string' && deadlineTime.includes(':')) {
+                // 字符串格式如 "18:30"
+                [hours, minutes] = deadlineTime.split(':').map(Number);
+              } else if (deadlineTime instanceof Date) {
+                // Date对象
+                hours = deadlineTime.getHours();
+                minutes = deadlineTime.getMinutes();
+              } else if (typeof deadlineTime === 'object' && deadlineTime.hours !== undefined && deadlineTime.minutes !== undefined) {
+                // 对象格式如 {hours: 18, minutes: 30}
+                hours = deadlineTime.hours;
+                minutes = deadlineTime.minutes;
+              }
+              
+              // 创建当天的deadline时间点
+              const todayDeadline = new Date(Date.UTC(year, month, day, hours, minutes, 0));
+              
+              // 检查所有作业的完成时间是否都早于deadline
+              const allCompletedBeforeDeadline = todaysHomeworks.every(
+                hw => {
+                  // 对于当前正在审核的作业，直接使用完成时间
+                  if (hw.id === parseInt(data.id)) {
+                    return existingHomework.complete_time && new Date(existingHomework.complete_time) < todayDeadline;
+                  }
+                  // 其他作业检查数据库状态
+                  return hw.complete_time && new Date(hw.complete_time) < todayDeadline;
+                }
+              );
+              
+              // 如果所有作业都在deadline前完成，添加额外积分
+              if (allCompletedBeforeDeadline && family.integral > 0) {
+                // 将family.integral添加到总积分中
+                addedIntegral += family.integral;
+                
+                // 创建额外的积分历史记录
+                await tx.integral_history.create({
+                  data: {
+                    integral_id: 0, // 非特定作业
+                    integral_type: INTEGRAL_TYPE.FAMILY,
+                    child_id: existingHomework.child_id,
+                    family_id: child.family_id,
+                    integral: family.integral,
+                    integral_date: now,
+                  },
+                });
+              }
+            }
+          }
+        }
+        
+        // 更新孩子的积分
         await tx.account.update({
           where: { id: existingHomework.child_id },
           data: {
-            integral: child.integral + existingHomework.integral,
+            integral: child.integral + addedIntegral,
             updated_at: now,
             updated_user_id: request.user.id,
           },
         });
         
-        // 3. 创建积分历史记录
+        // 5. 创建作业积分历史记录
         await tx.integral_history.create({
           data: {
             integral_id: existingHomework.id,
