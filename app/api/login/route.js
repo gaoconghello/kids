@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { signJWT } from "@/lib/jwt";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 export async function POST(request) {
   try {

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 import { formatDateTime } from "@/lib/utils";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 // 更新账户密码
 export const PUT = withAuth(["admin", "parent", "child"], async (request) => {

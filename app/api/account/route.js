@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 import { formatDateTime } from "@/lib/utils";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 // 获取当前登录用户信息
 export const GET = withAuth([], async (request) => {
