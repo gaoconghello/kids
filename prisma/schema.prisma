@@ -71,6 +71,7 @@ model integral_history {
   integral      Int?
   child_id      Int?
   family_id     Int?
+  name          String?   @db.VarChar(100)
   integral_date DateTime? @db.Timestamp(6)
 }
 
