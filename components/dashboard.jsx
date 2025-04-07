@@ -138,56 +138,8 @@ export default function Dashboard() {
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
 
   // 添加积分兑换列表状态
-  const [rewards, setRewards] = useState([
-    {
-      id: 1,
-      title: "看30分钟动画片",
-      points: 50,
-      image: "/placeholder.svg?height=80&width=80",
-    },
-    {
-      id: 2,
-      title: "冰淇淋一个",
-      points: 100,
-      image: "/placeholder.svg?height=80&width=80",
-    },
-    {
-      id: 3,
-      title: "玩具小车",
-      points: 200,
-      image: "/placeholder.svg?height=80&width=80",
-    },
-    {
-      id: 4,
-      title: "游乐场门票",
-      points: 500,
-      image: "/placeholder.svg?height=80&width=80",
-    },
-    {
-      id: 5,
-      title: "新故事书一本",
-      points: 150,
-      image: "/placeholder.svg?height=80&width=80",
-    },
-    {
-      id: 6,
-      title: "画画套装",
-      points: 300,
-      image: "/placeholder.svg?height=80&width=80",
-    },
-    {
-      id: 7,
-      title: "积木玩具",
-      points: 250,
-      image: "/placeholder.svg?height=80&width=80",
-    },
-    {
-      id: 8,
-      title: "小提琴课一节",
-      points: 400,
-      image: "/placeholder.svg?height=80&width=80",
-    },
-  ]);
+  const [rewards, setRewards] = useState([]);
+  const [isLoadingRewards, setIsLoadingRewards] = useState(true);
 
   // 添加显示所有奖励状态
   const [showAllRewards, setShowAllRewards] = useState(false);
@@ -387,6 +339,38 @@ export default function Dashboard() {
     }
   };
 
+  // 添加获取奖励列表的函数
+  const fetchRewards = async () => {
+    try {
+      setIsLoadingRewards(true);
+
+      // 使用封装的get方法获取奖励数据
+      const response = await get("/api/reward");
+      const result = await response.json();
+
+      if (result.code === 200 && result.data) {
+        // 将API返回的数据设置到状态中
+        setRewards(result.data.map(reward => ({
+          id: reward.id,
+          title: reward.name,
+          points: reward.integral || 0,
+          image: reward.pic ? 
+                (reward.pic_ext ? `data:image/${reward.pic_ext};base64,${reward.pic}` : reward.pic) : 
+                "/placeholder.svg?height=80&width=80",
+        })));
+        console.log("获取奖励列表成功:", result.data);
+      } else {
+        console.error("获取奖励列表失败:", result.message);
+        setRewards([]); // 获取失败时设置为空数组
+      }
+    } catch (error) {
+      console.error("获取奖励数据出错:", error);
+      setRewards([]); // 出错时设置为空数组
+    } finally {
+      setIsLoadingRewards(false);
+    }
+  };
+
   // 修改 useEffect 中的数据获取
   useEffect(() => {
     const fetchAllData = async () => {
@@ -395,6 +379,7 @@ export default function Dashboard() {
         await fetchSubjects();
         await fetchHomeworks();
         await fetchTasks(); 
+        await fetchRewards(); // 添加获取奖励列表
       } catch (error) {
         console.error("数据获取失败:", error);
       } finally {
@@ -483,22 +468,44 @@ export default function Dashboard() {
     }
   };
 
-  const redeemReward = (rewardId) => {
+  const redeemReward = async (rewardId) => {
     const reward = rewards.find((r) => r.id === rewardId);
     if (reward && points >= reward.points) {
-      setPoints(points - reward.points);
-      setHistory([
-        {
-          id: Date.now(),
-          title: `兑换${reward.title}`,
-          points: reward.points,
-          type: "spend",
-          date: new Date().toISOString().split("T")[0],
-        },
-        ...history,
-      ]);
-      // Close the confirmation dialog
-      setConfirmingReward(null);
+      try {
+        // 调用API兑换奖励
+        const response = await put("/api/reward/redeem", {
+          rewardId: rewardId
+        });
+        
+        const result = await response.json();
+        
+        if (result.code === 200) {
+          
+          // 添加到历史记录
+          setHistory([
+            {
+              id: Date.now(),
+              title: `兑换${reward.title}`,
+              points: reward.points,
+              type: "spend",
+              date: new Date().toISOString().split("T")[0],
+            },
+            ...history,
+          ]);
+          
+          // 关闭确认对话框
+          setConfirmingReward(null);
+          
+          // 创建兑换成功的彩带效果
+          createTaskConfetti();
+          
+          console.log("奖励兑换成功");
+        } else {
+          console.error("兑换奖励失败:", result.message);
+        }
+      } catch (error) {
+        console.error("兑换奖励出错:", error);
+      }
     }
   };
 
@@ -1686,45 +1693,55 @@ export default function Dashboard() {
               <CardContent className="p-6">
                 <div className="transition-all duration-300 ease-in-out">
                   <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
-                    {rewards
-                      .slice(0, showAllRewards ? rewards.length : 4)
-                      .map((reward) => (
-                        <div
-                          key={reward.id}
-                          className="flex flex-col overflow-hidden transition-all border-2 rounded-xl border-primary/20 bg-gradient-to-br from-white to-purple-50 hover:border-primary/50 hover:shadow-xl"
-                        >
-                          <div className="flex items-center gap-2 p-3 sm:gap-4 sm:p-4">
-                            <div className="flex items-center justify-center w-16 h-16 sm:h-20 sm:w-20 rounded-xl bg-primary/10">
-                              <img
-                                src={reward.image || "/placeholder.svg"}
-                                alt={reward.title}
-                                className="object-contain w-16 h-16"
-                              />
-                            </div>
-                            <div className="flex-1">
-                              <h3 className="font-semibold">{reward.title}</h3>
-                              <div className="flex items-center gap-1 mt-1">
-                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
-                                <span className="font-bold text-primary">
-                                  {reward.points}
-                                </span>
-                                <span className="text-sm text-muted-foreground">
-                                  积分
-                                </span>
+                    {isLoadingRewards ? (
+                      <div className="flex items-center justify-center h-40 col-span-2">
+                        <div className="w-10 h-10 border-b-2 rounded-full animate-spin border-primary"></div>
+                      </div>
+                    ) : rewards.length > 0 ? (
+                      rewards
+                        .slice(0, showAllRewards ? rewards.length : 4)
+                        .map((reward) => (
+                          <div
+                            key={reward.id}
+                            className="flex flex-col overflow-hidden transition-all border-2 rounded-xl border-primary/20 bg-gradient-to-br from-white to-purple-50 hover:border-primary/50 hover:shadow-xl"
+                          >
+                            <div className="flex items-center gap-2 p-3 sm:gap-4 sm:p-4">
+                              <div className="flex items-center justify-center w-16 h-16 sm:h-20 sm:w-20 rounded-xl bg-primary/10">
+                                <img
+                                  src={reward.image || "/placeholder.svg"}
+                                  alt={reward.title}
+                                  className="object-contain w-16 h-16"
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="font-semibold">{reward.title}</h3>
+                                <div className="flex items-center gap-1 mt-1">
+                                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
+                                  <span className="font-bold text-primary">
+                                    {reward.points}
+                                  </span>
+                                  <span className="text-sm text-muted-foreground">
+                                    积分
+                                  </span>
+                                </div>
                               </div>
                             </div>
+                            <div className="p-3 mt-auto bg-primary/5">
+                              <Button
+                                className="w-full"
+                                disabled={points < reward.points}
+                                onClick={() => setConfirmingReward(reward.id)}
+                              >
+                                {points < reward.points ? "积分不足" : "立即兑换"}
+                              </Button>
+                            </div>
                           </div>
-                          <div className="p-3 mt-auto bg-primary/5">
-                            <Button
-                              className="w-full"
-                              disabled={points < reward.points}
-                              onClick={() => setConfirmingReward(reward.id)}
-                            >
-                              {points < reward.points ? "积分不足" : "立即兑换"}
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                        ))
+                    ) : (
+                      <div className="col-span-2 p-6 text-center bg-white rounded-lg shadow">
+                        <p className="text-gray-500">暂时没有可兑换的奖励哦！</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>

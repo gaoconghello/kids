@@ -141,42 +141,10 @@ export default function ParentDashboard() {
   const [completedTasks, setCompletedTasks] = useState([]);
   const [childTasks, setChildTasks] = useState([]);
 
-  const [rewards, setRewards] = useState([
-    {
-      id: 1,
-      title: "看30分钟动画片",
-      points: 50,
-      image: "/placeholder.svg?height=80&width=80",
-    },
-    {
-      id: 2,
-      title: "冰淇淋一个",
-      points: 100,
-      image: "/placeholder.svg?height=80&width=80",
-    },
-    {
-      id: 3,
-      title: "玩具小车",
-      points: 200,
-      image: "/placeholder.svg?height=80&width=80",
-    },
-    {
-      id: 4,
-      title: "游乐场门票",
-      points: 500,
-      image: "/placeholder.svg?height=80&width=80",
-    },
-  ]);
-  const [pendingRewards, setPendingRewards] = useState([
-    {
-      id: 1,
-      childName: "小明",
-      rewardTitle: "看30分钟动画片",
-      points: 50,
-      status: "pending",
-      requestedAt: "2025-03-01 17:15",
-    },
-  ]);
+  const [rewards, setRewards] = useState([]);
+  const [isLoadingRewards, setIsLoadingRewards] = useState(true);
+
+  const [pendingRewards, setPendingRewards] = useState([]);
   const [history, setHistory] = useState([
     {
       id: 1,
@@ -276,11 +244,7 @@ export default function ParentDashboard() {
   const [approvalType, setApprovalType] = useState(""); // homework, task, reward
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isDeadlineSettingsOpen, setIsDeadlineSettingsOpen] = useState(false);
-  const [deadlineSettings, setDeadlineSettings] = useState({
-    enabled: true,
-    time: "20:00",
-    bonusPoints: 50,
-  });
+  const [deadlineSettings, setDeadlineSettings] = useState({});
   const [showStatistics, setShowStatistics] = useState(false);
   const [selectedHomeworkDate, setSelectedHomeworkDate] = useState(new Date());
   const [showHomeworkCalendar, setShowHomeworkCalendar] = useState(false);
@@ -293,7 +257,7 @@ export default function ParentDashboard() {
     try {
       const response = await get("/api/family/deadline");
       const result = await response.json();
-      
+
       if (result.code === 200 && result.data) {
         setDeadlineSettings({
           enabled: result.data.is_deadline,
@@ -320,6 +284,43 @@ export default function ParentDashboard() {
       }
     } catch (error) {
       console.error("获取科目数据出错:", error);
+    }
+  };
+
+  // 获取奖励列表
+  const fetchRewards = async () => {
+    try {
+      setIsLoadingRewards(true);
+
+      // 使用封装的get方法获取奖励数据
+      const response = await get("/api/reward");
+      const result = await response.json();
+
+      if (result.code === 200 && result.data) {
+        // 将API返回的数据设置到状态中
+        setRewards(
+          result.data.map((reward) => ({
+            id: reward.id,
+            title: reward.name,
+            points: reward.integral || 0,
+            image: reward.pic
+              ? reward.pic_ext
+                ? `data:image/${reward.pic_ext};base64,${reward.pic}`
+                : reward.pic
+              : "/placeholder.svg?height=80&width=80",
+            family_id: reward.family_id,
+          }))
+        );
+        console.log("获取奖励列表成功:", result.data);
+      } else {
+        console.error("获取奖励列表失败:", result.message);
+        setRewards([]); // 获取失败时设置为空数组
+      }
+    } catch (error) {
+      console.error("获取奖励数据出错:", error);
+      setRewards([]); // 出错时设置为空数组
+    } finally {
+      setIsLoadingRewards(false);
     }
   };
 
@@ -553,6 +554,44 @@ export default function ParentDashboard() {
     }
   };
 
+  // 获取待审核奖励
+  const fetchPendingRewards = async () => {
+    try {
+      setIsLoading(true);
+      console.log("获取待审核奖励");
+
+      // 调用API获取待审核奖励
+      const response = await get(
+        `/api/reward/history?childId=${selectedChild.id}`
+      );
+      const result = await response.json();
+
+      if (result.code === 200 && result.data) {
+        // 将API返回的数据转换为组件需要的格式
+        const formattedRewards = result.data.map((reward) => ({
+          id: reward.id,
+          childName: reward.child_name || selectedChild?.name || "未知",
+          rewardTitle: reward.reward_name || "未知奖励",
+          points: reward.reward_integral || 0,
+          status: "pending",
+          requestedAt:
+            reward.created_at ||
+            new Date().toISOString().slice(0, 16).replace("T", " "),
+        }));
+
+        setPendingRewards(formattedRewards);
+      } else {
+        console.error("获取待审核奖励失败:", result.message);
+        setPendingRewards([]);
+      }
+    } catch (error) {
+      console.error("获取待审核奖励数据出错:", error);
+      setPendingRewards([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // 页面加载时获取数据
   useEffect(() => {
     // 首先获取孩子列表
@@ -561,6 +600,8 @@ export default function ParentDashboard() {
     fetchDeadlineSettings();
     // 获取科目列表
     fetchSubjects();
+    // 获取奖励列表
+    fetchRewards();
   }, []);
 
   // 当选择的孩子ID变化时，重新获取相关数据
@@ -579,6 +620,8 @@ export default function ParentDashboard() {
       fetchCompletedTasks();
       // 获取孩子任务列表
       fetchChildTasks();
+      // 获取待审核奖励
+      fetchPendingRewards();
     }
   }, [selectedChild]); // 添加selectedChild依赖
 
@@ -799,10 +842,10 @@ export default function ParentDashboard() {
         setEditingTask(null);
       } else {
         console.log("添加新任务:", newTask);
-        
+
         // 设置加载状态
         setIsLoading(true);
-        
+
         // 异步函数处理API调用
         (async () => {
           try {
@@ -813,14 +856,14 @@ export default function ParentDashboard() {
               child_id: selectedChild.id, // 添加孩子ID，家长版本需要指定哪个孩子
               task_date: new Date().toISOString().split("T")[0],
             };
-            
+
             // 调用API添加任务
             const response = await post("/api/task/parent", taskData);
             const result = await response.json();
-            
+
             if (result.code === 200 && result.data) {
               console.log("任务添加成功:", result.data);
-              
+
               // 添加成功后刷新任务列表
               fetchChildTasks();
             } else {
@@ -842,10 +885,43 @@ export default function ParentDashboard() {
 
   const handleAddReward = (newReward) => {
     console.log("添加新奖励:", newReward);
-    const nextId =
-      rewards.length > 0 ? Math.max(...rewards.map((r) => r.id)) + 1 : 1;
-    setRewards([...rewards, { ...newReward, id: nextId }]);
-    alert("奖励添加成功！");
+
+    // 设置加载状态
+    setIsLoading(true);
+
+    // 异步函数处理API调用
+    (async () => {
+      try {
+        // 准备API请求数据
+        const rewardData = {
+          name: newReward.title,
+          integral: parseInt(newReward.points) || 0,
+          // pic: newReward.image || null,
+          // pic_ext: newReward.pic_ext || null,
+        };
+
+        // 调用API添加奖励
+        const response = await post("/api/reward/parent", rewardData);
+        const result = await response.json();
+
+        if (result.code === 200 && result.data) {
+          console.log("奖励添加成功:", result.data);
+
+          // 添加成功后刷新奖励列表
+          fetchRewards();
+
+          alert("奖励添加成功！");
+        } else {
+          console.error("添加奖励失败:", result.message);
+          alert(`添加失败: ${result.message || "未知错误"}`);
+        }
+      } catch (error) {
+        console.error("添加奖励出错:", error);
+        alert(`添加奖励失败: ${error.message}`);
+      } finally {
+        setIsLoading(false);
+      }
+    })();
   };
 
   const openApprovalDialog = (item, type) => {
@@ -1024,14 +1100,19 @@ export default function ParentDashboard() {
         });
 
         const result = await response.json();
-        
+
         console.log("任务完成审批结果:", result);
 
         // 检查结果码：
         // 1. code 200 表示审批成功
         // 2. code 400 且 message 是"任务审核未通过"表示拒绝成功
         // 3. 其他情况视为真正的错误
-        if (result.code === 200 || (result.code === 400 && result.message === "任务审核未通过" && !approved)) {
+        if (
+          result.code === 200 ||
+          (result.code === 400 &&
+            result.message === "任务审核未通过" &&
+            !approved)
+        ) {
           // 从待完成列表中移除该任务
           setCompletedTasks(
             completedTasks.filter((item) => item.id !== approvalItem.id)
@@ -1060,7 +1141,7 @@ export default function ParentDashboard() {
           } else {
             console.log("任务完成被拒绝:", approvalItem.title);
           }
-          
+
           // 刷新数据
           fetchCompletedTasks();
         } else {
@@ -1109,18 +1190,18 @@ export default function ParentDashboard() {
   const handleSaveDeadlineSettings = async (settings) => {
     try {
       console.log("保存截止时间设置:", settings);
-      
+
       // 构建请求数据
       const deadlineData = {
         is_deadline: settings.enabled ? "1" : "0",
         deadline: settings.time,
-        integral: settings.bonusPoints
+        integral: settings.bonusPoints,
       };
-      
+
       // 调用API保存设置
       const response = await put("/api/family/deadline", deadlineData);
       const result = await response.json();
-      
+
       if (result.code === 200) {
         setDeadlineSettings(settings);
         console.log("截止时间设置保存成功");

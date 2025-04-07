@@ -4,25 +4,25 @@ import { withAuth } from "@/lib/auth";
 import { formatDateTime } from "@/lib/utils";
 
 // 获取奖励列表
-export const GET = withAuth(["child", "parent"], async (request) => {
+export const GET = withAuth(["parent"], async (request) => {
   try {
     // 通过当前用户ID查询child信息
-    const child = await prisma.account.findUnique({
+    const parent = await prisma.account.findUnique({
       where: {
         id: request.user.id
       }
     });
     
-    if (!child || !child.family_id) {
+    if (!parent || !parent.family_id) {
       return NextResponse.json(
         { code: 400, message: "无法获取家庭信息" },
         { status: 400 }
       );
     }
 
-    // 构建查询条件，只查询该小朋友所在家庭的奖励
+    // 构建查询条件，只查询该家长所在家庭的奖励
     const where = {
-      family_id: child.family_id
+      family_id: parent.family_id
     };
 
     // 查询数据库
@@ -60,7 +60,7 @@ export const GET = withAuth(["child", "parent"], async (request) => {
 });
 
 // 创建新奖励
-export const POST = withAuth(["admin", "parent"], async (request) => {
+export const POST = withAuth(["parent"], async (request) => {
   try {
     const data = await request.json();
 
@@ -72,17 +72,32 @@ export const POST = withAuth(["admin", "parent"], async (request) => {
       );
     }
 
+    // 通过当前用户ID查询parent信息
+    const parent = await prisma.account.findUnique({
+      where: {
+        id: request.user.id
+      }
+    });
+    
+    if (!parent || !parent.family_id) {
+      return NextResponse.json(
+        { code: 400, message: "无法获取家庭信息" },
+        { status: 400 }
+      );
+    }
+
     // 创建新奖励
     const newReward = await prisma.reward.create({
       data: {
         name: data.name,
         integral: parseInt(data.integral),
-        family_id: data.family_id ? parseInt(data.family_id) : request.user.family_id,
+        family_id: parent.family_id,
         pic: data.pic || null,
         pic_ext: data.pic_ext || null,
         created_at: new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })),
         updated_at: new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })),
         created_user_id: request.user.id,
+        updated_user_id: request.user.id,
       },
     });
 
