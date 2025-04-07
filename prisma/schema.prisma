@@ -85,11 +85,13 @@ model reward {
   updated_at      DateTime? @db.Timestamp(6)
   created_user_id Int?
   updated_user_id Int?
+  reward_histories reward_history[]
 }
 
 model reward_history {
   id              Int       @id @default(autoincrement())
   reward_id       Int?
+  reward          reward?   @relation(fields: [reward_id], references: [id])
   review          String?   @db.VarChar(1)
   review_time     DateTime? @db.Timestamp(6)
   child_id        Int?
