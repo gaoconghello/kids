@@ -13,6 +13,7 @@ import {
   Settings,
   ChevronDown,
   ChevronRight,
+  Key,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -30,6 +31,7 @@ import { DeleteParentDialog } from "./delete-parent-dialog"
 import { AddChildDialog } from "@/components/add-child-dialog"
 import { EditChildDialog } from "@/components/edit-child-dialog"
 import { DeleteChildDialog } from "@/components/delete-child-dialog"
+import { ChangePasswordDialog } from "@/components/change-password-dialog"
 import { useAuth } from "@/app/providers/AuthProvider"
 import { toast } from "sonner"
 import { get, post, put, del } from "@/lib/http"
@@ -268,6 +270,9 @@ export default function AdminDashboard() {
   const [families, setFamilies] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  // 添加更改密码对话框的状态
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false)
 
   // 添加useEffect钩子来获取家庭数据
   React.useEffect(() => {
@@ -607,6 +612,35 @@ export default function AdminDashboard() {
   const totalParents = loading ? 0 : families.reduce((sum, family) => sum + family.parents.length, 0)
   const totalChildren = loading ? 0 : families.reduce((sum, family) => sum + family.children.length, 0)
 
+  // 在handleDeleteChild函数后添加handleChangePassword函数
+  const handleChangePassword = async (passwordData) => {
+    try {
+      // 调用API更新密码
+      const response = await put("/api/account/password", {
+        password: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+      
+      const result = await response.json();
+      
+      if (result.code === 200) {
+        // 修改成功
+        console.log("密码修改成功:", result.data);
+        toast.success("密码修改成功");
+        return { success: true };
+      } else {
+        // 修改失败
+        console.error("密码修改失败:", result.message);
+        toast.error(result.message || "密码修改失败");
+        return { success: false, message: result.message || "密码修改失败" };
+      }
+    } catch (error) {
+      console.error("修改密码时出错:", error);
+      toast.error("修改密码时出错，请稍后再试");
+      return { success: false, message: "修改密码时出错，请稍后再试" };
+    }
+  };
+
   return (
     <div className="min-h-screen p-3 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 sm:p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
@@ -638,9 +672,10 @@ export default function AdminDashboard() {
               variant="ghost"
               size="icon"
               className="transition-colors rounded-full hover:bg-blue-100 hover:text-blue-600"
+              onClick={() => setIsChangePasswordOpen(true)}
             >
               <Settings className="w-5 h-5" />
-              <span className="sr-only">设置</span>
+              <span className="sr-only">修改密码</span>
             </Button>
             <Button
               variant="ghost"
@@ -1126,6 +1161,12 @@ export default function AdminDashboard() {
           }}
           onDelete={handleDeleteChild}
           child={deletingChild}
+        />
+        <ChangePasswordDialog
+          isOpen={isChangePasswordOpen}
+          onClose={() => setIsChangePasswordOpen(false)}
+          onSubmit={handleChangePassword}
+          userType="admin"
         />
       </div>
     </div>

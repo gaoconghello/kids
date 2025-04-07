@@ -1211,9 +1211,30 @@ export default function ParentDashboard() {
     setApprovalItem(null);
   };
 
-  const handleChangePassword = (passwordData) => {
-    console.log("修改密码:", passwordData);
-    alert("密码修改成功！");
+  // 修改密码的函数
+  const handleChangePassword = async (passwordData) => {
+    try {
+      // 调用API更新密码
+      const response = await put("/api/account/password", {
+        password: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+      
+      const result = await response.json();
+      
+      if (result.code === 200) {
+        // 修改成功
+        console.log("密码修改成功:", result.data);
+        return { success: true };
+      } else {
+        // 修改失败
+        console.error("密码修改失败:", result.message);
+        return { success: false, message: result.message || "密码修改失败" };
+      }
+    } catch (error) {
+      console.error("修改密码时出错:", error);
+      return { success: false, message: "修改密码时出错，请稍后再试" };
+    }
   };
 
   const handleSaveDeadlineSettings = async (settings) => {

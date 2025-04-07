@@ -753,11 +753,29 @@ export default function Dashboard() {
   const unfinishedTasksCount = tasks.filter((task) => !task.completed).length;
 
   // 修改密码的函数
-  const handleChangePassword = (passwordData) => {
-    // 在实际应用中，这里应该发送请求到后端
-    console.log("修改密码:", passwordData);
-    // 模拟修改成功
-    alert("密码修改成功！");
+  const handleChangePassword = async (passwordData) => {
+    try {
+      // 调用API更新密码
+      const response = await put("/api/account/password", {
+        password: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+      
+      const result = await response.json();
+      
+      if (result.code === 200) {
+        // 修改成功
+        console.log("密码修改成功:", result.data);
+        return { success: true };
+      } else {
+        // 修改失败
+        console.error("密码修改失败:", result.message);
+        return { success: false, message: result.message || "密码修改失败" };
+      }
+    } catch (error) {
+      console.error("修改密码时出错:", error);
+      return { success: false, message: "修改密码时出错，请稍后再试" };
+    }
   };
 
   // 添加处理日期选择的函数
@@ -1839,14 +1857,12 @@ export default function Dashboard() {
           </TabsContent>
         </Tabs>
 
-        {/* Floating Animation Elements */}
         <div className="fixed pointer-events-none bottom-10 right-10 animate-bounce">
           <Star className="w-12 h-12 text-yellow-500 fill-yellow-400" />
         </div>
         <div className="fixed pointer-events-none bottom-20 left-10 animate-pulse">
           <Award className="w-10 h-10 text-blue-400" />
         </div>
-        {/* 添加更多浮动动画元素 */}
         <div className="fixed pointer-events-none top-10 right-20 animate-pulse">
           <Gift className="w-8 h-8 text-pink-400" />
         </div>
@@ -1856,12 +1872,8 @@ export default function Dashboard() {
         <div className="fixed delay-150 pointer-events-none bottom-40 right-20 animate-bounce">
           <Sparkles className="w-6 h-6 text-purple-400" />
         </div>
-        {/* 5. Add the confirmation dialog to the JSX */}
-        {/* Add this right before the closing </div> of the main container div (before the AddHomeworkDialog) */}
-        {/* 兑换确认对话框 */}
         <RewardConfirmationDialog />
       </div>
-      {/* 添加作业对话框 */}
       <AddHomeworkDialog
         isOpen={isAddHomeworkOpen}
         onClose={() => setIsAddHomeworkOpen(false)}
@@ -1869,15 +1881,11 @@ export default function Dashboard() {
         subjects={subjects}
         childId={user.id}
       />
-      {/* 5. 在组件最后，在 AddHomeworkDialog 后添加 AddTaskDialog
-      // 在 <AddHomeworkDialog /> 后添加： */}
       <AddTaskDialog
         isOpen={isAddTaskOpen}
         onClose={() => setIsAddTaskOpen(false)}
         onAdd={handleAddTask}
       />
-      {/* 5. 在组件最后，在 AddTaskDialog 后添加 ChangePasswordDialog
-      // 在 <AddTaskDialog /> 后添加： */}
       <ChangePasswordDialog
         isOpen={isChangePasswordOpen}
         onClose={() => setIsChangePasswordOpen(false)}
