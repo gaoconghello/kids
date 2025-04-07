@@ -886,279 +886,315 @@ export default function ParentDashboard() {
     setApprovalDialogOpen(true);
   };
 
-  const handleApproval = async (approved, wrongAnswers = 0) => {
-    if (approvalType === "homework-add") {
-      if (approved) {
-        try {
-          // 调用API批准作业
-          setIsLoading(true);
-
-          const response = await put(`/api/homework/pending`, {
-            id: approvalItem.id,
-          });
-
-          const result = await response.json();
-
-          if (result.code === 200) {
-            // 批准成功，从待处理列表中移除该作业
-            setPendingHomework(
-              pendingHomework.filter((item) => item.id !== approvalItem.id)
-            );
-            console.log("作业审批成功:", approvalItem.title);
-            // 刷新数据
-            fetchPendingHomeworks();
-          } else {
-            console.error("作业审批失败:", result.message);
-            alert(`审批失败: ${result.message || "未知错误"}`);
-          }
-        } catch (error) {
-          console.error("作业审批请求出错:", error);
-          alert(`审批请求出错: ${error.message}`);
-        } finally {
-          setIsLoading(false);
-        }
-      } else {
-        // 作业被拒绝，暂时仅在前端处理
-        console.log("作业被拒绝:", approvalItem.title);
-        // 从待处理列表中移除
-        setPendingHomework(
-          pendingHomework.filter((item) => item.id !== approvalItem.id)
-        );
-      }
-    } else if (approvalType === "homework-complete") {
+  // 处理作业添加审批
+  const handleHomeworkAddApproval = async (approved) => {
+    if (approved) {
       try {
-        // 调用API批准作业完成（无论是批准还是拒绝）
         setIsLoading(true);
-
-        const response = await put(`/api/homework/complete`, {
+        const response = await put(`/api/homework/pending`, {
           id: approvalItem.id,
-          incorrect: wrongAnswers || 0,
-          approved: approved,
         });
 
         const result = await response.json();
 
         if (result.code === 200) {
-          // 批准成功，从待完成列表中移除该作业
-          const updatedCompletedHomework = completedHomework.filter(
-            (item) => item.id !== approvalItem.id
+          setPendingHomework(
+            pendingHomework.filter((item) => item.id !== approvalItem.id)
           );
-          setCompletedHomework(updatedCompletedHomework);
-
-          if (approved) {
-            // 更新作业列表中对应作业的状态
-            setChildHomework(
-              childHomework.map((subject) => {
-                if (subject.subject === approvalItem.subject) {
-                  return {
-                    ...subject,
-                    tasks: subject.tasks.map((task) => {
-                      if (task.title === approvalItem.title) {
-                        return {
-                          ...task,
-                          completed: true,
-                          wrongAnswers: wrongAnswers || 0,
-                        };
-                      }
-                      return task;
-                    }),
-                  };
-                }
-                return subject;
-              })
-            );
-
-            console.log(
-              `作业 ${approvalItem.title} 完成，错题数量: ${wrongAnswers}`
-            );
-
-            // 添加到历史记录
-            setHistory([
-              {
-                id: Date.now(),
-                childName: approvalItem.childName,
-                title: `完成${approvalItem.subject}作业: ${approvalItem.title}`,
-                points: approvalItem.points,
-                type: "earn",
-                date: new Date().toISOString().split("T")[0],
-                wrongAnswers: wrongAnswers,
-              },
-              ...history,
-            ]);
-
-            // 更新积分
-            setChildPoints({
-              ...childPoints,
-              total: childPoints.total + approvalItem.points,
-              thisWeek: childPoints.thisWeek + approvalItem.points,
-            });
-          } else {
-            console.log(`作业 ${approvalItem.title} 被拒绝`);
-          }
-
-          // 刷新数据
-          fetchCompletedHomeworks();
+          console.log("作业审批成功:", approvalItem.title);
+          fetchPendingHomeworks();
         } else {
-          console.error("作业完成审批失败:", result.message);
+          console.error("作业审批失败:", result.message);
           alert(`审批失败: ${result.message || "未知错误"}`);
         }
       } catch (error) {
-        console.error("作业完成审批请求出错:", error);
+        console.error("作业审批请求出错:", error);
         alert(`审批请求出错: ${error.message}`);
       } finally {
         setIsLoading(false);
       }
-    } else if (approvalType === "task-add") {
-      if (approved) {
-        try {
-          // 调用API批准任务
-          setIsLoading(true);
+    } else {
+      console.log("作业被拒绝:", approvalItem.title);
+      setPendingHomework(
+        pendingHomework.filter((item) => item.id !== approvalItem.id)
+      );
+    }
+  };
 
-          const response = await put(`/api/task/pending`, {
-            id: approvalItem.id,
-          });
+  // 处理作业完成审批
+  const handleHomeworkCompleteApproval = async (approved, wrongAnswers = 0) => {
+    try {
+      setIsLoading(true);
+      const response = await put(`/api/homework/complete`, {
+        id: approvalItem.id,
+        incorrect: wrongAnswers || 0,
+        approved: approved,
+      });
 
-          const result = await response.json();
+      const result = await response.json();
 
-          if (result.code === 200) {
-            // 批准成功，从待处理列表中移除该任务
-            setPendingTasks(
-              pendingTasks.filter((item) => item.id !== approvalItem.id)
-            );
-            console.log("任务审批成功:", approvalItem.title);
-            // 刷新数据
-            fetchPendingTasks();
-          } else {
-            console.error("任务审批失败:", result.message);
-            alert(`审批失败: ${result.message || "未知错误"}`);
-          }
-        } catch (error) {
-          console.error("任务审批请求出错:", error);
-          alert(`审批请求出错: ${error.message}`);
-        } finally {
-          setIsLoading(false);
-        }
-      } else {
-        // 任务被拒绝，从待处理列表中移除
-        console.log("任务被拒绝:", approvalItem.title);
-        setPendingTasks(
-          pendingTasks.filter((item) => item.id !== approvalItem.id)
+      if (result.code === 200) {
+        const updatedCompletedHomework = completedHomework.filter(
+          (item) => item.id !== approvalItem.id
         );
-      }
-    } else if (approvalType === "task-complete") {
-      try {
-        // 调用API批准任务完成（无论是批准还是拒绝）
-        setIsLoading(true);
+        setCompletedHomework(updatedCompletedHomework);
 
-        const response = await put(`/api/task/complete`, {
-          id: approvalItem.id,
-          approved: approved,
-        });
-
-        const result = await response.json();
-
-        console.log("任务完成审批结果:", result);
-
-        // 检查结果码：
-        // 1. code 200 表示审批成功
-        // 2. code 400 且 message 是"任务审核未通过"表示拒绝成功
-        // 3. 其他情况视为真正的错误
-        if (
-          result.code === 200 ||
-          (result.code === 400 &&
-            result.message === "任务审核未通过" &&
-            !approved)
-        ) {
-          // 从待完成列表中移除该任务
-          setCompletedTasks(
-            completedTasks.filter((item) => item.id !== approvalItem.id)
-          );
-
-          if (approved && result.code === 200) {
-            setHistory([
-              {
-                id: Date.now(),
-                childName: approvalItem.childName,
-                title: `完成任务: ${approvalItem.title}`,
-                points: approvalItem.points,
-                type: "earn",
-                date: new Date().toISOString().split("T")[0],
-              },
-              ...history,
-            ]);
-
-            setChildPoints({
-              ...childPoints,
-              total: childPoints.total + approvalItem.points,
-              thisWeek: childPoints.thisWeek + approvalItem.points,
-            });
-
-            console.log("任务完成审批成功:", approvalItem.title);
-          } else {
-            console.log("任务完成被拒绝:", approvalItem.title);
-          }
-
-          // 刷新数据
-          fetchCompletedTasks();
+        if (approved) {
+          updateHomeworkStatusAfterCompletion(wrongAnswers);
+          addHomeworkCompletionToHistory(wrongAnswers);
+          updatePointsAfterHomeworkCompletion();
         } else {
-          console.error("任务完成审批失败:", result?.message || "未知错误");
-          alert(`审批失败: ${result?.message || "未知错误"}`);
+          console.log(`作业 ${approvalItem.title} 被拒绝`);
         }
-      } catch (error) {
-        console.error("任务完成审批请求出错:", error);
-        alert(`审批请求出错: ${error?.message || "未知错误"}`);
-      } finally {
-        setIsLoading(false);
-      }
-    } else if (approvalType === "reward-redeem") {
-      try {
-        // 调用API批准奖励兑换
-        setIsLoading(true);
 
-        const response = await put(`/api/reward/history`, {
+        fetchCompletedHomeworks();
+      } else {
+        console.error("作业完成审批失败:", result.message);
+        alert(`审批失败: ${result.message || "未知错误"}`);
+      }
+    } catch (error) {
+      console.error("作业完成审批请求出错:", error);
+      alert(`审批请求出错: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 更新作业完成后的状态
+  const updateHomeworkStatusAfterCompletion = (wrongAnswers) => {
+    setChildHomework(
+      childHomework.map((subject) => {
+        if (subject.subject === approvalItem.subject) {
+          return {
+            ...subject,
+            tasks: subject.tasks.map((task) => {
+              if (task.title === approvalItem.title) {
+                return {
+                  ...task,
+                  completed: true,
+                  wrongAnswers: wrongAnswers || 0,
+                };
+              }
+              return task;
+            }),
+          };
+        }
+        return subject;
+      })
+    );
+
+    console.log(
+      `作业 ${approvalItem.title} 完成，错题数量: ${wrongAnswers}`
+    );
+  };
+
+  // 添加作业完成到历史记录
+  const addHomeworkCompletionToHistory = (wrongAnswers) => {
+    setHistory([
+      {
+        id: Date.now(),
+        childName: approvalItem.childName,
+        title: `完成${approvalItem.subject}作业: ${approvalItem.title}`,
+        points: approvalItem.points,
+        type: "earn",
+        date: new Date().toISOString().split("T")[0],
+        wrongAnswers: wrongAnswers,
+      },
+      ...history,
+    ]);
+  };
+
+  // 更新作业完成后的积分
+  const updatePointsAfterHomeworkCompletion = () => {
+    setChildPoints({
+      ...childPoints,
+      total: childPoints.total + approvalItem.points,
+      thisWeek: childPoints.thisWeek + approvalItem.points,
+    });
+  };
+
+  // 处理任务添加审批
+  const handleTaskAddApproval = async (approved) => {
+    if (approved) {
+      try {
+        setIsLoading(true);
+        const response = await put(`/api/task/pending`, {
           id: approvalItem.id,
-          approved: approved ? "1" : "2", // 转换为字符串
         });
 
         const result = await response.json();
 
         if (result.code === 200) {
-          console.log("奖励兑换审批成功:", result.data);
-          
-          if (approved) {
-            setPendingRewards(
-              pendingRewards.filter((item) => item.id !== approvalItem.id)
-            );
-            setHistory([
-              {
-                id: Date.now(),
-                childName: approvalItem.childName,
-                title: `兑换奖励: ${approvalItem.rewardTitle}`,
-                points: approvalItem.points,
-                type: "spend",
-                date: new Date().toISOString().split("T")[0],
-              },
-              ...history,
-            ]);
-            setChildPoints({
-              ...childPoints,
-              total: childPoints.total - approvalItem.points,
-              thisWeekSpent: childPoints.thisWeekSpent + approvalItem.points,
-            });
-          }
-          
-          // 刷新待审核奖励列表
-          fetchPendingRewards();
+          setPendingTasks(
+            pendingTasks.filter((item) => item.id !== approvalItem.id)
+          );
+          console.log("任务审批成功:", approvalItem.title);
+          fetchPendingTasks();
         } else {
-          console.error("奖励兑换审批失败:", result.message);
+          console.error("任务审批失败:", result.message);
           alert(`审批失败: ${result.message || "未知错误"}`);
         }
       } catch (error) {
-        console.error("奖励兑换审批请求出错:", error);
-        alert(`审批请求出错: ${error.message || "未知错误"}`);
+        console.error("任务审批请求出错:", error);
+        alert(`审批请求出错: ${error.message}`);
       } finally {
         setIsLoading(false);
       }
+    } else {
+      console.log("任务被拒绝:", approvalItem.title);
+      setPendingTasks(
+        pendingTasks.filter((item) => item.id !== approvalItem.id)
+      );
+    }
+  };
+
+  // 处理任务完成审批
+  const handleTaskCompleteApproval = async (approved) => {
+    try {
+      setIsLoading(true);
+      const response = await put(`/api/task/complete`, {
+        id: approvalItem.id,
+        approved: approved,
+      });
+
+      const result = await response.json();
+
+      console.log("任务完成审批结果:", result);
+
+      if (
+        result.code === 200 ||
+        (result.code === 400 &&
+          result.message === "任务审核未通过" &&
+          !approved)
+      ) {
+        setCompletedTasks(
+          completedTasks.filter((item) => item.id !== approvalItem.id)
+        );
+
+        if (approved && result.code === 200) {
+          addTaskCompletionToHistory();
+          updatePointsAfterTaskCompletion();
+          console.log("任务完成审批成功:", approvalItem.title);
+        } else {
+          console.log("任务完成被拒绝:", approvalItem.title);
+        }
+
+        fetchCompletedTasks();
+      } else {
+        console.error("任务完成审批失败:", result?.message || "未知错误");
+        alert(`审批失败: ${result?.message || "未知错误"}`);
+      }
+    } catch (error) {
+      console.error("任务完成审批请求出错:", error);
+      alert(`审批请求出错: ${error?.message || "未知错误"}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 添加任务完成到历史记录
+  const addTaskCompletionToHistory = () => {
+    setHistory([
+      {
+        id: Date.now(),
+        childName: approvalItem.childName,
+        title: `完成任务: ${approvalItem.title}`,
+        points: approvalItem.points,
+        type: "earn",
+        date: new Date().toISOString().split("T")[0],
+      },
+      ...history,
+    ]);
+  };
+
+  // 更新任务完成后的积分
+  const updatePointsAfterTaskCompletion = () => {
+    setChildPoints({
+      ...childPoints,
+      total: childPoints.total + approvalItem.points,
+      thisWeek: childPoints.thisWeek + approvalItem.points,
+    });
+  };
+
+  // 处理奖励兑换审批
+  const handleRewardRedeemApproval = async (approved) => {
+    try {
+      setIsLoading(true);
+      const response = await put(`/api/reward/history`, {
+        id: approvalItem.id,
+        approved: approved ? "1" : "2", // 转换为字符串
+      });
+
+      const result = await response.json();
+
+      if (result.code === 200) {
+        console.log("奖励兑换审批成功:", result.data);
+        
+        if (approved) {
+          setPendingRewards(
+            pendingRewards.filter((item) => item.id !== approvalItem.id)
+          );
+          addRewardRedemptionToHistory();
+          updatePointsAfterRewardRedemption();
+        }
+        
+        fetchPendingRewards();
+      } else {
+        console.error("奖励兑换审批失败:", result.message);
+        alert(`审批失败: ${result.message || "未知错误"}`);
+      }
+    } catch (error) {
+      console.error("奖励兑换审批请求出错:", error);
+      alert(`审批请求出错: ${error.message || "未知错误"}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 添加奖励兑换到历史记录
+  const addRewardRedemptionToHistory = () => {
+    setHistory([
+      {
+        id: Date.now(),
+        childName: approvalItem.childName,
+        title: `兑换奖励: ${approvalItem.rewardTitle}`,
+        points: approvalItem.points,
+        type: "spend",
+        date: new Date().toISOString().split("T")[0],
+      },
+      ...history,
+    ]);
+  };
+
+  // 更新奖励兑换后的积分
+  const updatePointsAfterRewardRedemption = () => {
+    setChildPoints({
+      ...childPoints,
+      total: childPoints.total - approvalItem.points,
+      thisWeekSpent: childPoints.thisWeekSpent + approvalItem.points,
+    });
+  };
+
+  // 处理审批的主函数
+  const handleApproval = async (approved, wrongAnswers = 0) => {
+    switch (approvalType) {
+      case "homework-add":
+        await handleHomeworkAddApproval(approved);
+        break;
+      case "homework-complete":
+        await handleHomeworkCompleteApproval(approved, wrongAnswers);
+        break;
+      case "task-add":
+        await handleTaskAddApproval(approved);
+        break;
+      case "task-complete":
+        await handleTaskCompleteApproval(approved);
+        break;
+      case "reward-redeem":
+        await handleRewardRedeemApproval(approved);
+        break;
+      default:
+        console.error("未知的审批类型:", approvalType);
     }
 
     setApprovalDialogOpen(false);
