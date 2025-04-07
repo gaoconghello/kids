@@ -11,6 +11,15 @@ export const GET = withAuth(["child"], async (request) => {
     
     // 只能查看自己的积分历史
     where.child_id = request.user.id;
+
+    // 日期过滤，从今天往前7天（一周）的历史记录
+    const today = new Date(new Date().toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })); 
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 7);
+    where.integral_date = {
+      gte: sevenDaysAgo,
+      lte: today,
+    };
     
     // 查询数据库
     const histories = await prisma.integral_history.findMany({

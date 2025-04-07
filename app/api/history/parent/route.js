@@ -50,7 +50,18 @@ export const GET = withAuth(["parent"], async (request) => {
 
     // 构建查询条件
     const where = {
-      child_id: parseInt(childId)
+      child_id: parseInt(childId),
+    };
+
+    // 日期过滤，从今天往前7天（一周）的历史记录
+    const today = new Date(
+      new Date().toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })
+    );
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 7);
+    where.integral_date = {
+      gte: sevenDaysAgo,
+      lte: today,
     };
 
     // 查询数据库
@@ -69,7 +80,9 @@ export const GET = withAuth(["parent"], async (request) => {
       integral: history.integral,
       child_id: history.child_id,
       family_id: history.family_id,
-      integral_date: history.integral_date ? formatDateTime(history.integral_date) : null,
+      integral_date: history.integral_date
+        ? formatDateTime(history.integral_date)
+        : null,
       name: history.name,
     }));
 
