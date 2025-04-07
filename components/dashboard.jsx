@@ -145,66 +145,8 @@ export default function Dashboard() {
   const [showAllRewards, setShowAllRewards] = useState(false);
 
   // 添加积分记录状态
-  const [history, setHistory] = useState([
-    {
-      id: 1,
-      title: "完成语文作业",
-      points: 20,
-      type: "earn",
-      date: "2025-02-28",
-    },
-    {
-      id: 2,
-      title: "兑换冰淇淋",
-      points: 100,
-      type: "spend",
-      date: "2025-02-27",
-    },
-    {
-      id: 3,
-      title: "帮爸爸整理书架",
-      points: 30,
-      type: "earn",
-      date: "2025-02-26",
-    },
-    {
-      id: 4,
-      title: "完成英语作业",
-      points: 20,
-      type: "earn",
-      date: "2025-02-25",
-    },
-    {
-      id: 5,
-      title: "完成数学练习",
-      points: 25,
-      type: "earn",
-      date: "2025-02-24",
-    },
-    {
-      id: 6,
-      title: "兑换画画套装",
-      points: 300,
-      type: "spend",
-      date: "2025-02-23",
-    },
-    {
-      id: 7,
-      title: "完成科学实验",
-      points: 35,
-      type: "earn",
-      date: "2025-02-22",
-    },
-    { id: 8, title: "整理房间", points: 15, type: "earn", date: "2025-02-21" },
-    { id: 9, title: "背诵古诗", points: 20, type: "earn", date: "2025-02-20" },
-    {
-      id: 10,
-      title: "兑换故事书",
-      points: 150,
-      type: "spend",
-      date: "2025-02-19",
-    },
-  ]);
+  const [history, setHistory] = useState([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
   // 添加显示所有记录状态
   const [showAllRecords, setShowAllRecords] = useState(false);
@@ -371,6 +313,37 @@ export default function Dashboard() {
     }
   };
 
+  // 获取积分历史记录的函数
+  const fetchHistory = async () => {
+    try {
+      setIsLoadingHistory(true);
+
+      // 使用封装的get方法获取积分历史数据
+      const response = await get("/api/history");
+      const result = await response.json();
+
+      if (result.code === 200 && result.data) {
+        // 将API返回的数据格式化为组件需要的格式
+        const formattedHistory = result.data.map(item => ({
+          id: item.id,
+          title: item.name,
+          points: item.integral || 0,
+          type: ["01", "02", "03"].includes(item.integral_type) ? "earn" : "spend",
+          date: item.integral_date ? item.integral_date.split(' ')[0] : new Date().toISOString().split('T')[0]
+        }));
+        
+        setHistory(formattedHistory);
+        console.log("获取积分历史记录成功:", formattedHistory);
+      } else {
+        console.error("获取积分历史记录失败:", result.message);
+       }
+    } catch (error) {
+      console.error("获取积分历史记录出错:", error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
   // 修改 useEffect 中的数据获取
   useEffect(() => {
     const fetchAllData = async () => {
@@ -380,6 +353,7 @@ export default function Dashboard() {
         await fetchHomeworks();
         await fetchTasks(); 
         await fetchRewards(); // 添加获取奖励列表
+        await fetchHistory(); // 添加获取积分历史记录
       } catch (error) {
         console.error("数据获取失败:", error);
       } finally {
@@ -437,6 +411,9 @@ export default function Dashboard() {
         // 更新积分
         setPoints(points + taskPoints);
 
+        // 刷新积分历史记录
+        fetchHistory();
+
         // 检查是否所有任务都已完成
         const updatedTasks = tasks.map((task) =>
           task.id === taskId ? { ...task, completed: true } : task
@@ -448,17 +425,11 @@ export default function Dashboard() {
           setShowCelebration(true);
           // 额外奖励50积分
           setPoints((prev) => prev + 50);
-          // 添加到历史记录
-          setHistory([
-            {
-              id: Date.now(),
-              title: "完成所有日常任务",
-              points: 50,
-              type: "earn",
-              date: new Date().toISOString().split("T")[0],
-            },
-            ...history,
-          ]);
+          
+          // 刷新积分历史记录以获取最新的所有任务完成奖励记录
+          setTimeout(() => {
+            fetchHistory();
+          }, 1000);
         }
       } else {
         console.error("完成任务失败:", result.message);
@@ -481,17 +452,8 @@ export default function Dashboard() {
         
         if (result.code === 200) {
           
-          // 添加到历史记录
-          setHistory([
-            {
-              id: Date.now(),
-              title: `兑换${reward.title}`,
-              points: reward.points,
-              type: "spend",
-              date: new Date().toISOString().split("T")[0],
-            },
-            ...history,
-          ]);
+          // 刷新积分历史记录
+          fetchHistory();
           
           // 关闭确认对话框
           setConfirmingReward(null);
@@ -547,6 +509,9 @@ export default function Dashboard() {
           })
         );
 
+        // 刷新积分历史记录
+        fetchHistory();
+
         // 检查是否所有作业都已完成
         const updatedHomework = homeworks.map((subject) => ({
           ...subject,
@@ -564,17 +529,11 @@ export default function Dashboard() {
         if (allCompleted) {
           setShowCelebration(true);
           setPoints((prev) => prev + 50);
-          // 添加到历史记录
-          setHistory([
-            {
-              id: Date.now(),
-              title: "完成所有今日作业",
-              points: 50,
-              type: "earn",
-              date: new Date().toISOString().split("T")[0],
-            },
-            ...history,
-          ]);
+          
+          // 刷新积分历史记录以获取最新的所有作业完成奖励记录
+          setTimeout(() => {
+            fetchHistory();
+          }, 1000);
         }
       } else {
         console.error("更新作业状态失败:", result.message);
@@ -719,17 +678,8 @@ export default function Dashboard() {
           // 更新本地积分
           setPoints((prev) => prev + 5);
 
-          // 添加到积分历史记录
-          setHistory([
-            {
-              id: Date.now(),
-              title: `完成 ${activePomodoro.taskInfo.name} 的番茄钟学习`,
-              points: 5,
-              type: "01",
-              date: new Date().toISOString().split("T")[0],
-            },
-            ...history,
-          ]);
+          // 刷新积分历史记录
+          fetchHistory();
 
           console.log("番茄钟完成，积分已更新");
         } else {
@@ -1796,46 +1746,56 @@ export default function Dashboard() {
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div className="space-y-3 transition-all duration-300 ease-in-out">
-                    {history
-                      .slice(0, showAllRecords ? history.length : 4)
-                      .map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center justify-between p-4 bg-white border-2 rounded-xl border-primary/20"
-                        >
-                          <div className="flex items-center gap-3">
+                    {isLoadingHistory ? (
+                      <div className="flex items-center justify-center h-40">
+                        <div className="w-10 h-10 border-b-2 rounded-full animate-spin border-primary"></div>
+                      </div>
+                    ) : history.length > 0 ? (
+                      history
+                        .slice(0, showAllRecords ? history.length : 4)
+                        .map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex items-center justify-between p-4 bg-white border-2 rounded-xl border-primary/20"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                                  item.type === "earn"
+                                    ? "bg-green-100"
+                                    : "bg-red-100"
+                                }`}
+                              >
+                                {item.type === "earn" ? (
+                                  <Plus className="w-5 h-5 text-green-600" />
+                                ) : (
+                                  <Gift className="w-5 h-5 text-red-600" />
+                                )}
+                              </div>
+                              <div>
+                                <h3 className="font-semibold">{item.title}</h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {item.date}
+                                </p>
+                              </div>
+                            </div>
                             <div
-                              className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                              className={`flex items-center gap-1 font-bold ${
                                 item.type === "earn"
-                                  ? "bg-green-100"
-                                  : "bg-red-100"
+                                  ? "text-green-600"
+                                  : "text-red-600"
                               }`}
                             >
-                              {item.type === "earn" ? (
-                                <Plus className="w-5 h-5 text-green-600" />
-                              ) : (
-                                <Gift className="w-5 h-5 text-red-600" />
-                              )}
-                            </div>
-                            <div>
-                              <h3 className="font-semibold">{item.title}</h3>
-                              <p className="text-sm text-muted-foreground">
-                                {item.date}
-                              </p>
+                              {item.type === "earn" ? "+" : "-"}
+                              {item.points}
                             </div>
                           </div>
-                          <div
-                            className={`flex items-center gap-1 font-bold ${
-                              item.type === "earn"
-                                ? "text-green-600"
-                                : "text-red-600"
-                            }`}
-                          >
-                            {item.type === "earn" ? "+" : "-"}
-                            {item.points}
-                          </div>
-                        </div>
-                      ))}
+                        ))
+                    ) : (
+                      <div className="p-6 text-center bg-white rounded-lg shadow">
+                        <p className="text-gray-500">暂无积分记录</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>
