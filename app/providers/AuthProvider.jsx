@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import Loading from "@/components/Loading";
+import Loading from "@/components/loading";
 
 // 定义不需要验证的路由
 const PUBLIC_ROUTES = ["/login", "/"];
