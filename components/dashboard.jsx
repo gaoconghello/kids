@@ -348,12 +348,9 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchAllData = async () => {
       try {
+        // 只等待用户信息获取完成
         await fetchUserInfo();
-        await fetchSubjects();
-        await fetchHomeworks();
-        await fetchTasks(); 
-        await fetchRewards(); // 添加获取奖励列表
-        await fetchHistory(); // 添加获取积分历史记录
+
       } catch (error) {
         console.error("数据获取失败:", error);
       } finally {
@@ -362,6 +359,14 @@ export default function Dashboard() {
     };
 
     fetchAllData();
+  }, []);
+
+  useEffect(() => {
+    fetchSubjects();
+    fetchHomeworks();
+    fetchTasks(); 
+    fetchRewards();
+    fetchHistory();
   }, []);
 
   // 添加新的 state 来控制对话框
