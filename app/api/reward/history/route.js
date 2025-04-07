@@ -193,6 +193,7 @@ export const PUT = withAuth(["parent"], async (request) => {
             integral_date: new Date(
               new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
             ),
+            name: "兑换" + existingRewardHistory.reward?.name,
           },
         });
       }

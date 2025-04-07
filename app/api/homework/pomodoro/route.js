@@ -59,6 +59,7 @@ export const POST = withAuth(["parent", "child"], async (request) => {
         integral_type: "01",
         family_id: existingHomework.family_id,
         integral: 5,
+        name: "完成" + existingHomework.name + "的一个番茄钟学习",
       },
     });
 

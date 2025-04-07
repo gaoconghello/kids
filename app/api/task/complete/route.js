@@ -318,6 +318,7 @@ export const PUT = withAuth(["parent"], async (request) => {
             family_id: child.family_id,
             integral: existingTask.integral,
             integral_date: now,
+            name: "完成" + existingTask.name,
           },
         });
         
