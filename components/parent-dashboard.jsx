@@ -287,42 +287,7 @@ export default function ParentDashboard() {
     }
   };
 
-  // 获取奖励列表
-  const fetchRewards = async () => {
-    try {
-      setIsLoadingRewards(true);
 
-      // 使用封装的get方法获取奖励数据
-      const response = await get("/api/reward");
-      const result = await response.json();
-
-      if (result.code === 200 && result.data) {
-        // 将API返回的数据设置到状态中
-        setRewards(
-          result.data.map((reward) => ({
-            id: reward.id,
-            title: reward.name,
-            points: reward.integral || 0,
-            image: reward.pic
-              ? reward.pic_ext
-                ? `data:image/${reward.pic_ext};base64,${reward.pic}`
-                : reward.pic
-              : "/placeholder.svg?height=80&width=80",
-            family_id: reward.family_id,
-          }))
-        );
-        console.log("获取奖励列表成功:", result.data);
-      } else {
-        console.error("获取奖励列表失败:", result.message);
-        setRewards([]); // 获取失败时设置为空数组
-      }
-    } catch (error) {
-      console.error("获取奖励数据出错:", error);
-      setRewards([]); // 出错时设置为空数组
-    } finally {
-      setIsLoadingRewards(false);
-    }
-  };
 
   // 获取待新增作业
   const fetchPendingHomeworks = async () => {
@@ -551,6 +516,43 @@ export default function ParentDashboard() {
       setChildTasks([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // 获取奖励列表
+  const fetchRewards = async () => {
+    try {
+      setIsLoadingRewards(true);
+
+      // 使用封装的get方法获取奖励数据
+      const response = await get("/api/reward");
+      const result = await response.json();
+
+      if (result.code === 200 && result.data) {
+        // 将API返回的数据设置到状态中
+        setRewards(
+          result.data.map((reward) => ({
+            id: reward.id,
+            title: reward.name,
+            points: reward.integral || 0,
+            image: reward.pic
+              ? reward.pic_ext
+                ? `data:image/${reward.pic_ext};base64,${reward.pic}`
+                : reward.pic
+              : "/placeholder.svg?height=80&width=80",
+            family_id: reward.family_id,
+          }))
+        );
+        console.log("获取奖励列表成功:", result.data);
+      } else {
+        console.error("获取奖励列表失败:", result.message);
+        setRewards([]); // 获取失败时设置为空数组
+      }
+    } catch (error) {
+      console.error("获取奖励数据出错:", error);
+      setRewards([]); // 出错时设置为空数组
+    } finally {
+      setIsLoadingRewards(false);
     }
   };
 
@@ -1155,26 +1157,53 @@ export default function ParentDashboard() {
         setIsLoading(false);
       }
     } else if (approvalType === "reward-redeem") {
-      if (approved) {
-        setPendingRewards(
-          pendingRewards.filter((item) => item.id !== approvalItem.id)
-        );
-        setHistory([
-          {
-            id: Date.now(),
-            childName: approvalItem.childName,
-            title: `兑换奖励: ${approvalItem.rewardTitle}`,
-            points: approvalItem.points,
-            type: "spend",
-            date: new Date().toISOString().split("T")[0],
-          },
-          ...history,
-        ]);
-        setChildPoints({
-          ...childPoints,
-          total: childPoints.total - approvalItem.points,
-          thisWeekSpent: childPoints.thisWeekSpent + approvalItem.points,
+      try {
+        // 调用API批准奖励兑换
+        setIsLoading(true);
+
+        const response = await put(`/api/reward/history`, {
+          id: approvalItem.id,
+          approved: approved ? "1" : "2", // 转换为字符串
         });
+
+        const result = await response.json();
+
+        if (result.code === 200) {
+          console.log("奖励兑换审批成功:", result.data);
+          
+          if (approved) {
+            setPendingRewards(
+              pendingRewards.filter((item) => item.id !== approvalItem.id)
+            );
+            setHistory([
+              {
+                id: Date.now(),
+                childName: approvalItem.childName,
+                title: `兑换奖励: ${approvalItem.rewardTitle}`,
+                points: approvalItem.points,
+                type: "spend",
+                date: new Date().toISOString().split("T")[0],
+              },
+              ...history,
+            ]);
+            setChildPoints({
+              ...childPoints,
+              total: childPoints.total - approvalItem.points,
+              thisWeekSpent: childPoints.thisWeekSpent + approvalItem.points,
+            });
+          }
+          
+          // 刷新待审核奖励列表
+          fetchPendingRewards();
+        } else {
+          console.error("奖励兑换审批失败:", result.message);
+          alert(`审批失败: ${result.message || "未知错误"}`);
+        }
+      } catch (error) {
+        console.error("奖励兑换审批请求出错:", error);
+        alert(`审批请求出错: ${error.message || "未知错误"}`);
+      } finally {
+        setIsLoading(false);
       }
     }
 
