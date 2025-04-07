@@ -145,88 +145,8 @@ export default function ParentDashboard() {
   const [isLoadingRewards, setIsLoadingRewards] = useState(true);
 
   const [pendingRewards, setPendingRewards] = useState([]);
-  const [history, setHistory] = useState([
-    {
-      id: 1,
-      childName: "小明",
-      title: "完成语文作业",
-      points: 20,
-      type: "earn",
-      date: "2025-02-28",
-    },
-    {
-      id: 2,
-      childName: "小明",
-      title: "兑换冰淇淋",
-      points: 100,
-      type: "spend",
-      date: "2025-02-27",
-    },
-    {
-      id: 3,
-      childName: "小明",
-      title: "帮爸爸整理书架",
-      points: 30,
-      type: "earn",
-      date: "2025-02-26",
-    },
-    {
-      id: 4,
-      childName: "小明",
-      title: "完成英语作业",
-      points: 20,
-      type: "earn",
-      date: "2025-02-25",
-    },
-    {
-      id: 5,
-      childName: "小明",
-      title: "完成数学练习",
-      points: 25,
-      type: "earn",
-      date: "2025-02-24",
-    },
-    {
-      id: 6,
-      childName: "小明",
-      title: "兑换画画套装",
-      points: 300,
-      type: "spend",
-      date: "2025-02-23",
-    },
-    {
-      id: 7,
-      childName: "小明",
-      title: "完成科学实验",
-      points: 35,
-      type: "earn",
-      date: "2025-02-22",
-    },
-    {
-      id: 8,
-      childName: "小明",
-      title: "整理房间",
-      points: 15,
-      type: "earn",
-      date: "2025-02-21",
-    },
-    {
-      id: 9,
-      childName: "小明",
-      title: "背诵古诗",
-      points: 20,
-      type: "earn",
-      date: "2025-02-20",
-    },
-    {
-      id: 10,
-      childName: "小明",
-      title: "兑换故事书",
-      points: 150,
-      type: "spend",
-      date: "2025-02-19",
-    },
-  ]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [history, setHistory] = useState([]);
 
   const [isAddHomeworkOpen, setIsAddHomeworkOpen] = useState(false);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
@@ -594,6 +514,38 @@ export default function ParentDashboard() {
     }
   };
 
+  // 获取积分历史记录的函数
+  const fetchHistory = async () => {
+    try {
+      setIsLoadingHistory(true);
+
+      // 使用封装的get方法获取积分历史数据
+      const response = await get(`/api/history/parent?childId=${selectedChild.id}`);
+      const result = await response.json();
+
+      if (result.code === 200 && result.data) {
+        // 将API返回的数据格式化为组件需要的格式
+        const formattedHistory = result.data.map(item => ({
+          id: item.id,
+          childName: selectedChild?.name || "未知",
+          title: item.name,
+          points: item.integral || 0,
+          type: ["01", "02", "03"].includes(item.integral_type) ? "earn" : "spend",
+          date: item.integral_date ? item.integral_date.split(' ')[0] : new Date().toISOString().split('T')[0]
+        }));
+        
+        setHistory(formattedHistory);
+        console.log("获取积分历史记录成功:", formattedHistory);
+      } else {
+        console.error("获取积分历史记录失败:", result.message);
+      }
+    } catch (error) {
+      console.error("获取积分历史记录出错:", error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };  
+
   // 页面加载时获取数据
   useEffect(() => {
     // 首先获取孩子列表
@@ -624,6 +576,8 @@ export default function ParentDashboard() {
       fetchChildTasks();
       // 获取待审核奖励
       fetchPendingRewards();
+      // 获取积分历史记录
+      fetchHistory();
     }
   }, [selectedChild]); // 添加selectedChild依赖
 
@@ -1411,6 +1365,8 @@ export default function ParentDashboard() {
       setIsLoading(false);
     }
   };
+
+
 
   return (
     <div className="min-h-screen p-3 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 sm:p-4 md:p-8">
