@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 import { z } from "zod";
-import { formatDateTime } from "@/lib/utils";
 
 // 辅助函数：从日期对象中提取HH:MM格式的时间
 function formatTimeHHMM(dateObj) {
@@ -26,7 +25,7 @@ const updateFamilySchema = z.object({
 });
 
 // GET 方法：获取家庭信息
-export const GET = withAuth("parent", async (request) => {
+export const GET = withAuth(["parent", "child"], async (request) => {
   try {
     // 获取当前用户信息
     const currentUser = request.user;

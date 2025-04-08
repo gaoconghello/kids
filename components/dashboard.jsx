@@ -76,14 +76,14 @@ const calculateWrongAnswersStats = (homeworks) => {
 };
 
 // 庆祝组件
-function CompletionCelebration({ onClose }) {
+function CompletionCelebration({ onClose, rewardPoints }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="p-8 bg-white rounded-lg shadow-xl">
         <h2 className="mb-4 text-3xl font-bold text-green-600">
           恭喜你完成了所有作业！
         </h2>
-        <p className="mb-6 text-gray-700">奖励 +50 积分已到账！</p>
+        <p className="mb-6 text-gray-700">奖励 +{rewardPoints} 积分已到账！</p>
         <Button
           onClick={onClose}
           className="text-white bg-green-500 hover:bg-green-700"
@@ -128,6 +128,12 @@ export default function Dashboard() {
   const [name, setName] = useState("");
   const [points, setPoints] = useState(350);
   const [subjects, setSubjects] = useState([]);
+  // 添加家庭截止时间设置
+  const [familySettings, setFamilySettings] = useState({
+    is_deadline: "0",  // 默认不启用截止时间
+    deadline: "20:00", // 默认截止时间
+    integral: 50       // 默认额外积分
+  });
 
   // 添加作业列表状态
   const [homeworks, setHomeworks] = useState([]);
@@ -344,12 +350,35 @@ export default function Dashboard() {
     }
   };
 
+  // 添加获取家庭截止时间设置的函数
+  const fetchFamilySettings = async () => {
+    try {
+      const response = await get("/api/family/deadline");
+      const result = await response.json();
+
+      if (result.code === 200 && result.data) {
+        setFamilySettings({
+          is_deadline: result.data.is_deadline,
+          deadline: result.data.deadline || "20:00",
+          integral: result.data.integral || 50
+        });
+        console.log("获取家庭截止时间设置成功:", result.data);
+      } else {
+        console.error("获取家庭截止时间设置失败:", result.message);
+      }
+    } catch (error) {
+      console.error("获取家庭截止时间设置出错:", error);
+    }
+  };
+
   // 修改 useEffect 中的数据获取
   useEffect(() => {
     const fetchAllData = async () => {
       try {
         // 只等待用户信息获取完成
         await fetchUserInfo();
+        // 获取家庭截止时间设置
+        await fetchFamilySettings();
 
       } catch (error) {
         console.error("数据获取失败:", error);
@@ -428,8 +457,8 @@ export default function Dashboard() {
         if (allCompleted) {
           // 显示庆祝效果
           setShowCelebration(true);
-          // 额外奖励50积分
-          setPoints((prev) => prev + 50);
+          // 根据家庭设置给予额外积分
+          setPoints((prev) => prev + familySettings.integral);
           
           // 刷新积分历史记录以获取最新的所有任务完成奖励记录
           setTimeout(() => {
@@ -533,7 +562,8 @@ export default function Dashboard() {
 
         if (allCompleted) {
           setShowCelebration(true);
-          setPoints((prev) => prev + 50);
+          // 根据家庭设置给予额外积分
+          setPoints((prev) => prev + familySettings.integral);
           
           // 刷新积分历史记录以获取最新的所有作业完成奖励记录
           setTimeout(() => {
@@ -1035,11 +1065,11 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <CardDescription>按时完成作业，获得积分奖励！</CardDescription>
-                {homeworks.length > 0 && (
+                {homeworks.length > 0 && familySettings.is_deadline === "1" && (
                   <div className="flex items-center gap-2 mt-2 text-sm">
                     <Clock className="w-4 h-4 text-amber-500" />
                     <span className="font-medium text-amber-600">
-                      今日截止时间: 20:00
+                      今日截止时间: {familySettings.deadline}
                     </span>
                     <span className="text-amber-600">
                       (在截止时间前完成所有作业可获得额外奖励)
@@ -1211,12 +1241,14 @@ export default function Dashboard() {
                   <div className="flex items-center gap-2">
                     <Award className="w-5 h-5 text-primary" />
                     <span className="text-sm text-muted-foreground">
-                      在 20:00 前完成所有作业可获得额外奖励！
+                      {familySettings.is_deadline === "1" 
+                        ? `在 ${familySettings.deadline} 前完成所有作业可获得额外奖励！` 
+                        : "完成所有作业可获得额外奖励！"}
                     </span>
                   </div>
                   <Badge variant="outline" className="flex gap-1">
                     <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
-                    <span>额外 50 积分</span>
+                    <span>额外 {familySettings.integral} 积分</span>
                   </Badge>
                 </div>
               </CardFooter>
@@ -1861,7 +1893,10 @@ export default function Dashboard() {
       {showCelebration && (
         <ConfettiCelebration onComplete={() => setShowCelebration(false)} />
       )}
-      {/*{showCelebration && <CompletionCelebration onClose={() => setShowCelebration(false)} />}*/}
+      {showCelebration && <CompletionCelebration 
+        onClose={() => setShowCelebration(false)} 
+        rewardPoints={familySettings.integral}
+      />}
     </div>
   );
 }
