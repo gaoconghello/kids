@@ -371,12 +371,11 @@ export const PUT = withAuth(["parent", "child"], async (request) => {
 });
 
 // 删除作业
-export const DELETE = withAuth(["parent", "child"], async (request) => {
+export const DELETE = withAuth(["child"], async (request) => {
   try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
+    const data = await request.json();
 
-    if (!id) {
+    if (!data.id) {
       return NextResponse.json(
         { code: 400, message: "缺少作业ID" },
         { status: 400 }
@@ -385,7 +384,7 @@ export const DELETE = withAuth(["parent", "child"], async (request) => {
 
     // 检查作业是否存在
     const homework = await prisma.homework.findUnique({
-      where: { id: parseInt(id) },
+      where: { id: parseInt(data.id) },
     });
 
     if (!homework) {
@@ -395,9 +394,25 @@ export const DELETE = withAuth(["parent", "child"], async (request) => {
       );
     }
 
+    // 权限检查：只有孩子可以删除自己的作业
+    if (homework.child_id !== request.user.id) {
+      return NextResponse.json(
+        { code: 403, message: "没有权限删除此作业" },
+        { status: 403 }
+      );
+    }
+
+    // 如果已经添加审核完成，则不能删除改作业
+    if (homework.create_review === "1") {
+      return NextResponse.json(
+        { code: 403, message: "作业已审核完成，不能删除" },
+        { status: 403 }
+      );
+    }
+
     // 删除作业
     await prisma.homework.delete({
-      where: { id: parseInt(id) },
+      where: { id: parseInt(data.id) },
     });
 
     return NextResponse.json({

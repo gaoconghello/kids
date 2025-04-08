@@ -22,6 +22,8 @@ import {
   BarChart3,
   Sparkles,
   ShoppingBag,
+  Trash,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -52,7 +54,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { get, post, put } from "@/lib/http";
+import { get, post, put, del } from "@/lib/http";
 
 // 计算错题统计的辅助函数
 const calculateWrongAnswersStats = (homeworks) => {
@@ -740,9 +742,49 @@ export default function ParentDashboard() {
   };
 
   const handleEditHomework = (item) => {
-    console.log("修改作业:", item);
     setEditingHomework(item);
     setIsAddHomeworkOpen(true);
+  };
+
+  // 添加删除作业的函数
+  const deleteHomework = async (subjectId, taskId) => {
+    try {
+      if (!confirm("确定要删除这个作业吗？此操作不可撤销。")) {
+        return;
+      }
+
+      // 调用API删除作业
+      const response = await del(`/api/homework/parent`, {
+        body: JSON.stringify({ id: taskId })
+      });
+
+      const result = await response.json();
+
+      if (result.code === 200) {
+        // 更新本地状态，移除被删除的作业
+        setChildHomework(
+          childHomework
+            .map((subject) => {
+              if (subject.id === subjectId) {
+                return {
+                  ...subject,
+                  tasks: subject.tasks.filter((task) => task.id !== taskId),
+                };
+              }
+              return subject;
+            })
+            .filter((subject) => subject.tasks.length > 0)
+        );
+
+        console.log("作业删除成功");
+      } else {
+        console.error("删除作业失败:", result.message);
+        alert(`删除失败: ${result.message || "未知错误"}`);
+      }
+    } catch (error) {
+      console.error("删除作业出错:", error);
+      alert("删除作业时出错，请稍后再试");
+    }
   };
 
   const handleEditTask = (item) => {
@@ -1938,6 +1980,14 @@ export default function ParentDashboard() {
                                     <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                     <span>{task.points}</span>
                                   </Badge>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => deleteHomework(subject.id, task.id)}
+                                    className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
                                   <div className="flex gap-2"></div>
                                 </div>
                               </div>

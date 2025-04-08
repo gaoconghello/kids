@@ -256,3 +256,71 @@ export const POST = withAuth(["parent"], async (request) => {
     );
   }
 });
+
+// 删除作业
+export const DELETE = withAuth(["parent"], async (request) => {
+  try {
+    const data = await request.json();
+
+    if (!data.id) {
+      return NextResponse.json(
+        { code: 400, message: "缺少作业ID" },
+        { status: 400 }
+      );
+    }
+
+    // 检查作业是否存在
+    const homework = await prisma.homework.findUnique({
+      where: { id: parseInt(data.id) },
+    });
+
+    if (!homework) {
+      return NextResponse.json(
+        { code: 404, message: "作业不存在" },
+        { status: 404 }
+      );
+    }
+
+    // 获取当前家长信息
+    const parent = await prisma.account.findUnique({
+      where: { id: request.user.id },
+      select: { family_id: true },
+    });
+
+    if (!parent) {
+      return NextResponse.json(
+        { code: 403, message: "无法验证家长身份" },
+        { status: 403 }
+      );
+    }
+
+    // 验证child是否属于该family
+    const child = await prisma.account.findUnique({
+      where: { id: parseInt(homework.child_id) },
+      select: { family_id: true },
+    });
+
+    if (!child || child.family_id !== parent.family_id) {
+      return NextResponse.json(
+        { code: 403, message: "无权为此孩子删除作业" },
+        { status: 403 }
+      );
+    }    
+
+    // 删除作业
+    await prisma.homework.delete({
+      where: { id: parseInt(data.id) },
+    });
+
+    return NextResponse.json({
+      code: 200,
+      message: "作业删除成功",
+    });
+  } catch (error) {
+    console.error("删除作业失败:", error);
+    return NextResponse.json(
+      { code: 500, message: "删除作业失败", error: error.message },
+      { status: 500 }
+    );
+  }
+});

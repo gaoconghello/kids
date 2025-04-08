@@ -18,6 +18,7 @@ import {
   LogOut,
   Settings,
   AlertCircle,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -40,7 +41,7 @@ import { AddTaskDialog } from "./add-task-dialog";
 import { TaskCalendar } from "./task-calendar";
 import { ChangePasswordDialog } from "./change-password-dialog";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { get, post, put } from "@/lib/http";
+import { get, post, put, del } from "@/lib/http";
 
 // 计算错题统计的辅助函数
 const calculateWrongAnswersStats = (homeworks) => {
@@ -49,29 +50,26 @@ const calculateWrongAnswersStats = (homeworks) => {
     (sum, subject) =>
       sum +
       subject.tasks.reduce(
-        (subSum, task) =>
-          subSum +
-          (task.completed ? task.incorrect || 0 : 0),
+        (subSum, task) => subSum + (task.completed ? task.incorrect || 0 : 0),
         0
       ),
     0
   );
-  
+
   // 计算总作业数
   const totalTasks = homeworks.reduce(
     (sum, subject) => sum + subject.tasks.length,
     0
   );
-  
+
   // 计算平均错题数
-  const avgWrongAnswers = totalTasks > 0 
-    ? (totalWrongAnswers / totalTasks).toFixed(1) 
-    : "0.0";
-  
+  const avgWrongAnswers =
+    totalTasks > 0 ? (totalWrongAnswers / totalTasks).toFixed(1) : "0.0";
+
   return {
     totalWrongAnswers,
     totalTasks,
-    avgWrongAnswers
+    avgWrongAnswers,
   };
 };
 
@@ -101,20 +99,32 @@ function getTaskIcon(title) {
   if (!title) {
     return <Sparkles className="w-5 h-5 text-primary" />;
   }
-  
+
   const titleLower = title.toLowerCase();
-  
+
   if (titleLower.includes("阅读") || titleLower.includes("读")) {
     return <BookOpen className="w-5 h-5 text-primary" />;
-  } else if (titleLower.includes("整理") || titleLower.includes("收拾") || titleLower.includes("打扫")) {
+  } else if (
+    titleLower.includes("整理") ||
+    titleLower.includes("收拾") ||
+    titleLower.includes("打扫")
+  ) {
     return <ShoppingBag className="w-5 h-5 text-primary" />;
   } else if (titleLower.includes("帮") || titleLower.includes("协助")) {
     return <Award className="w-5 h-5 text-primary" />;
-  } else if (titleLower.includes("完成") || titleLower.includes("作业") || titleLower.includes("习题")) {
+  } else if (
+    titleLower.includes("完成") ||
+    titleLower.includes("作业") ||
+    titleLower.includes("习题")
+  ) {
     return <PenLine className="w-5 h-5 text-primary" />;
   } else if (titleLower.includes("运动") || titleLower.includes("锻炼")) {
     return <Sparkles className="w-5 h-5 text-primary" />;
-  } else if (titleLower.includes("时间") || titleLower.includes("分钟") || titleLower.includes("点")) {
+  } else if (
+    titleLower.includes("时间") ||
+    titleLower.includes("分钟") ||
+    titleLower.includes("点")
+  ) {
     return <Clock className="w-5 h-5 text-primary" />;
   } else {
     return <Sparkles className="w-5 h-5 text-primary" />;
@@ -130,9 +140,9 @@ export default function Dashboard() {
   const [subjects, setSubjects] = useState([]);
   // 添加家庭截止时间设置
   const [familySettings, setFamilySettings] = useState({
-    is_deadline: "0",  // 默认不启用截止时间
+    is_deadline: "0", // 默认不启用截止时间
     deadline: "20:00", // 默认截止时间
-    integral: 50       // 默认额外积分
+    integral: 50, // 默认额外积分
   });
 
   // 添加作业列表状态
@@ -204,6 +214,7 @@ export default function Dashboard() {
           ? `${item.estimated_duration}分钟`
           : "未设置",
         points: item.integral || 0,
+        create_review: item.create_review === "1" ? true : false,
         completed: item.is_complete === "1",
         deadline: item.deadline
           ? item.deadline.split(" ")[1].substring(0, 5)
@@ -266,14 +277,16 @@ export default function Dashboard() {
 
       if (result.code === 200 && result.data) {
         // 格式化任务数据
-        const formattedTasks = result.data.map(task => ({
+        const formattedTasks = result.data.map((task) => ({
           id: task.id,
           title: task.name,
           points: task.integral || 0,
           completed: task.is_complete === "1" ? true : false,
-          time: task.task_date ? new Date(task.task_date).toLocaleDateString("zh-CN") : "今天"
+          time: task.task_date
+            ? new Date(task.task_date).toLocaleDateString("zh-CN")
+            : "今天",
         }));
-        
+
         setTasks(formattedTasks);
       } else {
         console.error("获取任务失败:", result.message);
@@ -298,14 +311,18 @@ export default function Dashboard() {
 
       if (result.code === 200 && result.data) {
         // 将API返回的数据设置到状态中
-        setRewards(result.data.map(reward => ({
-          id: reward.id,
-          title: reward.name,
-          points: reward.integral || 0,
-          image: reward.pic ? 
-                (reward.pic_ext ? `data:image/${reward.pic_ext};base64,${reward.pic}` : reward.pic) : 
-                "/placeholder.svg?height=80&width=80",
-        })));
+        setRewards(
+          result.data.map((reward) => ({
+            id: reward.id,
+            title: reward.name,
+            points: reward.integral || 0,
+            image: reward.pic
+              ? reward.pic_ext
+                ? `data:image/${reward.pic_ext};base64,${reward.pic}`
+                : reward.pic
+              : "/placeholder.svg?height=80&width=80",
+          }))
+        );
         console.log("获取奖励列表成功:", result.data);
       } else {
         console.error("获取奖励列表失败:", result.message);
@@ -330,19 +347,23 @@ export default function Dashboard() {
 
       if (result.code === 200 && result.data) {
         // 将API返回的数据格式化为组件需要的格式
-        const formattedHistory = result.data.map(item => ({
+        const formattedHistory = result.data.map((item) => ({
           id: item.id,
           title: item.name,
           points: item.integral || 0,
-          type: ["01", "02", "03"].includes(item.integral_type) ? "earn" : "spend",
-          date: item.integral_date ? item.integral_date.split(' ')[0] : new Date().toISOString().split('T')[0]
+          type: ["01", "02", "03"].includes(item.integral_type)
+            ? "earn"
+            : "spend",
+          date: item.integral_date
+            ? item.integral_date.split(" ")[0]
+            : new Date().toISOString().split("T")[0],
         }));
-        
+
         setHistory(formattedHistory);
         console.log("获取积分历史记录成功:", formattedHistory);
       } else {
         console.error("获取积分历史记录失败:", result.message);
-       }
+      }
     } catch (error) {
       console.error("获取积分历史记录出错:", error);
     } finally {
@@ -360,7 +381,7 @@ export default function Dashboard() {
         setFamilySettings({
           is_deadline: result.data.is_deadline,
           deadline: result.data.deadline || "20:00",
-          integral: result.data.integral || 50
+          integral: result.data.integral || 50,
         });
         console.log("获取家庭截止时间设置成功:", result.data);
       } else {
@@ -379,7 +400,6 @@ export default function Dashboard() {
         await fetchUserInfo();
         // 获取家庭截止时间设置
         await fetchFamilySettings();
-
       } catch (error) {
         console.error("数据获取失败:", error);
       } finally {
@@ -393,7 +413,7 @@ export default function Dashboard() {
   useEffect(() => {
     fetchSubjects();
     fetchHomeworks();
-    fetchTasks(); 
+    fetchTasks();
     fetchRewards();
     fetchHistory();
   }, []);
@@ -419,19 +439,19 @@ export default function Dashboard() {
     try {
       // 调用API完成任务
       const response = await post("/api/task/complete", {
-        taskId: taskId
+        taskId: taskId,
       });
-      
+
       const result = await response.json();
-      
+
       if (result.code === 200) {
         // 创建完成任务的彩带效果
         createTaskConfetti();
-        
+
         // 找到当前任务以获取其积分值
-        const task = tasks.find(t => t.id === taskId);
+        const task = tasks.find((t) => t.id === taskId);
         const taskPoints = task ? task.points : 0;
-        
+
         // 更新本地任务状态
         setTasks(
           tasks.map((task) => {
@@ -441,7 +461,7 @@ export default function Dashboard() {
             return task;
           })
         );
-        
+
         // 更新积分
         setPoints(points + taskPoints);
 
@@ -459,7 +479,7 @@ export default function Dashboard() {
           setShowCelebration(true);
           // 根据家庭设置给予额外积分
           setPoints((prev) => prev + familySettings.integral);
-          
+
           // 刷新积分历史记录以获取最新的所有任务完成奖励记录
           setTimeout(() => {
             fetchHistory();
@@ -479,22 +499,21 @@ export default function Dashboard() {
       try {
         // 调用API兑换奖励
         const response = await put("/api/reward/redeem", {
-          rewardId: rewardId
+          rewardId: rewardId,
         });
-        
+
         const result = await response.json();
-        
+
         if (result.code === 200) {
-          
           // 刷新积分历史记录
           fetchHistory();
-          
+
           // 关闭确认对话框
           setConfirmingReward(null);
-          
+
           // 创建兑换成功的彩带效果
           createTaskConfetti();
-          
+
           console.log("奖励兑换成功");
         } else {
           console.error("兑换奖励失败:", result.message);
@@ -564,7 +583,7 @@ export default function Dashboard() {
           setShowCelebration(true);
           // 根据家庭设置给予额外积分
           setPoints((prev) => prev + familySettings.integral);
-          
+
           // 刷新积分历史记录以获取最新的所有作业完成奖励记录
           setTimeout(() => {
             fetchHistory();
@@ -582,7 +601,7 @@ export default function Dashboard() {
   const handleAddHomework = async (newHomework) => {
     try {
       // 准备API请求数据
-      const subjectId = newHomework.subject_id;  // 修改这里，使用subject_id而不是subject
+      const subjectId = newHomework.subject_id; // 修改这里，使用subject_id而不是subject
       const homeworkData = {
         name: newHomework.name,
         subject_id: subjectId,
@@ -606,6 +625,47 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error("添加作业出错:", error);
+    }
+  };
+
+  // 添加删除作业的函数
+  const deleteHomework = async (subjectId, taskId) => {
+    try {
+      if (!confirm("确定要删除这个作业吗？此操作不可撤销。")) {
+        return;
+      }
+
+      // 调用API删除作业
+      const response = await del(`/api/homework`, {
+        body: JSON.stringify({ id: taskId })
+      });
+
+      const result = await response.json();
+
+      if (result.code === 200) {
+        // 更新本地状态，移除被删除的作业
+        setHomeworks(
+          homeworks
+            .map((subject) => {
+              if (subject.id === subjectId) {
+                return {
+                  ...subject,
+                  tasks: subject.tasks.filter((task) => task.id !== taskId),
+                };
+              }
+              return subject;
+            })
+            .filter((subject) => subject.tasks.length > 0)
+        );
+
+        console.log("作业删除成功");
+      } else {
+        console.error("删除作业失败:", result.message);
+        alert(`删除失败: ${result.message || "未知错误"}`);
+      }
+    } catch (error) {
+      console.error("删除作业出错:", error);
+      alert("删除作业时出错，请稍后再试");
     }
   };
 
@@ -743,11 +803,11 @@ export default function Dashboard() {
       // 调用API更新密码
       const response = await put("/api/account/password", {
         password: passwordData.currentPassword,
-        newPassword: passwordData.newPassword
+        newPassword: passwordData.newPassword,
       });
-      
+
       const result = await response.json();
-      
+
       if (result.code === 200) {
         // 修改成功
         console.log("密码修改成功:", result.data);
@@ -766,23 +826,26 @@ export default function Dashboard() {
   // 添加处理日期选择的函数
   const handleDateSelect = async (date) => {
     setSelectedDate(date);
-    
+
     // 使用本地日期格式，避免时区问题
     // 创建一个新的日期对象避免修改原始对象
     const localDate = new Date(date);
-    
+
     // 格式化为YYYY-MM-DD格式
-    const formattedDate = localDate.getFullYear() + '-' + 
-                          String(localDate.getMonth() + 1).padStart(2, '0') + '-' + 
-                          String(localDate.getDate()).padStart(2, '0');
-    
+    const formattedDate =
+      localDate.getFullYear() +
+      "-" +
+      String(localDate.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(localDate.getDate()).padStart(2, "0");
+
     try {
       setIsLoadingTasks(true);
-      
+
       // 调用API获取该日期的任务，日志API请求URL
       const apiUrl = `/api/task?taskDate=${formattedDate}`;
       console.log("任务API请求URL:", apiUrl);
-      
+
       const response = await get(apiUrl);
       const result = await response.json();
 
@@ -790,16 +853,21 @@ export default function Dashboard() {
 
       if (result.code === 200 && result.data) {
         // 格式化任务数据
-        const formattedTasks = result.data.map(task => ({
+        const formattedTasks = result.data.map((task) => ({
           id: task.id,
           title: task.name,
           points: task.integral || 0,
           completed: task.is_complete === "1" ? true : false,
-          time: task.task_date ? new Date(task.task_date).toLocaleDateString("zh-CN") : "今天"
+          time: task.task_date
+            ? new Date(task.task_date).toLocaleDateString("zh-CN")
+            : "今天",
         }));
-        
+
         setTasks(formattedTasks);
-        console.log(`已获取${formattedDate}的任务数据，共${result.data.length}条记录`, formattedTasks);
+        console.log(
+          `已获取${formattedDate}的任务数据，共${result.data.length}条记录`,
+          formattedTasks
+        );
       } else {
         console.error("获取任务数据失败:", result.message);
         // 如果API调用失败或无数据，设置空的任务列表
@@ -817,21 +885,24 @@ export default function Dashboard() {
   // 添加处理作业日期选择的函数
   const handleHomeworkDateSelect = async (date) => {
     setSelectedHomeworkDate(date);
-    
+
     // 使用本地日期格式，避免时区问题
     // 创建一个新的日期对象避免修改原始对象
     const localDate = new Date(date);
-    
+
     // 格式化为YYYY-MM-DD格式
-    const formattedDate = localDate.getFullYear() + '-' + 
-                          String(localDate.getMonth() + 1).padStart(2, '0') + '-' + 
-                          String(localDate.getDate()).padStart(2, '0');
-    
+    const formattedDate =
+      localDate.getFullYear() +
+      "-" +
+      String(localDate.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(localDate.getDate()).padStart(2, "0");
+
     try {
       // 调用API获取该日期的作业，日志API请求URL
       const apiUrl = `/api/homework?homeworkDate=${formattedDate}`;
       console.log("API请求URL:", apiUrl);
-      
+
       const response = await get(apiUrl);
       const result = await response.json();
 
@@ -841,10 +912,13 @@ export default function Dashboard() {
         // 将API返回的数据转换为组件需要的格式
         const formattedHomework = formatHomeworkData(result.data);
         setHomeworks(formattedHomework);
-        console.log(`已获取${formattedDate}的作业数据，共${result.data.length}条记录`, formattedHomework);
+        console.log(
+          `已获取${formattedDate}的作业数据，共${result.data.length}条记录`,
+          formattedHomework
+        );
       } else {
         console.error("获取作业数据失败:", result.message);
-        
+
         // 如果API调用失败或无数据，设置空的作业列表
         setHomeworks([]);
       }
@@ -1169,6 +1243,18 @@ export default function Dashboard() {
                                 </div>
                               </div>
                               <div className="flex items-center gap-3 ml-14 sm:ml-0">
+                                {!task.create_review && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      deleteHomework(subject.id, task.id)
+                                    }
+                                    className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                )}
                                 {task.pomodoro > 0 && (
                                   <Badge
                                     variant="outline"
@@ -1241,8 +1327,8 @@ export default function Dashboard() {
                   <div className="flex items-center gap-2">
                     <Award className="w-5 h-5 text-primary" />
                     <span className="text-sm text-muted-foreground">
-                      {familySettings.is_deadline === "1" 
-                        ? `在 ${familySettings.deadline} 前完成所有作业可获得额外奖励！` 
+                      {familySettings.is_deadline === "1"
+                        ? `在 ${familySettings.deadline} 前完成所有作业可获得额外奖励！`
                         : "完成所有作业可获得额外奖励！"}
                     </span>
                   </div>
@@ -1310,7 +1396,9 @@ export default function Dashboard() {
                                 0
                               );
                               return subject.tasks.length > 0
-                                ? (totalWrongAnswers / subject.tasks.length).toFixed(1)
+                                ? (
+                                    totalWrongAnswers / subject.tasks.length
+                                  ).toFixed(1)
                                 : "0.0";
                             })()}
                             个/题
@@ -1431,7 +1519,10 @@ export default function Dashboard() {
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="text-4xl font-bold text-amber-500">
-                        {calculateWrongAnswersStats(homeworks).totalWrongAnswers}
+                        {
+                          calculateWrongAnswersStats(homeworks)
+                            .totalWrongAnswers
+                        }
                       </div>
                       <span className="text-2xl">📝</span>
                     </div>
@@ -1719,7 +1810,9 @@ export default function Dashboard() {
                                 />
                               </div>
                               <div className="flex-1">
-                                <h3 className="font-semibold">{reward.title}</h3>
+                                <h3 className="font-semibold">
+                                  {reward.title}
+                                </h3>
                                 <div className="flex items-center gap-1 mt-1">
                                   <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                                   <span className="font-bold text-primary">
@@ -1737,14 +1830,18 @@ export default function Dashboard() {
                                 disabled={points < reward.points}
                                 onClick={() => setConfirmingReward(reward.id)}
                               >
-                                {points < reward.points ? "积分不足" : "立即兑换"}
+                                {points < reward.points
+                                  ? "积分不足"
+                                  : "立即兑换"}
                               </Button>
                             </div>
                           </div>
                         ))
                     ) : (
                       <div className="col-span-2 p-6 text-center bg-white rounded-lg shadow">
-                        <p className="text-gray-500">暂时没有可兑换的奖励哦！</p>
+                        <p className="text-gray-500">
+                          暂时没有可兑换的奖励哦！
+                        </p>
                       </div>
                     )}
                   </div>
@@ -1893,10 +1990,12 @@ export default function Dashboard() {
       {showCelebration && (
         <ConfettiCelebration onComplete={() => setShowCelebration(false)} />
       )}
-      {showCelebration && <CompletionCelebration 
-        onClose={() => setShowCelebration(false)} 
-        rewardPoints={familySettings.integral}
-      />}
+      {showCelebration && (
+        <CompletionCelebration
+          onClose={() => setShowCelebration(false)}
+          rewardPoints={familySettings.integral}
+        />
+      )}
     </div>
   );
 }
