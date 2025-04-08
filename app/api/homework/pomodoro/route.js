@@ -57,8 +57,11 @@ export const POST = withAuth(["parent", "child"], async (request) => {
         child_id: userId,
         integral_id: parseInt(homeworkId),
         integral_type: "01",
-        family_id: existingHomework.family_id,
+        family_id: user.family_id,
         integral: 5,
+        integral_date: new Date(
+          new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
+        ),
         name: "完成" + existingHomework.name + "的一个番茄钟学习",
       },
     });
