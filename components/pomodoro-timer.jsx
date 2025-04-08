@@ -9,13 +9,14 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
   const [isActive, setIsActive] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
   const [isBreak, setIsBreak] = useState(false)
-  const [time, setTime] = useState(25 * 60) // 25 minutes in seconds
-  const [initialTime, setInitialTime] = useState(25 * 60)
+  const [time, setTime] = useState(1 * 60) // 25 minutes in seconds
+  const [initialTime, setInitialTime] = useState(1 * 60)
   const [completedPomodoros, setCompletedPomodoros] = useState(currentTask?.pomodoro || 0)
   const [waitingForBreak, setWaitingForBreak] = useState(false)
   const [waitingForFocus, setWaitingForFocus] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(true) // 音效开关状态，默认开启
   const intervalRef = useRef(null)
+  const hasCalledOnComplete = useRef(false) // 跟踪是否已经调用过onComplete
 
   // Sound effects
   const timerCompleteSound = useRef(null)
@@ -79,14 +80,17 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
               // 休息结束，等待用户开始新的专注
               setIsActive(false)
               setWaitingForFocus(true)
+              // 重置onComplete调用标志，以便下一次可以调用
+              hasCalledOnComplete.current = false
             } else {
               // 专注结束，等待用户开始休息
               setIsActive(false)
               setWaitingForBreak(true)
               
-              // 使用setTimeout将onComplete回调放在下一个事件循环中执行
-              // 这样可以避免在渲染过程中更新父组件状态
-              if (onComplete) {
+              // 使用ref检查是否已经调用过onComplete
+              if (onComplete && !hasCalledOnComplete.current) {
+                hasCalledOnComplete.current = true // 标记为已调用
+                // 仍然使用setTimeout避免在渲染周期中更新父组件状态
                 setTimeout(() => {
                   onComplete();
                 }, 0);
@@ -136,8 +140,10 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
     setIsBreak(false)
     setWaitingForBreak(false)
     setWaitingForFocus(false)
-    setTime(25 * 60)
-    setInitialTime(25 * 60)
+    setTime(1 * 60)
+    setInitialTime(1 * 60)
+    // 重置调用标志
+    hasCalledOnComplete.current = false
     
     // 停止滴答声
     tickingSound.current?.pause()
