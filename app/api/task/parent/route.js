@@ -299,10 +299,9 @@ export const PUT = withAuth(["admin", "parent", "child"], async (request) => {
 // 删除任务
 export const DELETE = withAuth(["admin", "parent"], async (request) => {
   try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
+    const data = await request.json();
 
-    if (!id) {
+    if (!data.id) {
       return NextResponse.json(
         { code: 400, message: "缺少任务ID" },
         { status: 400 }
@@ -311,7 +310,7 @@ export const DELETE = withAuth(["admin", "parent"], async (request) => {
 
     // 检查任务是否存在
     const task = await prisma.task.findUnique({
-      where: { id: parseInt(id) },
+      where: { id: parseInt(data.id) },
     });
 
     if (!task) {
@@ -321,9 +320,35 @@ export const DELETE = withAuth(["admin", "parent"], async (request) => {
       );
     }
 
+    // 权限检查：家长的family_id必须与任务的child_id的family_id相同
+    const parent = await prisma.account.findUnique({
+      where: { id: request.user.id },
+      select: { family_id: true },
+    });
+
+    if (!parent) {
+      return NextResponse.json(
+        { code: 403, message: "无法验证家长身份" },
+        { status: 403 }
+      );
+    }
+
+    // 验证child是否属于该family
+    const child = await prisma.account.findUnique({
+      where: { id: parseInt(task.child_id) },
+      select: { family_id: true },
+    });
+
+    if (!child || child.family_id !== parent.family_id) {
+      return NextResponse.json(
+        { code: 403, message: "无权删除此任务" },
+        { status: 403 }
+      );
+    } 
+    
     // 删除任务
     await prisma.task.delete({
-      where: { id: parseInt(id) },
+      where: { id: parseInt(data.id) },
     });
 
     return NextResponse.json({

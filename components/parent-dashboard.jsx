@@ -1083,10 +1083,31 @@ export default function ParentDashboard() {
         setIsLoading(false);
       }
     } else {
-      console.log("任务被拒绝:", approvalItem.title);
-      setPendingTasks(
-        pendingTasks.filter((item) => item.id !== approvalItem.id)
-      );
+      try {
+        setIsLoading(true);
+        // 调用DELETE接口删除被拒绝的任务
+        const response = await del(`/api/task/parent`, {
+          body: JSON.stringify({ id: approvalItem.id })
+        });
+
+        const result = await response.json();
+
+        if (result.code === 200) {
+          console.log("任务被拒绝并成功删除:", approvalItem.title);
+          // 删除任务
+          fetchChildTasks();
+        } else {
+          console.error("任务被拒绝但删除失败:", result.message);
+        }
+      } catch (error) {
+        console.error("任务拒绝删除请求出错:", error);
+      } finally {
+        setIsLoading(false);
+        // 无论API调用成功与否，都从前端列表中移除该任务
+        setPendingTasks(
+          pendingTasks.filter((item) => item.id !== approvalItem.id)
+        );
+      }
     }
   };
 
@@ -1094,37 +1115,39 @@ export default function ParentDashboard() {
   const handleTaskCompleteApproval = async (approved) => {
     try {
       setIsLoading(true);
-      const response = await put(`/api/task/complete`, {
-        id: approvalItem.id,
-        approved: approved,
-      });
+      if (approved) {
+        const response = await put(`/api/task/complete`, {
+          id: approvalItem.id,
+          approved: approved,
+        });
 
-      const result = await response.json();
+        const result = await response.json();
 
-      console.log("任务完成审批结果:", result);
+        console.log("任务完成审批结果:", result);
 
-      if (
-        result.code === 200 ||
-        (result.code === 400 &&
-          result.message === "任务审核未通过" &&
-          !approved)
-      ) {
-        setCompletedTasks(
-          completedTasks.filter((item) => item.id !== approvalItem.id)
-        );
-
-        if (approved && result.code === 200) {
+        if (result.code === 200) {
+          setCompletedTasks(
+            completedTasks.filter((item) => item.id !== approvalItem.id)
+          );
           addTaskCompletionToHistory();
           updatePointsAfterTaskCompletion();
           console.log("任务完成审批成功:", approvalItem.title);
+          fetchCompletedTasks();
         } else {
-          console.log("任务完成被拒绝:", approvalItem.title);
+          console.error("任务完成审批失败:", result?.message || "未知错误");
+          alert(`审批失败: ${result?.message || "未知错误"}`);
         }
-
-        fetchCompletedTasks();
       } else {
-        console.error("任务完成审批失败:", result?.message || "未知错误");
-        alert(`审批失败: ${result?.message || "未知错误"}`);
+        // 拒绝任务完成，调用DELETE接口删除任务
+        const response = await del(`/api/task/parent?id=${approvalItem.id}`);
+        const result = await response.json();
+
+        if (result.code === 200) {
+          console.log("任务完成被拒绝并成功删除:", approvalItem.title);
+        } else {
+          console.error("任务完成被拒绝但删除失败:", result.message);
+        }
+        fetchCompletedTasks();
       }
     } catch (error) {
       console.error("任务完成审批请求出错:", error);
