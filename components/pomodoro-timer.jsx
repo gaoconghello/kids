@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Play, Pause, RotateCcw, Coffee, BookOpen } from "lucide-react"
+import { Play, Pause, RotateCcw, Coffee, BookOpen, Volume2, VolumeX } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
@@ -14,22 +14,43 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
   const [completedPomodoros, setCompletedPomodoros] = useState(currentTask?.pomodoro || 0)
   const [waitingForBreak, setWaitingForBreak] = useState(false)
   const [waitingForFocus, setWaitingForFocus] = useState(false)
+  const [soundEnabled, setSoundEnabled] = useState(true) // 音效开关状态，默认开启
   const intervalRef = useRef(null)
 
   // Sound effects
   const timerCompleteSound = useRef(null)
   const breakCompleteSound = useRef(null)
+  const tickingSound = useRef(null)
 
   useEffect(() => {
     // Initialize audio elements - 暂时注释掉音频初始化
-    // timerCompleteSound.current = new Audio("/timer-complete.mp3")
-    // breakCompleteSound.current = new Audio("/break-complete.mp3")
+    timerCompleteSound.current = new Audio("/timer-complete.mp3")
+    breakCompleteSound.current = new Audio("/break-complete.mp3")
+    tickingSound.current = new Audio("/ticking.mp3")
+    
+    // 设置滴答声循环播放
+    if (tickingSound.current) {
+      tickingSound.current.loop = true
+    }
 
     return () => {
       // Clean up interval on unmount
       if (intervalRef.current) clearInterval(intervalRef.current)
+      // 停止所有音频
+      if (tickingSound.current) tickingSound.current.pause()
     }
   }, [])
+
+  // 控制滴答声的播放和暂停
+  useEffect(() => {
+    if (isActive && !isPaused && !isBreak && soundEnabled) {
+      // 专注时间时播放滴答声，且音效开启时
+      tickingSound.current?.play()
+    } else {
+      // 休息时间或暂停时停止滴答声
+      tickingSound.current?.pause()
+    }
+  }, [isActive, isPaused, isBreak, soundEnabled])
 
   useEffect(() => {
     if (currentTask?.pomodoro !== undefined) {
@@ -45,20 +66,23 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
           if (prevTime <= 1) {
             clearInterval(intervalRef.current)
 
-            // 播放声音 - 暂时注释掉音频播放
+            // 只有在开启音效的情况下才播放声音
+            if (soundEnabled) {
+              if (isBreak) {
+                breakCompleteSound.current?.play()
+              } else {
+                timerCompleteSound.current?.play()
+              }
+            }
+
             if (isBreak) {
-              // breakCompleteSound.current?.play()
               // 休息结束，等待用户开始新的专注
               setIsActive(false)
               setWaitingForFocus(true)
             } else {
-              // timerCompleteSound.current?.play()
               // 专注结束，等待用户开始休息
               setIsActive(false)
               setWaitingForBreak(true)
-              
-              // 更新本地的番茄钟完成数量
-              // setCompletedPomodoros(prev => prev + 1)
               
               // 使用setTimeout将onComplete回调放在下一个事件循环中执行
               // 这样可以避免在渲染过程中更新父组件状态
@@ -79,20 +103,30 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [isActive, isPaused, isBreak, onComplete])
+  }, [isActive, isPaused, isBreak, onComplete, soundEnabled])
 
   const startTimer = () => {
     setIsActive(true)
     setIsPaused(false)
+    // 开始专注时播放滴答声，但仅在音效开启时
+    if (!isBreak && soundEnabled) {
+      tickingSound.current?.play()
+    }
   }
 
   const pauseTimer = () => {
     setIsPaused(true)
     clearInterval(intervalRef.current)
+    // 暂停时停止滴答声
+    tickingSound.current?.pause()
   }
 
   const resumeTimer = () => {
     setIsPaused(false)
+    // 继续专注时重新播放滴答声，但仅在音效开启时
+    if (!isBreak && soundEnabled) {
+      tickingSound.current?.play()
+    }
   }
 
   const resetTimer = () => {
@@ -104,6 +138,9 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
     setWaitingForFocus(false)
     setTime(25 * 60)
     setInitialTime(25 * 60)
+    
+    // 停止滴答声
+    tickingSound.current?.pause()
   }
 
   const cancelTimer = () => {
@@ -118,6 +155,9 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
     setInitialTime(5 * 60)
     setIsActive(true)
     setIsPaused(false)
+    
+    // 休息时停止滴答声
+    tickingSound.current?.pause()
   }
 
   const startFocus = () => {
@@ -127,6 +167,25 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
     setInitialTime(25 * 60)
     setIsActive(true)
     setIsPaused(false)
+    
+    // 开始专注时播放滴答声，但仅在音效开启时
+    if (soundEnabled) {
+      tickingSound.current?.play()
+    }
+  }
+
+  // 切换音效开关状态
+  const toggleSound = () => {
+    setSoundEnabled(prev => !prev)
+    
+    // 如果当前正在播放滴答声，根据新状态决定是否停止
+    if (!soundEnabled && isActive && !isPaused && !isBreak) {
+      // 如果开启音效，且处于专注计时中，则播放滴答声
+      tickingSound.current?.play()
+    } else if (soundEnabled) {
+      // 如果关闭音效，停止所有声音
+      tickingSound.current?.pause()
+    }
   }
 
   // Format time as MM:SS
@@ -179,9 +238,19 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
               <p className="text-sm text-red-500">{isBreak ? "放松一下眼睛和大脑吧！" : "保持专注，你做得很棒！"}</p>
             </div>
           </div>
-          <Badge variant="outline" className="flex items-center gap-1 px-3 py-1 border-red-200 bg-red-50">
-            <span className="text-red-600">🍅 x {completedPomodoros}</span>
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={toggleSound} 
+              variant="ghost" 
+              size="sm" 
+              className={`p-2 rounded-full hover:bg-red-50 ${soundEnabled ? 'text-red-500' : 'text-gray-400'}`}
+            >
+              {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </Button>
+            <Badge variant="outline" className="flex items-center gap-1 px-3 py-1 border-red-200 bg-red-50">
+              <span className="text-red-600">🍅 x {completedPomodoros}</span>
+            </Badge>
+          </div>
         </div>
 
         <div className="flex items-center justify-center mb-6">
