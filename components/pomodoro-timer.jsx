@@ -9,8 +9,8 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
   const [isActive, setIsActive] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
   const [isBreak, setIsBreak] = useState(false)
-  const [time, setTime] = useState(1 * 60) // 25 minutes in seconds
-  const [initialTime, setInitialTime] = useState(1 * 60)
+  const [time, setTime] = useState(25 * 60) // 25 minutes in seconds
+  const [initialTime, setInitialTime] = useState(25 * 60)
   const [completedPomodoros, setCompletedPomodoros] = useState(currentTask?.pomodoro || 0)
   const [waitingForBreak, setWaitingForBreak] = useState(false)
   const [waitingForFocus, setWaitingForFocus] = useState(false)
@@ -102,8 +102,8 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
     setIsBreak(false)
     setWaitingForBreak(false)
     setWaitingForFocus(false)
-    setTime(1 * 60)
-    setInitialTime(1 * 60)
+    setTime(25 * 60)
+    setInitialTime(25 * 60)
   }
 
   const cancelTimer = () => {
@@ -114,8 +114,8 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
   const startBreak = () => {
     setIsBreak(true)
     setWaitingForBreak(false)
-    setTime(1 * 60)
-    setInitialTime(1 * 60)
+    setTime(5 * 60)
+    setInitialTime(5 * 60)
     setIsActive(true)
     setIsPaused(false)
   }
@@ -123,8 +123,8 @@ export function PomodoroTimer({ onComplete, onCancel, currentTask }) {
   const startFocus = () => {
     setIsBreak(false)
     setWaitingForFocus(false)
-    setTime(1 * 60)
-    setInitialTime(1 * 60)
+    setTime(25 * 60)
+    setInitialTime(25 * 60)
     setIsActive(true)
     setIsPaused(false)
   }
