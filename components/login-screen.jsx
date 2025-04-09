@@ -15,6 +15,7 @@ export default function LoginScreen() {
   const [sliderValue, setSliderValue] = useState(0);
   const [isVerified, setIsVerified] = useState(false);
   const sliderRef = useRef(null);
+  const isDraggingRef = useRef(false);
   const router = useRouter();
 
   const handleLogin = async (e) => {
@@ -70,23 +71,63 @@ export default function LoginScreen() {
     setSliderValue(value);
     
     // 当滑动到最大值（100）时验证通过
-    if (value === 100) {
+    if (value === 100 && !isVerified) {
       setIsVerified(true);
-      toast.success("验证成功！");
-    } else {
+      // 添加适当延迟，避免toast消息在用户仍在滑动时出现
+      setTimeout(() => {
+        toast.success("验证成功！");
+      }, 100);
+    } else if (value < 100 && isVerified) {
       setIsVerified(false);
     }
   };
+
+  // 使用原生触摸/鼠标事件实现更精确的滑动体验
+  useEffect(() => {
+    const sliderElement = sliderRef.current;
+    if (!sliderElement) return;
+
+    const handleInputDown = () => {
+      isDraggingRef.current = true;
+    };
+
+    const handleInputUp = () => {
+      isDraggingRef.current = false;
+    };
+
+    // 确保滑动后验证状态不会错误重置
+    const preventReset = (e) => {
+      if (isVerified) {
+        e.preventDefault();
+        return false;
+      }
+    };
+
+    sliderElement.addEventListener('mousedown', handleInputDown);
+    sliderElement.addEventListener('touchstart', handleInputDown);
+    sliderElement.addEventListener('mouseup', handleInputUp);
+    sliderElement.addEventListener('touchend', handleInputUp);
+    sliderElement.addEventListener('touchcancel', handleInputUp);
+    
+    // 防止滑动完成后意外重置
+    if (isVerified) {
+      sliderElement.addEventListener('click', preventReset);
+    }
+
+    return () => {
+      sliderElement.removeEventListener('mousedown', handleInputDown);
+      sliderElement.removeEventListener('touchstart', handleInputDown);
+      sliderElement.removeEventListener('mouseup', handleInputUp);
+      sliderElement.removeEventListener('touchend', handleInputUp);
+      sliderElement.removeEventListener('touchcancel', handleInputUp);
+      sliderElement.removeEventListener('click', preventReset);
+    };
+  }, [sliderRef.current, isVerified]);
 
   const resetSlider = () => {
     setSliderValue(0);
     setIsVerified(false);
   };
-
-  // 登录失败或页面重新加载时重置滑动验证
-  useEffect(() => {
-    return () => resetSlider();
-  }, []);
 
   return (
     <div className="flex items-center justify-center min-h-screen p-3 sm:p-4">
@@ -193,16 +234,18 @@ export default function LoginScreen() {
                     id="slider"
                     min="0"
                     max="100"
+                    step="1"
                     value={sliderValue}
                     onChange={handleSliderChange}
                     className="absolute inset-0 z-30 w-full h-full opacity-0 cursor-pointer"
                     disabled={isVerified || isLoading}
+                    style={{touchAction: "none"}}
                   />
                   
                   {/* 滑动进度条 */}
                   <div
                     style={{ width: `${sliderValue}%` }}
-                    className="absolute top-0 left-0 z-10 h-full transition-all duration-300 rounded-md bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400"
+                    className="absolute top-0 left-0 z-10 h-full bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 rounded-md will-change-[width]"
                   >
                     {/* 进度条装饰 */}
                     <div className="absolute inset-0 overflow-hidden">
@@ -214,8 +257,8 @@ export default function LoginScreen() {
                   
                   {/* 滑块 */}
                   <div
-                    style={{ left: `calc(${sliderValue}% - ${sliderValue > 0 ? '18px' : '0px'})` }}
-                    className="absolute z-20 flex items-center justify-center transition-all duration-300 transform -translate-y-1/2 top-1/2"
+                    style={{ left: `calc(${sliderValue}% - ${Number(sliderValue) > 0 ? '18px' : '0px'})` }}
+                    className="absolute z-20 flex items-center justify-center transform -translate-y-1/2 top-1/2 will-change-[left]"
                   >
                     <div className={`w-10 h-10 flex items-center justify-center rounded-full shadow-md 
                       ${isVerified 
@@ -231,8 +274,8 @@ export default function LoginScreen() {
                   </div>
                   
                   {/* 文字提示 */}
-                  <div className="absolute inset-0 z-10 flex items-center justify-center">
-                    <span className={`text-sm font-medium text-center transition-opacity duration-300
+                  <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+                    <span className={`text-sm font-medium text-center
                       ${sliderValue > 30 ? "opacity-0" : "opacity-100"}
                       ${isVerified ? "text-transparent" : "text-gray-600"}`}>
                       {isVerified ? "验证成功" : "向右滑动小星星"}
@@ -240,7 +283,7 @@ export default function LoginScreen() {
                   </div>
                   
                   {/* 终点装饰 */}
-                  <div className="absolute transform -translate-y-1/2 right-2 top-1/2 z-5">
+                  <div className="absolute transform -translate-y-1/2 pointer-events-none right-2 top-1/2 z-5">
                     <div className={`w-5 h-5 rounded-full ${isVerified ? "opacity-0" : "opacity-70"} transition-opacity duration-300`}>
                       <Gift className="w-5 h-5 text-purple-500" />
                     </div>
