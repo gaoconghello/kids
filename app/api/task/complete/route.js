@@ -243,6 +243,14 @@ export const PUT = withAuth(["parent"], async (request) => {
       );
     }
 
+    // 检查任务是否已经审核过
+    if (existingTask.complete_review === "1") {
+      return NextResponse.json(
+        { code: 400, message: "该任务已经审核通过，不能重复审核" },
+        { status: 400 }
+      );
+    }
+
     // 权限检查：家长只能审核同一家庭孩子的任务
     // 获取当前家长和孩子的family_id
     const [parent, child] = await Promise.all([

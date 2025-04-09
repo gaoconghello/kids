@@ -270,6 +270,35 @@ export const PUT = withAuth(["parent"], async (request) => {
       );
     }
 
+    // 检查作业是否已经审核过
+    if (existingHomework.complete_review === "1") {
+      return NextResponse.json({
+        code: 400,
+        message: "该作业已经审核过",
+        data: {
+          id: existingHomework.id,
+          name: existingHomework.name,
+          subject_id: existingHomework.subject_id,
+          estimated_duration: existingHomework.estimated_duration,
+          deadline: existingHomework.deadline
+            ? formatDateTime(existingHomework.deadline)
+            : null,
+          integral: existingHomework.integral || 0,
+          incorrect: existingHomework.incorrect || 0,
+          homework_date: existingHomework.homework_date
+            ? formatDateTime(existingHomework.homework_date, "YYYY-MM-DD")
+            : null,
+          create_review: existingHomework.create_review,
+          complete_review: existingHomework.complete_review,
+          complete_time: existingHomework.complete_time
+            ? formatDateTime(existingHomework.complete_time)
+            : null,
+          is_complete: existingHomework.is_complete,
+          child_id: existingHomework.child_id,
+        },
+      });
+    }
+
     // 权限检查：家长只能审核同一家庭孩子的作业
     // 获取当前家长和孩子的family_id
     const [parent, child] = await Promise.all([

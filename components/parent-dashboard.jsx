@@ -533,7 +533,7 @@ export default function ParentDashboard() {
           title: item.name,
           points: item.integral || 0,
           type: ["01", "02", "03"].includes(item.integral_type) ? "earn" : "spend",
-          date: item.integral_date ? item.integral_date.split(' ')[0] : new Date().toISOString().split('T')[0]
+          date: item.integral_date
         }));
         
         setHistory(formattedHistory);
@@ -976,27 +976,29 @@ export default function ParentDashboard() {
       const result = await response.json();
 
       if (result.code === 200) {
-        const updatedCompletedHomework = completedHomework.filter(
-          (item) => item.id !== approvalItem.id
-        );
-        setCompletedHomework(updatedCompletedHomework);
+        // const updatedCompletedHomework = completedHomework.filter(
+        //   (item) => item.id !== approvalItem.id
+        // );
+        // setCompletedHomework(updatedCompletedHomework);
 
         if (approved) {
           updateHomeworkStatusAfterCompletion(wrongAnswers);
-          addHomeworkCompletionToHistory(wrongAnswers);
+          // addHomeworkCompletionToHistory(wrongAnswers);
           updatePointsAfterHomeworkCompletion();
         } else {
           console.log(`作业 ${approvalItem.title} 被拒绝`);
         }
-
-        fetchCompletedHomeworks();
+        
       } else {
         console.error("作业完成审批失败:", result.message);
-        alert(`审批失败: ${result.message || "未知错误"}`);
+        // alert(`审批失败: ${result.message || "未知错误"}`);
       }
+
+      fetchCompletedHomeworks();
+      fetchChildHomeworks();
     } catch (error) {
       console.error("作业完成审批请求出错:", error);
-      alert(`审批请求出错: ${error.message}`);
+      // alert(`审批请求出错: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -1115,40 +1117,28 @@ export default function ParentDashboard() {
   const handleTaskCompleteApproval = async (approved) => {
     try {
       setIsLoading(true);
-      if (approved) {
-        const response = await put(`/api/task/complete`, {
-          id: approvalItem.id,
-          approved: approved,
-        });
+      const response = await put(`/api/task/complete`, {
+        id: approvalItem.id,
+        approved: approved,
+      });
 
-        const result = await response.json();
+      const result = await response.json();
 
-        console.log("任务完成审批结果:", result);
+      console.log("任务完成审批结果:", result);
 
-        if (result.code === 200) {
-          setCompletedTasks(
-            completedTasks.filter((item) => item.id !== approvalItem.id)
-          );
-          addTaskCompletionToHistory();
+      if (result.code === 200) {
+
+        if (approved) {
+          // addTaskCompletionToHistory();
           updatePointsAfterTaskCompletion();
           console.log("任务完成审批成功:", approvalItem.title);
-          fetchCompletedTasks();
         } else {
-          console.error("任务完成审批失败:", result?.message || "未知错误");
-          alert(`审批失败: ${result?.message || "未知错误"}`);
+          console.log("任务完成被拒绝:", approvalItem.title);
         }
       } else {
-        // 拒绝任务完成，调用DELETE接口删除任务
-        const response = await del(`/api/task/parent?id=${approvalItem.id}`);
-        const result = await response.json();
-
-        if (result.code === 200) {
-          console.log("任务完成被拒绝并成功删除:", approvalItem.title);
-        } else {
-          console.error("任务完成被拒绝但删除失败:", result.message);
-        }
-        fetchCompletedTasks();
+        console.error("任务完成审批失败:", result?.message || "未知错误");
       }
+      fetchCompletedTasks();
     } catch (error) {
       console.error("任务完成审批请求出错:", error);
       alert(`审批请求出错: ${error?.message || "未知错误"}`);

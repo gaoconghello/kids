@@ -245,7 +245,7 @@ export const POST = withAuth(["parent", "child"], async (request) => {
 });
 
 // 更新作业信息
-export const PUT = withAuth(["parent", "child"], async (request) => {
+export const PUT = withAuth(["child"], async (request) => {
   try {
     const data = await request.json();
 
@@ -269,11 +269,8 @@ export const PUT = withAuth(["parent", "child"], async (request) => {
       );
     }
 
-    // 权限检查：孩子只能更新自己的作业完成状态
-    if (
-      request.user.role === "child" &&
-      existingHomework.child_id !== request.user.id
-    ) {
+    // 权限检查：孩子只能更新自己的作业
+    if (existingHomework.child_id !== request.user.id) {
       return NextResponse.json(
         { code: 403, message: "没有权限更新此作业" },
         { status: 403 }
@@ -283,46 +280,13 @@ export const PUT = withAuth(["parent", "child"], async (request) => {
     // 构建更新数据
     const updateData = {};
 
-    // 孩子只能更新完成状态相关字段
-    if (request.user.role === "child") {
-      // 如果是孩子提交完成
-      if (data.complete_status === "completed") {
-        updateData.complete_time = new Date(
-          new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
-        );
-        // 等待家长审核
-        updateData.complete_review = "0";
-      }
-    } else {
-      // 家长或管理员可以更新所有字段
-      if (data.name) updateData.name = data.name;
-      if (data.subject_id !== undefined)
-        updateData.subject_id = data.subject_id
-          ? parseInt(data.subject_id)
-          : null;
-      if (data.estimated_duration !== undefined)
-        updateData.estimated_duration = data.estimated_duration
-          ? parseInt(data.estimated_duration)
-          : null;
-      if (data.deadline !== undefined)
-        updateData.deadline = data.deadline ? new Date(data.deadline) : null;
-      if (data.integral !== undefined)
-        updateData.integral = parseInt(data.integral);
-      if (data.incorrect !== undefined)
-        updateData.incorrect = parseInt(data.incorrect);
-      if (data.homework_date !== undefined)
-        updateData.homework_date = data.homework_date
-          ? new Date(data.homework_date)
-          : null;
-
-      // 家长审核完成
-      if (data.complete_review) {
-        updateData.complete_review = data.complete_review;
-        updateData.complete_review_time = new Date(
-          new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
-        );
-        updateData.complete_review_user_id = request.user.id;
-      }
+    // 如果是孩子提交完成
+    if (data.complete_status === "completed") {
+      updateData.complete_time = new Date(
+        new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
+      );
+      // 等待家长审核
+      updateData.complete_review = "0";
     }
 
     // 通用更新字段
