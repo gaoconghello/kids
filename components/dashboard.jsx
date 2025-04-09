@@ -20,6 +20,7 @@ import {
   AlertCircle,
   Trash2,
   Edit,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -1019,6 +1020,56 @@ export default function Dashboard() {
     );
   }
 
+  // 添加刷新函数
+  const refreshHomeworks = async () => {
+    try {
+      setIsLoadingHomework(true);
+      await fetchHomeworks();
+      // 刷新错题和番茄钟统计
+      console.log("作业数据已刷新");
+    } catch (error) {
+      console.error("刷新作业数据失败:", error);
+    } finally {
+      setIsLoadingHomework(false);
+    }
+  };
+
+  const refreshTasks = async () => {
+    try {
+      setIsLoadingTasks(true);
+      await fetchTasks();
+      console.log("任务数据已刷新");
+    } catch (error) {
+      console.error("刷新任务数据失败:", error);
+    } finally {
+      setIsLoadingTasks(false);
+    }
+  };
+
+  const refreshRewards = async () => {
+    try {
+      setIsLoadingRewards(true);
+      await fetchRewards();
+      console.log("奖励数据已刷新");
+    } catch (error) {
+      console.error("刷新奖励数据失败:", error);
+    } finally {
+      setIsLoadingRewards(false);
+    }
+  };
+
+  const refreshHistory = async () => {
+    try {
+      setIsLoadingHistory(true);
+      await fetchHistory();
+      console.log("积分历史记录已刷新");
+    } catch (error) {
+      console.error("刷新积分历史记录失败:", error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
   return (
     <div className="min-h-screen p-3 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 sm:p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
@@ -1140,6 +1191,16 @@ export default function Dashboard() {
                     作业
                   </CardTitle>
                   <div className="flex items-center gap-4">
+                    <Button
+                      onClick={refreshHomeworks}
+                      variant="ghost"
+                      size="sm"
+                      className="text-primary hover:bg-primary/10"
+                      disabled={isLoadingHomework}
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingHomework ? 'animate-spin' : ''}`} />
+                      刷新
+                    </Button>
                     <Button
                       onClick={() => setIsAddHomeworkOpen(true)}
                       className="rounded-full bg-gradient-to-r from-primary to-purple-600"
@@ -1673,6 +1734,16 @@ export default function Dashboard() {
                   </CardTitle>
                   <div className="flex items-center gap-3">
                     <Button
+                      onClick={refreshTasks}
+                      variant="ghost"
+                      size="sm"
+                      className="text-primary hover:bg-primary/10"
+                      disabled={isLoadingTasks}
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingTasks ? 'animate-spin' : ''}`} />
+                      刷新
+                    </Button>
+                    <Button
                       onClick={() => setIsAddTaskOpen(true)}
                       className="rounded-full bg-gradient-to-r from-primary to-purple-600"
                       size="sm"
@@ -1825,6 +1896,16 @@ export default function Dashboard() {
                     积分兑换
                   </CardTitle>
                   <div className="flex items-center gap-2">
+                    <Button
+                      onClick={refreshRewards}
+                      variant="ghost"
+                      size="sm"
+                      className="mr-2 text-primary hover:bg-primary/10"
+                      disabled={isLoadingRewards}
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingRewards ? 'animate-spin' : ''}`} />
+                      刷新
+                    </Button>
                     <Star className="w-5 h-5 text-yellow-500 fill-yellow-400" />
                     <span className="font-bold text-primary">{points}</span>
                   </div>
@@ -1919,7 +2000,19 @@ export default function Dashboard() {
                     <History className="w-6 h-6 mr-2 text-primary" />
                     积分记录
                   </CardTitle>
-                  <CardDescription>查看你的积分获取和使用历史</CardDescription>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={refreshHistory}
+                      variant="ghost"
+                      size="sm"
+                      className="text-primary hover:bg-primary/10"
+                      disabled={isLoadingHistory}
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingHistory ? 'animate-spin' : ''}`} />
+                      刷新
+                    </Button>
+                    <CardDescription>查看你的积分获取和使用历史</CardDescription>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-6">

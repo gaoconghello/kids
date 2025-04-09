@@ -14,16 +14,21 @@ export function AddHomeworkDialog({
   initialData,
   subjects = [],
 }) {
-  const [subjectId, setSubjectId] = useState(initialData?.subject_id || "");
+  const [subjectId, setSubjectId] = useState(initialData?.subject_id || (subjects[0]?.id || ""));
   const [name, setName] = useState(initialData?.name || "");
   const [duration, setDuration] = useState(
     initialData?.duration|| "30"
   );
   const [deadline, setDeadline] = useState(initialData?.deadline || "");
-  const [points, setPoints] = useState(initialData?.points?.toString() || "10");
+  const [points, setPoints] = useState(initialData?.points?.toString() || "5");
   // 不再需要childName状态，但在提交时仍需处理
 
   useEffect(() => {
+    // 如果没有初始数据且有科目列表，默认选中第一个科目
+    if (!initialData && subjects.length > 0 && !subjectId) {
+      setSubjectId(subjects[0].id);
+    }
+    
     if (initialData) {
       // 如果initialData中的subject是科目名称而非ID，则需要查找对应的ID
       if (initialData.subject && subjects.length > 0) {
@@ -52,7 +57,7 @@ export function AddHomeworkDialog({
       
       setPoints(initialData.points?.toString() || "");
     }
-  }, [initialData, subjects]);
+  }, [initialData, subjects, subjectId]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -76,7 +81,7 @@ export function AddHomeworkDialog({
     setName("");
     setDuration("20");
     setDeadline("");
-    setPoints("10");
+    setPoints("5");
     onClose();
   };
 
@@ -181,7 +186,7 @@ export function AddHomeworkDialog({
                   value={points}
                   onChange={(e) => setPoints(e.target.value)}
                   className="h-10 pl-10 text-sm sm:h-12 sm:text-base"
-                  placeholder="15"
+                  placeholder="5"
                   required
                 />
               </div>

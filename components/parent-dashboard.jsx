@@ -24,6 +24,9 @@ import {
   ShoppingBag,
   Trash,
   Trash2,
+  Edit,
+  Users,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -173,6 +176,13 @@ export default function ParentDashboard() {
   const [editingHomework, setEditingHomework] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingPendingHomeworks, setIsLoadingPendingHomeworks] = useState(false);
+  const [isLoadingCompletedHomeworks, setIsLoadingCompletedHomeworks] = useState(false);
+  const [isLoadingChildHomeworks, setIsLoadingChildHomeworks] = useState(false);
+  const [isLoadingPendingTasks, setIsLoadingPendingTasks] = useState(false);
+  const [isLoadingCompletedTasks, setIsLoadingCompletedTasks] = useState(false);
+  const [isLoadingChildTasks, setIsLoadingChildTasks] = useState(false);
+  const [isLoadingPendingRewards, setIsLoadingPendingRewards] = useState(false);
 
   // 初始化截止时间设置
   const fetchDeadlineSettings = async () => {
@@ -1457,7 +1467,95 @@ export default function ParentDashboard() {
     }
   };
 
+  // 添加刷新函数
+  const refreshHomeworkData = async () => {
+    try {
+      // 显示加载状态
+      setIsLoadingPendingHomeworks(true);
+      setIsLoadingCompletedHomeworks(true);
+      setIsLoadingChildHomeworks(true);
+      
+      // 刷新作业相关数据
+      await Promise.all([
+        fetchPendingHomeworks(),
+        fetchCompletedHomeworks(),
+        fetchChildHomeworks()
+      ]);
+      
+      console.log("作业数据已刷新");
+    } catch (error) {
+      console.error("刷新作业数据失败:", error);
+    } finally {
+      // 隐藏加载状态
+      setIsLoadingPendingHomeworks(false);
+      setIsLoadingCompletedHomeworks(false);
+      setIsLoadingChildHomeworks(false);
+    }
+  };
 
+  const refreshTaskData = async () => {
+    try {
+      // 显示加载状态
+      setIsLoadingPendingTasks(true);
+      setIsLoadingCompletedTasks(true);
+      setIsLoadingChildTasks(true);
+      
+      // 刷新任务相关数据
+      await Promise.all([
+        fetchPendingTasks(),
+        fetchCompletedTasks(),
+        fetchChildTasks()
+      ]);
+      
+      console.log("任务数据已刷新");
+    } catch (error) {
+      console.error("刷新任务数据失败:", error);
+    } finally {
+      // 隐藏加载状态
+      setIsLoadingPendingTasks(false);
+      setIsLoadingCompletedTasks(false);
+      setIsLoadingChildTasks(false);
+    }
+  };
+
+  const refreshRewardData = async () => {
+    try {
+      // 显示加载状态
+      setIsLoadingRewards(true);
+      setIsLoadingPendingRewards(true);
+      
+      // 刷新奖励相关数据
+      await Promise.all([
+        fetchRewards(),
+        fetchPendingRewards()
+      ]);
+      
+      console.log("奖励数据已刷新");
+    } catch (error) {
+      console.error("刷新奖励数据失败:", error);
+    } finally {
+      // 隐藏加载状态
+      setIsLoadingRewards(false);
+      setIsLoadingPendingRewards(false);
+    }
+  };
+
+  const refreshHistoryData = async () => {
+    try {
+      // 显示加载状态
+      setIsLoadingHistory(true);
+      
+      // 刷新积分历史记录
+      await fetchHistory();
+      
+      console.log("积分历史记录已刷新");
+    } catch (error) {
+      console.error("刷新积分历史记录失败:", error);
+    } finally {
+      // 隐藏加载状态
+      setIsLoadingHistory(false);
+    }
+  };
 
   return (
     <div className="min-h-screen p-3 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 sm:p-4 md:p-8">
@@ -1699,6 +1797,16 @@ export default function ParentDashboard() {
                     作业管理
                   </CardTitle>
                   <div className="flex items-center gap-4">
+                    <Button
+                      onClick={refreshHomeworkData}
+                      variant="ghost"
+                      size="sm"
+                      className="text-primary hover:bg-primary/10"
+                      disabled={isLoadingPendingHomeworks || isLoadingCompletedHomeworks || isLoadingChildHomeworks}
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${(isLoadingPendingHomeworks || isLoadingCompletedHomeworks || isLoadingChildHomeworks) ? 'animate-spin' : ''}`} />
+                      刷新
+                    </Button>
                     <Button
                       onClick={() => setIsAddHomeworkOpen(true)}
                       className="rounded-full bg-gradient-to-r to-purple-600 from-primary"
@@ -2181,6 +2289,16 @@ export default function ParentDashboard() {
                   </CardTitle>
                   <div className="flex items-center gap-4">
                     <Button
+                      onClick={refreshTaskData}
+                      variant="ghost"
+                      size="sm"
+                      className="text-primary hover:bg-primary/10"
+                      disabled={isLoadingPendingTasks || isLoadingCompletedTasks || isLoadingChildTasks}
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${(isLoadingPendingTasks || isLoadingCompletedTasks || isLoadingChildTasks) ? 'animate-spin' : ''}`} />
+                      刷新
+                    </Button>
+                    <Button
                       onClick={() => setIsAddTaskOpen(true)}
                       className="rounded-full bg-gradient-to-r to-purple-600 from-primary"
                       size="sm"
@@ -2483,6 +2601,16 @@ export default function ParentDashboard() {
                   </CardTitle>
                   <div className="flex items-center gap-4">
                     <Button
+                      onClick={refreshRewardData}
+                      variant="ghost"
+                      size="sm"
+                      className="text-primary hover:bg-primary/10"
+                      disabled={isLoadingRewards || isLoadingPendingRewards}
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${(isLoadingRewards || isLoadingPendingRewards) ? 'animate-spin' : ''}`} />
+                      刷新
+                    </Button>
+                    <Button
                       onClick={() => setIsAddRewardOpen(true)}
                       className="rounded-full bg-gradient-to-r to-purple-600 from-primary"
                       size="sm"
@@ -2617,6 +2745,18 @@ export default function ParentDashboard() {
                     <History className="w-6 h-6 mr-2 text-primary" />
                     积分记录
                   </CardTitle>
+                  <div className="flex items-center gap-4">
+                    <Button
+                      onClick={refreshHistoryData}
+                      variant="ghost"
+                      size="sm"
+                      className="text-primary hover:bg-primary/10"
+                      disabled={isLoadingHistory}
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingHistory ? 'animate-spin' : ''}`} />
+                      刷新
+                    </Button>
+                  </div>
                 </div>
                 <CardDescription>查看积分获取和使用历史</CardDescription>
               </CardHeader>
