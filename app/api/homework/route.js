@@ -277,23 +277,33 @@ export const PUT = withAuth(["child"], async (request) => {
       );
     }
 
-    // 构建更新数据
-    const updateData = {};
-
-    // 如果是孩子提交完成
-    if (data.complete_status === "completed") {
-      updateData.complete_time = new Date(
-        new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
+    // 如果作业已经审核完成，则不能更新
+    if (existingHomework.create_review === "1") {
+      return NextResponse.json(
+        { code: 403, message: "作业已审核完成，不能更新" },
+        { status: 403 }
       );
-      // 等待家长审核
-      updateData.complete_review = "0";
     }
 
-    // 通用更新字段
-    updateData.updated_at = new Date(
-      new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
-    );
-    updateData.updated_user_id = request.user.id;
+    // 构建更新数据对象
+    const updateData = {
+      name: data.name,
+      subject_id: data.subject_id,
+      estimated_duration: parseInt(data.duration) || 0,
+      deadline: data.deadline ? (() => {
+        const today = new Date();
+        const [hours, minutes] = data.deadline.split(':').map(Number);
+        // 设置当天的具体时间
+        today.setHours(hours, minutes, 0, 0);
+        // 转换为上海时区
+        return new Date(today.toLocaleString("en-US", { timeZone: "Asia/Shanghai" }));
+      })() : null,
+      integral: parseInt(data.integral) || 0,
+      updated_at: new Date(
+        new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
+      ),
+      updated_user_id: request.user.id
+    };
 
     // 更新作业信息
     const updatedHomework = await prisma.homework.update({

@@ -19,6 +19,7 @@ import {
   Settings,
   AlertCircle,
   Trash2,
+  Edit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -411,6 +412,8 @@ export default function Dashboard() {
   // 添加作业日历相关状态
   const [selectedHomeworkDate, setSelectedHomeworkDate] = useState(new Date());
   const [showHomeworkCalendar, setShowHomeworkCalendar] = useState(false);
+  // 添加正在编辑的作业状态
+  const [editingHomework, setEditingHomework] = useState(null);
 
   const completeTask = async (taskId) => {
     // 避免重复完成
@@ -580,31 +583,61 @@ export default function Dashboard() {
   // 添加新作业的处理函数
   const handleAddHomework = async (newHomework) => {
     try {
-      // 准备API请求数据
-      const subjectId = newHomework.subject_id; // 修改这里，使用subject_id而不是subject
-      const homeworkData = {
-        name: newHomework.name,
-        subject_id: subjectId,
-        estimated_duration: parseInt(newHomework.duration) || null,
-        deadline: newHomework.deadline
-          ? `${new Date().toISOString().split("T")[0]} ${newHomework.deadline}`
-          : null,
-        integral: parseInt(newHomework.points) || 0,
-        homework_date: new Date().toISOString().split("T")[0],
-      };
+      // 如果是编辑模式
+      if (editingHomework) {
+        console.log("修改作业:", newHomework);
+        
+        // 准备API请求数据
+        const homeworkData = {
+          id: editingHomework.id,
+          name: newHomework.name,
+          subject_id: newHomework.subject_id,
+          duration: parseInt(newHomework.duration) || null,
+          deadline: newHomework.deadline,
+          integral: parseInt(newHomework.points) || 0,
+        };
 
-      // 使用封装的post方法替代fetch
-      const response = await post("/api/homework", homeworkData);
-      const result = await response.json();
+        // 调用API修改作业
+        const response = await put("/api/homework", homeworkData);
+        const result = await response.json();
 
-      if (result.code === 200 && result.data) {
-        // 添加成功后刷新作业列表
-        fetchHomeworks();
+        if (result.code === 200) {
+          // 修改成功后刷新作业列表
+          fetchHomeworks();
+          // 清除编辑状态
+          setEditingHomework(null);
+        } else {
+          console.error("修改作业失败:", result.message);
+          alert(result.message);
+        }
       } else {
-        console.error("添加作业失败:", result.message);
+        // 准备API请求数据
+        const subjectId = newHomework.subject_id; 
+        const homeworkData = {
+          name: newHomework.name,
+          subject_id: subjectId,
+          estimated_duration: parseInt(newHomework.duration) || null,
+          deadline: newHomework.deadline
+            ? `${new Date().toISOString().split("T")[0]} ${newHomework.deadline}`
+            : null,
+          integral: parseInt(newHomework.points) || 0,
+          homework_date: new Date().toISOString().split("T")[0],
+        };
+
+        // 使用封装的post方法替代fetch
+        const response = await post("/api/homework", homeworkData);
+        const result = await response.json();
+
+        if (result.code === 200 && result.data) {
+          // 添加成功后刷新作业列表
+          fetchHomeworks();
+        } else {
+          console.error("添加作业失败:", result.message);
+        }
       }
     } catch (error) {
-      console.error("添加作业出错:", error);
+      console.error("操作作业出错:", error);
+      alert("操作失败，请稍后再试");
     }
   };
 
@@ -647,6 +680,26 @@ export default function Dashboard() {
       console.error("删除作业出错:", error);
       alert("删除作业时出错，请稍后再试");
     }
+  };
+
+  // 添加处理编辑作业的函数
+  const handleEditHomework = (subject, task) => {
+    console.log("编辑作业:", subject, task);
+    
+    // 设置要编辑的作业数据
+    setEditingHomework({
+      id: task.id,
+      subject_id: subject.id,
+      subject: subject.subject,
+      name: task.name,
+      title: task.name,
+      duration: task.duration.replace(/分钟$/, ''),
+      deadline: task.deadline !== "未设置" ? task.deadline : "",
+      points: task.points
+    });
+    
+    // 打开添加作业对话框
+    setIsAddHomeworkOpen(true);
   };
 
   // 添加处理添加任务的函数
@@ -1235,6 +1288,16 @@ export default function Dashboard() {
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
                                 )}
+                                {!task.create_review && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleEditHomework(subject, task)}
+                                    className="text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                )}
                                 {task.pomodoro > 0 && (
                                   <Badge
                                     variant="outline"
@@ -1246,6 +1309,7 @@ export default function Dashboard() {
                                     </span>
                                   </Badge>
                                 )}
+                                
                                 <Badge
                                   variant="outline"
                                   className="flex gap-1 border-yellow-300 bg-yellow-50"
@@ -1286,6 +1350,7 @@ export default function Dashboard() {
                                   >
                                     {task.completed ? "已完成" : "完成"}
                                   </Button>
+
                                 </div>
                               </div>
                             </div>
@@ -1950,10 +2015,14 @@ export default function Dashboard() {
       </div>
       <AddHomeworkDialog
         isOpen={isAddHomeworkOpen}
-        onClose={() => setIsAddHomeworkOpen(false)}
+        onClose={() => {
+          setIsAddHomeworkOpen(false);
+          setEditingHomework(null); // 关闭对话框时清除编辑状态
+        }}
         onAdd={handleAddHomework}
         subjects={subjects}
         childId={user.id}
+        initialData={editingHomework} // 添加初始数据属性
       />
       <AddTaskDialog
         isOpen={isAddTaskOpen}
