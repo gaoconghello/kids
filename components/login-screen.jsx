@@ -14,9 +14,21 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [sliderValue, setSliderValue] = useState(0);
   const [isVerified, setIsVerified] = useState(false);
+  const [rememberPassword, setRememberPassword] = useState(false);
   const sliderRef = useRef(null);
   const isDraggingRef = useRef(false);
   const router = useRouter();
+
+  // 组件加载时检查是否有保存的密码
+  useEffect(() => {
+    const savedUsername = localStorage.getItem("savedUsername");
+    const savedPassword = localStorage.getItem("savedPassword");
+    if (savedUsername && savedPassword) {
+      setUsername(savedUsername);
+      setPassword(savedPassword);
+      setRememberPassword(true);
+    }
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -53,6 +65,16 @@ export default function LoginScreen() {
 
       // 保存用户信息到localStorage
       localStorage.setItem("userInfo", JSON.stringify(data.user));
+
+      // 如果勾选了记住密码，保存用户名和密码
+      if (rememberPassword) {
+        localStorage.setItem("savedUsername", username);
+        localStorage.setItem("savedPassword", password);
+      } else {
+        // 如果没有勾选记住密码，清除保存的密码
+        localStorage.removeItem("savedUsername");
+        localStorage.removeItem("savedPassword");
+      }
 
       // 跳转到仪表盘，使用 window.location.href 确保页面完全刷新
       window.location.href = "/dashboard";
@@ -209,6 +231,20 @@ export default function LoginScreen() {
                 />
                 <div className="absolute inset-0 transition-opacity duration-300 opacity-0 pointer-events-none rounded-xl bg-gradient-to-r from-primary/10 via-purple-500/10 to-pink-500/10 group-hover:opacity-100 group-focus-within:opacity-100" />
               </div>
+            </div>
+
+            {/* 记住密码复选框 */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="rememberPassword"
+                checked={rememberPassword}
+                onChange={(e) => setRememberPassword(e.target.checked)}
+                className="w-4 h-4 border-2 rounded text-primary border-primary/30 focus:ring-primary/50"
+              />
+              <Label htmlFor="rememberPassword" className="text-sm text-gray-600">
+                记住密码
+              </Label>
             </div>
 
             {/* 滑动验证组件 */}
