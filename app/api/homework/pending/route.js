@@ -147,7 +147,7 @@ export const GET = withAuth(["parent"], async (request) => {
   }
 });
 
-// 修改增加作业信息
+// 修改增加作业信息 （暂时作废，以后删除）
 export const POST = withAuth(["parent"], async (request) => {
   try {
     const data = await request.json();

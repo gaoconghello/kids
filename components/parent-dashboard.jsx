@@ -670,7 +670,7 @@ export default function ParentDashboard() {
             };
 
             // 调用POST接口保存修改
-            const response = await post("/api/homework/pending", homeworkData);
+            const response = await put("/api/homework/parent", homeworkData);
             const result = await response.json();
 
             if (result.code === 200) {

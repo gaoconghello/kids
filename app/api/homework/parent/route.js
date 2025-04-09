@@ -257,6 +257,112 @@ export const POST = withAuth(["parent"], async (request) => {
   }
 });
 
+// 修改增加作业信息
+export const PUT = withAuth(["parent"], async (request) => {
+  try {
+    const data = await request.json();
+
+    console.log("修改增加作业信息:", data);
+
+    // 验证必填字段
+    if (!data.id) {
+      return NextResponse.json(
+        { code: 400, message: "缺少作业ID" },
+        { status: 400 }
+      );
+    }
+
+    // 检查作业是否存在
+    const existingHomework = await prisma.homework.findUnique({
+      where: { id: parseInt(data.id) },
+    });
+
+    if (!existingHomework) {
+      return NextResponse.json(
+        { code: 404, message: "作业不存在" },
+        { status: 404 }
+      );
+    }
+
+    // 权限检查：家长只能审核同一家庭孩子的作业
+    // 获取当前家长和孩子的family_id
+    const [parent, child] = await Promise.all([
+      prisma.account.findUnique({
+        where: { id: request.user.id },
+        select: { family_id: true },
+      }),
+      prisma.account.findUnique({
+        where: { id: existingHomework.child_id },
+        select: { family_id: true },
+      }),
+    ]);
+
+    if (!parent || !child || parent.family_id !== child.family_id) {
+      return NextResponse.json(
+        { code: 403, message: "没有权限审核此作业" },
+        { status: 403 }
+      );
+    }
+
+    // 构建更新数据对象
+    const updateData = {
+      name: data.name,
+      subject_id: data.subject,
+      estimated_duration: parseInt(data.duration) || 0,
+      deadline: data.deadline ? (() => {
+        const today = new Date();
+        const [hours, minutes] = data.deadline.split(':').map(Number);
+        // 设置当天的具体时间
+        today.setHours(hours, minutes, 0, 0);
+        // 转换为上海时区
+        return new Date(today.toLocaleString("en-US", { timeZone: "Asia/Shanghai" }));
+      })() : null,
+      integral: parseInt(data.integral) || 0,
+      updated_at: new Date(
+        new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
+      ),
+      updated_user_id: request.user.id
+    };
+
+    // 更新作业信息
+    const updatedHomework = await prisma.homework.update({
+      where: { id: parseInt(data.id) },
+      data: updateData,
+    });
+
+    return NextResponse.json({
+      code: 200,
+      message: "作业信息更新成功",
+      data: {
+        id: updatedHomework.id,
+        name: updatedHomework.name,
+        subject_id: updatedHomework.subject_id,
+        estimated_duration: updatedHomework.estimated_duration,
+        deadline: updatedHomework.deadline
+          ? formatDateTime(updatedHomework.deadline)
+          : null,
+        integral: updatedHomework.integral || 0,
+        incorrect: updatedHomework.incorrect || 0,
+        homework_date: updatedHomework.homework_date
+          ? formatDateTime(updatedHomework.homework_date, "YYYY-MM-DD")
+          : null,
+        create_review: updatedHomework.create_review,
+        complete_review: updatedHomework.complete_review,
+        complete_time: updatedHomework.complete_time
+          ? formatDateTime(updatedHomework.complete_time)
+          : null,
+        child_id: updatedHomework.child_id,
+      },
+    });
+  } catch (error) {
+    console.error("更新作业信息失败:", error);
+    return NextResponse.json(
+      { code: 500, message: "更新作业信息失败", error: error.message },
+      { status: 500 }
+    );
+  }
+});
+
 // 删除作业
 export const DELETE = withAuth(["parent"], async (request) => {
   try {
