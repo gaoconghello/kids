@@ -217,7 +217,7 @@ export default function LoginScreen() {
                 <Gift className="w-4 h-4 text-purple-500" />
                 滑动小星星解锁
               </Label>
-              <div className="relative overflow-hidden border-2 h-14 border-primary/30 rounded-xl bg-gradient-to-r from-blue-100 to-purple-100 group">
+              <div className="relative h-16 overflow-hidden border-2 border-primary/30 rounded-xl bg-gradient-to-r from-blue-100 to-purple-100 group">
                 {/* 背景装饰元素 */}
                 <div className="absolute inset-0 overflow-hidden opacity-20">
                   <div className="absolute top-1 left-[10%] w-4 h-4 bg-yellow-300 rounded-full" />
@@ -228,6 +228,23 @@ export default function LoginScreen() {
                 </div>
                 
                 <div className="relative w-full h-full p-2">
+                  {/* 增加可点击区域 */}
+                  <div className="absolute inset-0 z-20 cursor-pointer" onClick={(e) => {
+                    if (!isVerified && !isLoading) {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const x = e.clientX - rect.left;
+                      const percentage = (x / rect.width) * 100;
+                      const newValue = Math.min(100, Math.max(0, Math.round(percentage)));
+                      setSliderValue(newValue);
+                      if (newValue === 100) {
+                        setIsVerified(true);
+                        setTimeout(() => {
+                          toast.success("验证成功！");
+                        }, 100);
+                      }
+                    }
+                  }} />
+                  
                   <input
                     ref={sliderRef}
                     type="range"
@@ -239,7 +256,18 @@ export default function LoginScreen() {
                     onChange={handleSliderChange}
                     className="absolute inset-0 z-30 w-full h-full opacity-0 cursor-pointer"
                     disabled={isVerified || isLoading}
-                    style={{touchAction: "none"}}
+                    style={{
+                      touchAction: "none",
+                      WebkitAppearance: "none",
+                      width: "100%",
+                      height: "100%",
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      zIndex: 30,
+                      cursor: "pointer",
+                      opacity: 0
+                    }}
                   />
                   
                   {/* 滑动进度条 */}
@@ -257,18 +285,18 @@ export default function LoginScreen() {
                   
                   {/* 滑块 */}
                   <div
-                    style={{ left: `calc(${sliderValue}% - ${Number(sliderValue) > 0 ? '18px' : '0px'})` }}
+                    style={{ left: `calc(${sliderValue}% - ${Number(sliderValue) > 0 ? '24px' : '0px'})` }}
                     className="absolute z-20 flex items-center justify-center transform -translate-y-1/2 top-1/2 will-change-[left]"
                   >
-                    <div className={`w-10 h-10 flex items-center justify-center rounded-full shadow-md 
+                    <div className={`w-12 h-12 flex items-center justify-center rounded-full shadow-md 
                       ${isVerified 
                         ? "bg-gradient-to-r from-yellow-400 to-yellow-500 animate-pulse" 
                         : "bg-gradient-to-r from-blue-500 to-purple-500"}`}
                     >
                       {isVerified ? (
-                        <Star className="w-6 h-6 text-white fill-white" />
+                        <Star className="text-white w-7 h-7 fill-white" />
                       ) : (
-                        <Star className="w-6 h-6 text-white" />
+                        <Star className="text-white w-7 h-7" />
                       )}
                     </div>
                   </div>
@@ -284,8 +312,8 @@ export default function LoginScreen() {
                   
                   {/* 终点装饰 */}
                   <div className="absolute transform -translate-y-1/2 pointer-events-none right-2 top-1/2 z-5">
-                    <div className={`w-5 h-5 rounded-full ${isVerified ? "opacity-0" : "opacity-70"} transition-opacity duration-300`}>
-                      <Gift className="w-5 h-5 text-purple-500" />
+                    <div className={`w-6 h-6 rounded-full ${isVerified ? "opacity-0" : "opacity-70"} transition-opacity duration-300`}>
+                      <Gift className="w-6 h-6 text-purple-500" />
                     </div>
                   </div>
                 </div>
