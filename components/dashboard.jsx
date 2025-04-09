@@ -73,26 +73,6 @@ const calculateWrongAnswersStats = (homeworks) => {
   };
 };
 
-// 庆祝组件
-function CompletionCelebration({ onClose, rewardPoints }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="p-8 bg-white rounded-lg shadow-xl">
-        <h2 className="mb-4 text-3xl font-bold text-green-600">
-          恭喜你完成了所有作业！
-        </h2>
-        <p className="mb-6 text-gray-700">奖励 +{rewardPoints} 积分已到账！</p>
-        <Button
-          onClick={onClose}
-          className="text-white bg-green-500 hover:bg-green-700"
-        >
-          关闭
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 // 根据任务标题返回适当的图标
 function getTaskIcon(title) {
   // 添加对title是否存在的检查
@@ -1986,13 +1966,10 @@ export default function Dashboard() {
         onSubmit={handleChangePassword}
         userType="child"
       />
-      {/* 只保留一个庆祝动画组件 */}
+      {/* 庆祝动画组件 */}
       {showCelebration && (
-        <ConfettiCelebration onComplete={() => setShowCelebration(false)} />
-      )}
-      {showCelebration && (
-        <CompletionCelebration
-          onClose={() => setShowCelebration(false)}
+        <ConfettiCelebration
+          onComplete={() => setShowCelebration(false)}
           rewardPoints={familySettings.integral}
         />
       )}

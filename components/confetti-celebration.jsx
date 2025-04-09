@@ -5,7 +5,7 @@ import confetti from "canvas-confetti"
 import { motion, AnimatePresence } from "framer-motion"
 import { Star } from "lucide-react"
 
-export function ConfettiCelebration({ onComplete }) {
+export function ConfettiCelebration({ onComplete, rewardPoints }) {
   useEffect(() => {
     // 创建左侧彩带
     const leftConfetti = () => {
@@ -50,19 +50,19 @@ export function ConfettiCelebration({ onComplete }) {
     }
 
     // Try to play sound if available
-    try {
-      const audio = new Audio("/success.mp3")
-      audio.volume = 0.5
-      const playPromise = audio.play()
+    // try {
+    //   const audio = new Audio("/success.mp3")
+    //   audio.volume = 0.5
+    //   const playPromise = audio.play()
 
-      if (playPromise !== undefined) {
-        playPromise.catch((error) => {
-          console.log("Audio playback failed:", error)
-        })
-      }
-    } catch (error) {
-      console.log("Audio creation failed:", error)
-    }
+    //   if (playPromise !== undefined) {
+    //     playPromise.catch((error) => {
+    //       console.log("Audio playback failed:", error)
+    //     })
+    //   }
+    // } catch (error) {
+    //   console.log("Audio creation failed:", error)
+    // }
 
     // 运行动画
     runAnimation()
@@ -100,17 +100,17 @@ export function ConfettiCelebration({ onComplete }) {
               repeat: 2,
               ease: "easeInOut",
             }}
-            className="rounded-2xl bg-white p-5 sm:p-8 shadow-2xl"
+            className="p-5 bg-white shadow-2xl rounded-2xl sm:p-8"
           >
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                  className="absolute -inset-2 rounded-full bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 opacity-75 blur-md"
+                  className="absolute rounded-full opacity-75 -inset-2 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 blur-md"
                 />
-                <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-yellow-400 to-orange-400">
-                  <Star className="h-8 w-8 fill-white text-white" />
+                <div className="relative flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-yellow-400 to-orange-400">
+                  <Star className="w-8 h-8 text-white fill-white" />
                 </div>
               </div>
               <div className="text-center">
@@ -118,7 +118,7 @@ export function ConfettiCelebration({ onComplete }) {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="text-xl sm:text-2xl font-bold text-gray-800"
+                  className="text-xl font-bold text-gray-800 sm:text-2xl"
                 >
                   太棒了！完成所有任务
                 </motion.div>
@@ -126,11 +126,11 @@ export function ConfettiCelebration({ onComplete }) {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="mt-2 flex items-center justify-center gap-2 text-2xl sm:text-3xl font-bold text-yellow-500"
+                  className="flex items-center justify-center gap-2 mt-2 text-2xl font-bold text-yellow-500 sm:text-3xl"
                 >
-                  <Star className="h-6 w-6 fill-yellow-400 text-yellow-500" />
-                  <span>+50 积分</span>
-                  <Star className="h-6 w-6 fill-yellow-400 text-yellow-500" />
+                  <Star className="w-6 h-6 text-yellow-500 fill-yellow-400" />
+                  <span>+ {rewardPoints} 积分</span>
+                  <Star className="w-6 h-6 text-yellow-500 fill-yellow-400" />
                 </motion.div>
               </div>
             </div>
@@ -161,7 +161,7 @@ export function ConfettiCelebration({ onComplete }) {
             }}
             className="absolute left-1/2 top-1/2"
           >
-            <Star className="h-6 w-6 fill-yellow-400 text-yellow-500" />
+            <Star className="w-6 h-6 text-yellow-500 fill-yellow-400" />
           </motion.div>
         ))}
       </div>
