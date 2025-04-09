@@ -132,3 +132,14 @@ model subject {
   created_user_id Int?
   updated_user_id Int?
 }
+
+model login_attempt {
+  id              Int       @id @default(autoincrement())
+  username        String    @db.VarChar(50)
+  count           Int       @default(0)
+  timestamp       DateTime  @db.Timestamp(6)
+  created_at      DateTime? @db.Timestamp(6)
+  updated_at      DateTime? @db.Timestamp(6)
+
+  @@index([username])
+}
