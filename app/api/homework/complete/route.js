@@ -74,18 +74,18 @@ export const GET = withAuth(["parent"], async (request) => {
       };
     } else {
       // 如果没有提供日期，查询当天的作业
-      // const now = new Date();
-      // const year = now.getFullYear();
-      // const month = now.getMonth();
-      // const day = now.getDate();
+      const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" }));
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const day = now.getDate();
 
-      // const startDate = new Date(Date.UTC(year, month, day, 0, 0, 0));
-      // const endDate = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
+      const startDate = new Date(Date.UTC(year, month, day, 0, 0, 0));
+      const endDate = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
 
-      // where.homework_date = {
-      //   gte: startDate,
-      //   lte: endDate,
-      // };
+      where.homework_date = {
+        gte: startDate,
+        lte: endDate,
+      };
     }
 
     console.log("查询条件:", where);
