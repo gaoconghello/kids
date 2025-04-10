@@ -70,18 +70,20 @@ export const GET = withAuth(["parent"], async (request) => {
         lte: endDate,
       };
     } else {
-      // 如果没有提供日期，查询当天的作业
+      // 如果没有提供日期，查询从昨天到今天的作业
       const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" }));
       const year = now.getFullYear();
       const month = now.getMonth();
       const day = now.getDate();
 
-      const startDate = new Date(Date.UTC(year, month, day, 0, 0, 0));
-      const endDate = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
+      // 创建昨天的开始时间（00:00:00）
+      const yesterdayStart = new Date(Date.UTC(year, month, day - 1, 0, 0, 0));
+      // 创建今天的结束时间（23:59:59.999）
+      const todayEnd = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
 
       where.homework_date = {
-        gte: startDate,
-        lte: endDate,
+        gte: yesterdayStart,
+        lte: todayEnd,
       };
     }
 
