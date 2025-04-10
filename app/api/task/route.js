@@ -37,7 +37,7 @@ export const GET = withAuth(["parent", "child"], async (request) => {
       };
     } else {
       // 如果没有提供日期，查询当天的任务
-      const now = new Date();
+      const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" }));
       const year = now.getFullYear();
       const month = now.getMonth();
       const day = now.getDate();
