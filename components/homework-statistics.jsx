@@ -446,9 +446,9 @@ export function HomeworkStatistics({ selectedChild }) {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-green-600">总作业数量</p>
+                      <p className="text-sm font-medium text-green-600">总作业数量 / 完成量</p>
                       <h3 className="text-2xl font-bold text-green-700">
-                        {childHomework.length || 0}
+                        {childHomework.length || 0} / {childHomework.reduce((sum, item) => item.isComplete ? sum + 1 : sum, 0)}
                       </h3>
                     </div>
                     <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-full">

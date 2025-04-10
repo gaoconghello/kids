@@ -109,7 +109,7 @@ export const GET = withAuth(["parent"], async (request) => {
         : null,
       wrongAnswers: homework.incorrect || 0,
       estimatedDuration: homework.estimated_duration,
-      isComplete: homework.is_complete === 1 ? true : false,
+      isComplete: homework.is_complete === "1" ? true : false,
       pomodoro: homework.pomodoro,
     }));
 
