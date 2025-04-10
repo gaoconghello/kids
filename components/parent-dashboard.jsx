@@ -1860,12 +1860,11 @@ export default function ParentDashboard() {
                           作业统计分析
                         </h3>
                       </div>
-                      <HomeworkStatistics>
-                        {[
-                          { id: 1, name: "小明" },
-                          { id: 2, name: "小红" },
-                        ]}
-                      </HomeworkStatistics>
+                      {selectedChild && (
+                        <HomeworkStatistics
+                          selectedChild ={selectedChild}
+                        />
+                      )}
                     </div>
                   </div>
                 )}

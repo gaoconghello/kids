@@ -19,66 +19,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { get } from "@/lib/http"
 
 // 将数字转换为时间格式 (18 -> "18:00")
 const formatTimePoint = (hour, minute = 0) => {
   return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`
-}
-
-// 生成模拟数据
-const generateMockData = (days, childName) => {
-  const data = []
-  const today = new Date()
-
-  // 可能的完成时间点（从20:00到次日1:00，半小时间隔）
-  const possibleTimePoints = []
-  for (let hour = 20; hour <= 24; hour++) {
-    possibleTimePoints.push({ hour, minute: 0 })
-    possibleTimePoints.push({ hour, minute: 30 })
-  }
-  for (let hour = 0; hour <= 1; hour++) {
-    possibleTimePoints.push({ hour, minute: 0 })
-    possibleTimePoints.push({ hour, minute: 30 })
-  }
-
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date(today)
-    date.setDate(today.getDate() - i)
-
-    // 周末作业少一些
-    const isWeekend = date.getDay() === 0 || date.getDay() === 6
-
-    // 随机生成作业数量，周末少一些
-    const homeworkCount = isWeekend ? Math.floor(Math.random() * 2) + 1 : Math.floor(Math.random() * 4) + 2
-
-    // 随机生成错题数量，通常不超过作业数量
-    const wrongAnswersCount = Math.floor(Math.random() * (homeworkCount + 1))
-
-    // 随机选择一个完成时间点
-    const timePointIndex = Math.floor(Math.random() * possibleTimePoints.length)
-    const timePoint = possibleTimePoints[timePointIndex]
-
-    // 将时间点转换为数值表示（用于图表）
-    // 例如：18:00 -> 18, 18:30 -> 18.5, 0:00 -> 24, 1:00 -> 25
-    let timeValue = timePoint.hour + timePoint.minute / 60
-    if (timePoint.hour < 12) {
-      // 如果是次日凌晨
-      timeValue += 24
-    }
-
-    data.push({
-      date: date.toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" }),
-      homeworkCount,
-      wrongAnswersCount,
-      completionTime: formatTimePoint(timePoint.hour, timePoint.minute),
-      timeValue: timeValue, // 用于图表绘制
-      fullDate: date.toISOString().split("T")[0],
-      isWeekend,
-      dayOfWeek: date.getDay(), // 0是周日，1-6是周一到周六
-    })
-  }
-
-  return data
 }
 
 // 自定义Y轴刻度
@@ -93,108 +38,152 @@ const timeTickFormatter = (value) => {
   }
 }
 
-export function HomeworkStatistics({ children }) {
+export function HomeworkStatistics({ selectedChild }) {
   const [displayMode, setDisplayMode] = useState("both") // "count", "time", "wrong", "both"
-  const [timeRange, setTimeRange] = useState("30")
-  const [selectedChild, setSelectedChild] = useState("小明")
+  const [timeRange, setTimeRange] = useState("7")
   const [data, setData] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
   const [showDeepAnalysis, setShowDeepAnalysis] = useState(false)
 
-  // 模拟的作业数据
-  const [childHomework, setChildHomework] = useState([
-    {
-      id: 1,
-      subject: "语文",
-      tasks: [
-        { id: 1, title: "古诗背诵", completed: true, wrongAnswers: 2 },
-        { id: 2, title: "词语听写", completed: true, wrongAnswers: 1 },
-        { id: 3, title: "课文朗读", completed: false },
-      ],
-    },
-    {
-      id: 2,
-      subject: "数学",
-      tasks: [
-        { id: 4, title: "口算练习", completed: true, wrongAnswers: 3 },
-        { id: 5, title: "应用题", completed: true, wrongAnswers: 0 },
-        { id: 6, title: "几何图形", completed: false },
-      ],
-    },
-    {
-      id: 3,
-      subject: "英语",
-      tasks: [
-        { id: 7, title: "单词拼写", completed: true, wrongAnswers: 1 },
-        { id: 8, title: "课文背诵", completed: false },
-        { id: 9, title: "语法练习", completed: true, wrongAnswers: 2 },
-      ],
-    },
-  ])
-
-  // 模拟的历史记录数据
-  const [history, setHistory] = useState([
-    {
-      id: 1,
-      type: "earn",
-      title: "数学作业",
-      description: "完成了今天的数学作业",
-      amount: 10,
-      date: "2024-08-01",
-      wrongAnswers: 2,
-    },
-    {
-      id: 2,
-      type: "spend",
-      title: "购买文具",
-      description: "购买了一支笔和一本笔记本",
-      amount: -5,
-      date: "2024-08-02",
-    },
-    {
-      id: 3,
-      type: "earn",
-      title: "语文作业",
-      description: "完成了今天的语文作业",
-      amount: 12,
-      date: "2024-08-03",
-      wrongAnswers: 3,
-    },
-    {
-      id: 4,
-      type: "earn",
-      title: "英语作业",
-      description: "完成了今天的英语作业",
-      amount: 8,
-      date: "2024-08-04",
-      wrongAnswers: 1,
-    },
-    {
-      id: 5,
-      type: "spend",
-      title: "奖励",
-      description: "奖励",
-      amount: 15,
-      date: "2024-08-05",
-    },
-  ])
-
-  // 当时间范围或选中的孩子变化时，重新生成数据
+  // 从API获取的作业数据
+  const [childHomework, setChildHomework] = useState([])
+  
+  // 从API获取数据
   useEffect(() => {
-    setData(generateMockData(Number.parseInt(timeRange), selectedChild))
-    // 重置深度分析状态
-    setShowDeepAnalysis(false)
-  }, [timeRange, selectedChild])
+    const fetchHomeworkData = async () => {
+      // 确保selectedChild有效且有ID
+      console.log("selectedChild", selectedChild);
+      const childId = selectedChild?.id
+        
+      if (!childId) {
+        // 如果没有childId，清空数据但不显示错误
+        console.log("没有childId");
+        setChildHomework([])
+        setData([])
+        return
+      }
+      
+      setLoading(true)
+      setError(null)
+      
+      try {
+        const response = await get(`/api/homework/statistics?childId=${childId}&lastDays=${timeRange}`)
+        
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.message || '获取作业统计数据失败')
+        }
+        
+        const result = await response.json()
+        
+        if (result.code === 200 && result.data) {
+          setChildHomework(result.data)
+          processHomeworkData(result.data)
+        } else {
+          throw new Error(result.message || '获取作业统计数据失败')
+        }
+      } catch (err) {
+        console.error('获取作业统计数据错误:', err)
+        setError(err.message)
+        setData([])
+        setChildHomework([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchHomeworkData()
+  }, [selectedChild, timeRange])
+  
+  // 处理API返回的数据，生成图表所需数据结构
+  const processHomeworkData = (homeworkData) => {
+    if (!homeworkData || !homeworkData.length) {
+      setData([])
+      return
+    }
+    
+    // 按日期分组并处理数据
+    const processedData = []
+    const today = new Date()
+    const dataMap = new Map()
+    
+    // 初始化日期映射
+    for (let i = Number(timeRange) - 1; i >= 0; i--) {
+      const date = new Date(today)
+      date.setDate(today.getDate() - i)
+      const dateString = date.toISOString().split('T')[0]
+      
+      dataMap.set(dateString, {
+        date: date.toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" }),
+        homeworkCount: 0,
+        wrongAnswersCount: 0,
+        completionTime: "无数据",
+        timeValue: 0,
+        fullDate: dateString,
+        isWeekend: date.getDay() === 0 || date.getDay() === 6,
+        dayOfWeek: date.getDay(),
+        hasData: false
+      })
+    }
+    
+    // 处理每条作业记录
+    homeworkData.forEach(homework => {
+      const dateKey = new Date(homework.completionDate || homework.homeworkDate).toISOString().split('T')[0]
+      
+      if (dataMap.has(dateKey)) {
+        const entry = dataMap.get(dateKey)
+        entry.hasData = true
+        entry.homeworkCount++
+        
+        // 处理错题数量
+        if (homework.wrongAnswers) {
+          entry.wrongAnswersCount += homework.wrongAnswers
+        }
+        
+        // 处理完成时间
+        if (homework.completionTime) {
+          const [hours, minutes] = homework.completionTime.split(':').map(Number)
+          let timeValue = hours + minutes / 60
+          
+          // 处理次日凌晨时间
+          if (hours < 12) {
+            timeValue += 24
+          }
+          
+          // 如果是第一条数据或时间比现有值晚，则更新
+          if (!entry.timeValue || timeValue > entry.timeValue) {
+            entry.timeValue = timeValue
+            entry.completionTime = formatTimePoint(hours, minutes)
+          }
+        }
+        
+        dataMap.set(dateKey, entry)
+      }
+    })
+    
+    // 将Map转换为数组
+    dataMap.forEach(value => {
+      processedData.push(value)
+    })
+    
+    setData(processedData.sort((a, b) => new Date(a.fullDate) - new Date(b.fullDate)))
+  }
 
   // 计算平均值
   const avgHomeworkCount =
-    data.length > 0 ? (data.reduce((sum, item) => sum + item.homeworkCount, 0) / data.length).toFixed(1) : 0
+    data.length > 0 && data.some(item => item.hasData)
+      ? (data.reduce((sum, item) => sum + item.homeworkCount, 0) / data.filter(item => item.hasData).length).toFixed(1)
+      : 0
 
   // 计算平均完成时间点
   const calculateAvgTimePoint = () => {
-    if (data.length === 0) return "无数据"
+    const dataWithTime = data.filter(item => item.hasData && item.timeValue > 0)
+    
+    if (dataWithTime.length === 0) return "无数据"
 
-    const totalTimeValue = data.reduce((sum, item) => sum + item.timeValue, 0)
-    const avgTimeValue = totalTimeValue / data.length
+    const totalTimeValue = dataWithTime.reduce((sum, item) => sum + item.timeValue, 0)
+    const avgTimeValue = totalTimeValue / dataWithTime.length
 
     // 将平均值转回时间格式
     let hour = Math.floor(avgTimeValue)
@@ -213,20 +202,28 @@ export function HomeworkStatistics({ children }) {
 
   // 深度分析函数
   const performDeepAnalysis = () => {
-    if (data.length === 0) return null
+    const dataWithStats = data.filter(item => item.hasData)
+    if (dataWithStats.length === 0) return null
 
     // 1. 趋势分析
     // 将数据分为前半部分和后半部分，比较平均值变化
-    const halfIndex = Math.floor(data.length / 2)
-    const firstHalf = data.slice(0, halfIndex)
-    const secondHalf = data.slice(halfIndex)
+    const halfIndex = Math.floor(dataWithStats.length / 2)
+    const firstHalf = dataWithStats.slice(0, halfIndex)
+    const secondHalf = dataWithStats.slice(halfIndex)
 
     const firstHalfAvgCount = firstHalf.reduce((sum, item) => sum + item.homeworkCount, 0) / firstHalf.length
     const secondHalfAvgCount = secondHalf.reduce((sum, item) => sum + item.homeworkCount, 0) / secondHalf.length
     const countTrend = secondHalfAvgCount - firstHalfAvgCount
 
-    const firstHalfAvgTime = firstHalf.reduce((sum, item) => sum + item.timeValue, 0) / firstHalf.length
-    const secondHalfAvgTime = secondHalf.reduce((sum, item) => sum + item.timeValue, 0) / secondHalf.length
+    const firstHalfTimeData = firstHalf.filter(item => item.timeValue > 0)
+    const secondHalfTimeData = secondHalf.filter(item => item.timeValue > 0)
+    
+    const firstHalfAvgTime = firstHalfTimeData.length > 0
+      ? firstHalfTimeData.reduce((sum, item) => sum + item.timeValue, 0) / firstHalfTimeData.length
+      : 0
+    const secondHalfAvgTime = secondHalfTimeData.length > 0
+      ? secondHalfTimeData.reduce((sum, item) => sum + item.timeValue, 0) / secondHalfTimeData.length
+      : 0
     const timeTrend = secondHalfAvgTime - firstHalfAvgTime
 
     const firstHalfAvgWrong = firstHalf.reduce((sum, item) => sum + item.wrongAnswersCount, 0) / firstHalf.length
@@ -234,18 +231,21 @@ export function HomeworkStatistics({ children }) {
     const wrongTrend = secondHalfAvgWrong - firstHalfAvgWrong
 
     // 2. 周期性分析
-    const weekdayData = data.filter((item) => !item.isWeekend)
-    const weekendData = data.filter((item) => item.isWeekend)
+    const weekdayData = dataWithStats.filter((item) => !item.isWeekend)
+    const weekendData = dataWithStats.filter((item) => item.isWeekend)
 
     const weekdayAvgCount =
       weekdayData.length > 0 ? weekdayData.reduce((sum, item) => sum + item.homeworkCount, 0) / weekdayData.length : 0
     const weekendAvgCount =
       weekendData.length > 0 ? weekendData.reduce((sum, item) => sum + item.homeworkCount, 0) / weekendData.length : 0
 
+    const weekdayTimeData = weekdayData.filter(item => item.timeValue > 0)
+    const weekendTimeData = weekendData.filter(item => item.timeValue > 0)
+    
     const weekdayAvgTime =
-      weekdayData.length > 0 ? weekdayData.reduce((sum, item) => sum + item.timeValue, 0) / weekdayData.length : 0
+      weekdayTimeData.length > 0 ? weekdayTimeData.reduce((sum, item) => sum + item.timeValue, 0) / weekdayTimeData.length : 0
     const weekendAvgTime =
-      weekendData.length > 0 ? weekendData.reduce((sum, item) => sum + item.timeValue, 0) / weekendData.length : 0
+      weekendTimeData.length > 0 ? weekendTimeData.reduce((sum, item) => sum + item.timeValue, 0) / weekendTimeData.length : 0
 
     const weekdayAvgWrong =
       weekdayData.length > 0
@@ -258,27 +258,33 @@ export function HomeworkStatistics({ children }) {
 
     // 3. 相关性分析
     // 计算作业数量和完成时间的相关性
+    const timeCorrelationData = dataWithStats.filter(item => item.timeValue > 0)
     const correlation = calculateCorrelation(
-      data.map((item) => item.homeworkCount),
-      data.map((item) => item.timeValue),
+      timeCorrelationData.map((item) => item.homeworkCount),
+      timeCorrelationData.map((item) => item.timeValue),
     )
 
     const wrongCorrelation = calculateCorrelation(
-      data.map((item) => item.homeworkCount),
-      data.map((item) => item.wrongAnswersCount),
+      dataWithStats.map((item) => item.homeworkCount),
+      dataWithStats.map((item) => item.wrongAnswersCount),
     )
 
     // 4. 异常值检测
     // 找出完成时间特别晚的日期（超过平均值+1.5小时）
-    const avgTimeValue = data.reduce((sum, item) => sum + item.timeValue, 0) / data.length
-    const lateNights = data
+    const timeData = dataWithStats.filter(item => item.timeValue > 0)
+    const avgTimeValue = timeData.length > 0 
+      ? timeData.reduce((sum, item) => sum + item.timeValue, 0) / timeData.length
+      : 0
+    const lateNights = timeData
       .filter((item) => item.timeValue > avgTimeValue + 1.5)
       .map((item) => item.date)
       .slice(0, 3) // 最多显示3个
 
     // 5. 按星期分析
     const dayOfWeekData = [0, 1, 2, 3, 4, 5, 6].map((day) => {
-      const dayData = data.filter((item) => item.dayOfWeek === day)
+      const dayData = dataWithStats.filter((item) => item.dayOfWeek === day)
+      const dayTimeData = dayData.filter(item => item.timeValue > 0)
+      
       return {
         day: ["周日", "周一", "周二", "周三", "周四", "周五", "周六"][day],
         avgCount:
@@ -286,8 +292,8 @@ export function HomeworkStatistics({ children }) {
             ? (dayData.reduce((sum, item) => sum + item.homeworkCount, 0) / dayData.length).toFixed(1)
             : "0",
         avgTime:
-          dayData.length > 0
-            ? formatTimeValueToString(dayData.reduce((sum, item) => sum + item.timeValue, 0) / dayData.length)
+          dayTimeData.length > 0
+            ? formatTimeValueToString(dayTimeData.reduce((sum, item) => sum + item.timeValue, 0) / dayTimeData.length)
             : "无数据",
       }
     })
@@ -375,258 +381,269 @@ export function HomeworkStatistics({ children }) {
             </div>
           </div>
         </div>
-        <CardDescription>查看{selectedChild}的作业完成情况统计</CardDescription>
+        <CardDescription>查看{typeof selectedChild === 'object' ? (selectedChild?.name || selectedChild?.label || '孩子') : '孩子'}的作业完成情况统计</CardDescription>
       </CardHeader>
 
       <CardContent className="p-6">
-        <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-4">
-          <Card className="border-blue-100 bg-blue-50">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-blue-600">平均每日作业数量</p>
-                  <h3 className="text-2xl font-bold text-blue-700">{avgHomeworkCount}</h3>
-                </div>
-                <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-full">
-                  <BarChart3 className="w-5 h-5 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-purple-100 bg-purple-50">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-purple-600">平均完成时间</p>
-                  <h3 className="text-2xl font-bold text-purple-700">{avgTimePoint}</h3>
-                </div>
-                <div className="flex items-center justify-center w-10 h-10 bg-purple-100 rounded-full">
-                  <Clock className="w-5 h-5 text-purple-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-green-100 bg-green-50">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-green-600">总作业数量</p>
-                  <h3 className="text-2xl font-bold text-green-700">
-                    {data.reduce((sum, item) => sum + item.homeworkCount, 0)}
-                  </h3>
-                </div>
-                <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-full">
-                  <BarChart3 className="w-5 h-5 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-amber-50 border-amber-100">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-amber-600">总错题数量</p>
-                  <h3 className="text-2xl font-bold text-amber-700">
-                    {data.reduce((sum, item) => sum + item.wrongAnswersCount, 0)}
-                  </h3>
-                </div>
-                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-100">
-                  <AlertCircle className="w-5 h-5 text-amber-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-2">
-          <Card className="border-indigo-100 bg-indigo-50">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-indigo-600">最近7天作业数量</p>
-                  <h3 className="text-2xl font-bold text-indigo-700">
-                    {data.slice(0, Math.min(7, data.length)).reduce((sum, item) => sum + item.homeworkCount, 0)}
-                  </h3>
-                </div>
-                <div className="flex items-center justify-center w-10 h-10 bg-indigo-100 rounded-full">
-                  <Calendar className="w-5 h-5 text-indigo-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-rose-50 border-rose-100">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-rose-600">最近7天错题数量</p>
-                  <h3 className="text-2xl font-bold text-rose-700">
-                    {data.slice(0, Math.min(7, data.length)).reduce((sum, item) => sum + item.wrongAnswersCount, 0)}
-                  </h3>
-                </div>
-                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-rose-100">
-                  <AlertCircle className="w-5 h-5 text-rose-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* 显示模式选择 */}
-        <div className="p-4 mb-4 border border-gray-200 rounded-lg bg-gray-50">
-          <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-              <Label className="font-medium text-gray-700">显示数据：</Label>
-              <RadioGroup value={displayMode} onValueChange={setDisplayMode} className="flex flex-wrap gap-4">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="count" id="count" />
-                  <Label htmlFor="count" className="text-blue-600 cursor-pointer">
-                    仅作业数量
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="time" id="time" />
-                  <Label htmlFor="time" className="text-green-600 cursor-pointer">
-                    仅完成时间
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="wrong" id="wrong" />
-                  <Label htmlFor="wrong" className="cursor-pointer text-rose-600">
-                    仅错题数量
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="both" id="both" />
-                  <Label htmlFor="both" className="text-purple-600 cursor-pointer">
-                    同时显示全部
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-            <Button
-              onClick={() => setShowDeepAnalysis(!showDeepAnalysis)}
-              className="text-white bg-gradient-to-r from-indigo-500 to-purple-600"
-            >
-              <TrendingUp className="w-4 h-4 mr-2" />
-              {showDeepAnalysis ? "隐藏深度分析" : "深度分析"}
-            </Button>
+        {/* 如果没有选择孩子，显示提示 */}
+        {!selectedChild?.id && (
+          <div className="flex flex-col items-center justify-center h-40">
+            <User className="w-12 h-12 mb-4 text-gray-300" />
+            <p className="text-gray-500">请选择一个孩子查看作业统计</p>
           </div>
-        </div>
+        )}
 
-        <div className="h-[400px]">
-          {data.length > 0 && (
-            <div className="w-full h-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={data}
-                  margin={{
-                    top: 20,
-                    right: 30,
-                    left: 20,
-                    bottom: 50,
-                  }}
+        {/* 加载状态 */}
+        {selectedChild?.id && loading && (
+          <div className="flex items-center justify-center h-20 mb-6">
+            <div className="w-8 h-8 border-4 rounded-full animate-spin border-primary border-t-transparent"></div>
+            <span className="ml-3 font-medium text-primary">加载中...</span>
+          </div>
+        )}
+
+        {/* 错误提示 */}
+        {selectedChild?.id && error && (
+          <div className="p-4 mb-6 text-red-700 border border-red-200 rounded-lg bg-red-50">
+            <div className="flex items-center">
+              <AlertCircle className="w-5 h-5 mr-2" />
+              <span>获取数据失败: {error}</span>
+            </div>
+          </div>
+        )}
+
+        {/* 数据展示 */}
+        {selectedChild?.id && !loading && !error && (
+          <>
+            <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-4">
+              <Card className="border-blue-100 bg-blue-50">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-blue-600">平均每日作业数量</p>
+                      <h3 className="text-2xl font-bold text-blue-700">{avgHomeworkCount}</h3>
+                    </div>
+                    <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-full">
+                      <BarChart3 className="w-5 h-5 text-blue-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-purple-100 bg-purple-50">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-purple-600">平均完成时间</p>
+                      <h3 className="text-2xl font-bold text-purple-700">{avgTimePoint}</h3>
+                    </div>
+                    <div className="flex items-center justify-center w-10 h-10 bg-purple-100 rounded-full">
+                      <Clock className="w-5 h-5 text-purple-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-green-100 bg-green-50">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-green-600">总作业数量</p>
+                      <h3 className="text-2xl font-bold text-green-700">
+                        {data.reduce((sum, item) => sum + item.homeworkCount, 0)}
+                      </h3>
+                    </div>
+                    <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-full">
+                      <BarChart3 className="w-5 h-5 text-green-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-amber-50 border-amber-100">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-amber-600">总错题数量</p>
+                      <h3 className="text-2xl font-bold text-amber-700">
+                        {data.reduce((sum, item) => sum + item.wrongAnswersCount, 0)}
+                      </h3>
+                    </div>
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-100">
+                      <AlertCircle className="w-5 h-5 text-amber-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* 显示模式选择 */}
+            <div className="p-4 mb-4 border border-gray-200 rounded-lg bg-gray-50">
+              <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+                <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+                  <Label className="font-medium text-gray-700">显示数据：</Label>
+                  <RadioGroup value={displayMode} onValueChange={setDisplayMode} className="flex flex-wrap gap-4">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="count" id="count" />
+                      <Label htmlFor="count" className="text-blue-600 cursor-pointer">
+                        仅作业数量
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="time" id="time" />
+                      <Label htmlFor="time" className="text-green-600 cursor-pointer">
+                        仅完成时间
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="wrong" id="wrong" />
+                      <Label htmlFor="wrong" className="cursor-pointer text-rose-600">
+                        仅错题数量
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="both" id="both" />
+                      <Label htmlFor="both" className="text-purple-600 cursor-pointer">
+                        同时显示全部
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+                <Button
+                  onClick={() => setShowDeepAnalysis(!showDeepAnalysis)}
+                  className="text-white bg-gradient-to-r from-indigo-500 to-purple-600"
+                  disabled={data.filter(item => item.hasData).length === 0}
                 >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" angle={-45} textAnchor="end" height={60} tick={{ fontSize: 12 }} />
-
-                  {/* 只有在显示作业数量、错题数量或同时显示全部时才显示左侧Y轴 */}
-                  {(displayMode === "count" || displayMode === "wrong" || displayMode === "both") && (
-                    <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
-                  )}
-
-                  {/* 只有在显示完成时间或同时显示两者时才显示右侧Y轴 */}
-                  {(displayMode === "time" || displayMode === "both") && (
-                    <YAxis
-                      yAxisId="right"
-                      orientation="right"
-                      stroke="#82ca9d"
-                      domain={[18, 27]} // 从18:00到次日3:00
-                      ticks={[18, 19, 20, 21, 22, 23, 24, 25, 26, 27]} // 固定刻度
-                      tickFormatter={timeTickFormatter}
-                    />
-                  )}
-
-                  <Tooltip
-                    formatter={(value, name, props) => {
-                      if (name === "timeValue") {
-                        const item = data.find((d) => d.timeValue === value)
-                        return [item ? item.completionTime : value, "完成时间"]
-                      }
-                      return [
-                        value,
-                        name === "homeworkCount" ? "作业数量" : name === "wrongAnswersCount" ? "错题数量" : name,
-                      ]
-                    }}
-                    labelFormatter={(label) => `日期: ${label}`}
-                  />
-                  <Legend />
-
-                  {/* 只有在显示作业数量或同时显示两者时才显示作业数量线 */}
-                  {(displayMode === "count" || displayMode === "both") && (
-                    <Line
-                      yAxisId="left"
-                      type="monotone"
-                      dataKey="homeworkCount"
-                      name="作业数量"
-                      stroke="#8884d8"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  )}
-
-                  {/* 添加错题数量线 */}
-                  {(displayMode === "wrong" || displayMode === "both") && (
-                    <Line
-                      yAxisId="left"
-                      type="monotone"
-                      dataKey="wrongAnswersCount"
-                      name="错题数量"
-                      stroke="#ff6b6b"
-                      strokeWidth={2}
-                      dot={false}
-                      strokeDasharray="5 5"
-                    />
-                  )}
-
-                  {/* 只有在显示完成时间或同时显示两者时才显示完成时间线 */}
-                  {(displayMode === "time" || displayMode === "both") && (
-                    <Line
-                      yAxisId="right"
-                      type="monotone"
-                      dataKey="timeValue"
-                      name="完成时间"
-                      stroke="#82ca9d"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  )}
-                </LineChart>
-              </ResponsiveContainer>
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  {showDeepAnalysis ? "隐藏深度分析" : "深度分析"}
+                </Button>
+              </div>
             </div>
-          )}
-        </div>
 
-        <div className="p-4 mt-6 border border-blue-100 rounded-lg bg-blue-50">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="font-medium text-blue-700">统计分析</h4>
-          </div>
-          <p className="text-sm text-blue-600">
-            在过去的{timeRange}天里，{selectedChild}平均每天完成{avgHomeworkCount}个作业，平均错题数量为
-            {(data.reduce((sum, item) => sum + item.wrongAnswersCount, 0) / data.length).toFixed(1)}个， 平均完成时间为
-            {avgTimePoint}。最近7天共完成
-            {data.slice(0, Math.min(7, data.length)).reduce((sum, item) => sum + item.homeworkCount, 0)}个作业，
-            出现错题{data.slice(0, Math.min(7, data.length)).reduce((sum, item) => sum + item.wrongAnswersCount, 0)}个。
-            {avgHomeworkCount > 3 ? "作业量较大，请注意合理安排时间。" : "作业量适中，继续保持。"}
-            {avgTimePoint.includes("次日") ? "完成作业时间较晚，建议提前开始作业。" : "作业完成时间合理，很好！"}
-          </p>
-        </div>
+            {/* 图表部分 */}
+            <div className="h-[400px]">
+              {data.length > 0 ? (
+                <div className="w-full h-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={data}
+                      margin={{
+                        top: 20,
+                        right: 30,
+                        left: 20,
+                        bottom: 50,
+                      }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" angle={-45} textAnchor="end" height={60} tick={{ fontSize: 12 }} />
 
-        {/* 深度分析部分 */}
-        {showDeepAnalysis && deepAnalysis && (
+                      {/* 只有在显示作业数量、错题数量或同时显示全部时才显示左侧Y轴 */}
+                      {(displayMode === "count" || displayMode === "wrong" || displayMode === "both") && (
+                        <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
+                      )}
+
+                      {/* 只有在显示完成时间或同时显示两者时才显示右侧Y轴 */}
+                      {(displayMode === "time" || displayMode === "both") && (
+                        <YAxis
+                          yAxisId="right"
+                          orientation="right"
+                          stroke="#82ca9d"
+                          domain={[18, 27]} // 从18:00到次日3:00
+                          ticks={[18, 19, 20, 21, 22, 23, 24, 25, 26, 27]} // 固定刻度
+                          tickFormatter={timeTickFormatter}
+                        />
+                      )}
+
+                      <Tooltip
+                        formatter={(value, name, props) => {
+                          if (name === "timeValue") {
+                            const item = data.find((d) => d.timeValue === value)
+                            return [item ? item.completionTime : value, "完成时间"]
+                          }
+                          return [
+                            value,
+                            name === "homeworkCount" ? "作业数量" : name === "wrongAnswersCount" ? "错题数量" : name,
+                          ]
+                        }}
+                        labelFormatter={(label) => `日期: ${label}`}
+                      />
+                      <Legend />
+
+                      {/* 只有在显示作业数量或同时显示两者时才显示作业数量线 */}
+                      {(displayMode === "count" || displayMode === "both") && (
+                        <Line
+                          yAxisId="left"
+                          type="monotone"
+                          dataKey="homeworkCount"
+                          name="作业数量"
+                          stroke="#8884d8"
+                          strokeWidth={2}
+                          dot={false}
+                        />
+                      )}
+
+                      {/* 添加错题数量线 */}
+                      {(displayMode === "wrong" || displayMode === "both") && (
+                        <Line
+                          yAxisId="left"
+                          type="monotone"
+                          dataKey="wrongAnswersCount"
+                          name="错题数量"
+                          stroke="#ff6b6b"
+                          strokeWidth={2}
+                          dot={false}
+                          strokeDasharray="5 5"
+                        />
+                      )}
+
+                      {/* 只有在显示完成时间或同时显示两者时才显示完成时间线 */}
+                      {(displayMode === "time" || displayMode === "both") && (
+                        <Line
+                          yAxisId="right"
+                          type="monotone"
+                          dataKey="timeValue"
+                          name="完成时间"
+                          stroke="#82ca9d"
+                          strokeWidth={2}
+                          dot={false}
+                        />
+                      )}
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-full border border-gray-200 rounded-lg bg-gray-50">
+                  <p className="text-gray-500">暂无数据</p>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 mt-6 border border-blue-100 rounded-lg bg-blue-50">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium text-blue-700">统计分析</h4>
+              </div>
+              {data.filter(item => item.hasData).length > 0 ? (
+                <p className="text-sm text-blue-600">
+                  在过去的{timeRange}天里，
+                  {typeof selectedChild === 'object' 
+                    ? (selectedChild?.name || selectedChild?.label || '孩子') 
+                    : '孩子'}
+                  平均每天完成{avgHomeworkCount}个作业，平均错题数量为
+                  {(data.reduce((sum, item) => sum + item.wrongAnswersCount, 0) / Math.max(1, data.filter(item => item.hasData).length)).toFixed(1)}个， 平均完成时间为
+                  {avgTimePoint}。最近7天共完成
+                  {data.slice(Math.max(0, data.length - 7), data.length).reduce((sum, item) => sum + item.homeworkCount, 0)}个作业，
+                  出现错题{data.slice(Math.max(0, data.length - 7), data.length).reduce((sum, item) => sum + item.wrongAnswersCount, 0)}个。
+                  {Number(avgHomeworkCount) > 3 ? "作业量较大，请注意合理安排时间。" : "作业量适中，继续保持。"}
+                  {avgTimePoint.includes("次日") ? "完成作业时间较晚，建议提前开始作业。" : "作业完成时间合理，很好！"}
+                </p>
+              ) : (
+                <p className="text-sm text-blue-600">暂无足够数据进行分析，请继续收集数据。</p>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* 深度分析部分 - 仅在有数据且不在加载状态时显示 */}
+        {!loading && !error && showDeepAnalysis && deepAnalysis && (
           <div className="p-4 mt-6 border border-indigo-100 rounded-lg bg-indigo-50">
             <h4 className="flex items-center mb-4 text-lg font-semibold text-indigo-700">
               <TrendingUp className="w-5 h-5 mr-2" />
@@ -861,24 +878,57 @@ export function HomeworkStatistics({ children }) {
                 <div className="p-4 bg-white border border-indigo-100 rounded-lg">
                   <h4 className="mb-3 font-medium text-indigo-700">科目错题分布</h4>
                   <div className="grid grid-cols-3 gap-3">
-                    {childHomework.map((subject) => {
-                      const totalWrong = subject.tasks.reduce(
-                        (sum, task) => sum + (task.completed ? task.wrongAnswers || 0 : 0),
-                        0,
-                      )
-                      const totalTasks = subject.tasks.length
-                      const wrongRate = totalTasks > 0 ? totalWrong / totalTasks : 0
-
-                      return (
-                        <div key={subject.id} className="p-3 border border-indigo-100 rounded-lg">
-                          <div className="text-center">
-                            <div className="mb-1 font-medium text-indigo-700">{subject.subject}</div>
-                            <div className="text-sm text-indigo-600">错题: {totalWrong}个</div>
-                            <div className="text-sm text-indigo-600">错题率: {Math.round(wrongRate * 100)}%</div>
+                    {/* 根据API数据计算各科目错题统计 */}
+                    {(() => {
+                      // 按科目分组数据
+                      const subjectMap = new Map()
+                      
+                      childHomework.forEach(homework => {
+                        const subject = homework.subject || { id: 0, name: "未分类" }
+                        
+                        if (!subjectMap.has(subject.id)) {
+                          subjectMap.set(subject.id, {
+                            id: subject.id,
+                            name: subject.name || "未分类",
+                            totalTasks: 0,
+                            wrongAnswers: 0
+                          })
+                        }
+                        
+                        const subjectData = subjectMap.get(subject.id)
+                        subjectData.totalTasks++
+                        if (homework.wrongAnswers) {
+                          subjectData.wrongAnswers += homework.wrongAnswers
+                        }
+                        
+                        subjectMap.set(subject.id, subjectData)
+                      })
+                      
+                      // 转换为数组并渲染
+                      const subjects = Array.from(subjectMap.values())
+                      
+                      if (subjects.length === 0) {
+                        return (
+                          <div className="col-span-3 py-4 text-center text-gray-500">
+                            暂无科目数据
                           </div>
-                        </div>
-                      )
-                    })}
+                        )
+                      }
+                      
+                      return subjects.map(subject => {
+                        const wrongRate = subject.totalTasks > 0 ? subject.wrongAnswers / subject.totalTasks : 0
+                        
+                        return (
+                          <div key={subject.id} className="p-3 border border-indigo-100 rounded-lg">
+                            <div className="text-center">
+                              <div className="mb-1 font-medium text-indigo-700">{subject.name}</div>
+                              <div className="text-sm text-indigo-600">错题: {subject.wrongAnswers}个</div>
+                              <div className="text-sm text-indigo-600">错题率: {Math.round(wrongRate * 100)}%</div>
+                            </div>
+                          </div>
+                        )
+                      })
+                    })()}
                   </div>
                 </div>
 
@@ -886,32 +936,64 @@ export function HomeworkStatistics({ children }) {
                 <div className="p-4 bg-white border border-indigo-100 rounded-lg">
                   <h4 className="mb-3 font-medium text-indigo-700">错题趋势分析</h4>
                   <div className="space-y-2">
-                    {history
-                      .filter((item) => item.type === "earn" && item.wrongAnswers !== undefined)
-                      .slice(0, 5)
-                      .map((item, index) => (
-                        <div key={index} className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                            <span className="text-sm">{item.title}</span>
+                    {/* 查找最近有错题的作业 */}
+                    {(() => {
+                      try {
+                        // 按日期排序并筛选有错题的作业
+                        const recentHomeworkWithWrongs = [...childHomework]
+                          .filter(homework => homework.wrongAnswers && homework.wrongAnswers > 0)
+                          .sort((a, b) => {
+                            const dateA = new Date(a.date || a.completionDate || 0)
+                            const dateB = new Date(b.date || b.completionDate || 0)
+                            return dateB - dateA
+                          })
+                          .slice(0, 5) // 最多显示5条
+                        
+                        if (recentHomeworkWithWrongs.length === 0) {
+                          return (
+                            <div className="py-3 text-center text-gray-500">
+                              暂无错题数据
+                            </div>
+                          )
+                        }
+                        
+                        return recentHomeworkWithWrongs.map((homework, index) => {
+                          const title = homework.title || 
+                                      (homework.subject && homework.subject.name ? homework.subject.name + "作业" : "未命名作业")
+                          
+                          return (
+                            <div key={index} className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                                <span className="text-sm">{title}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-indigo-600">错题: {homework.wrongAnswers}</span>
+                                <Badge
+                                  variant="outline"
+                                  className={`${
+                                    homework.wrongAnswers > 3
+                                      ? "bg-red-50 text-red-600"
+                                      : homework.wrongAnswers > 1
+                                        ? "bg-amber-50 text-amber-600"
+                                        : "bg-green-50 text-green-600"
+                                  }`}
+                                >
+                                  {homework.wrongAnswers > 3 ? "需要关注" : homework.wrongAnswers > 1 ? "一般" : "良好"}
+                                </Badge>
+                              </div>
+                            </div>
+                          )
+                        })
+                      } catch (err) {
+                        console.error("渲染错题趋势时出错:", err)
+                        return (
+                          <div className="py-3 text-center text-gray-500">
+                            数据处理异常，请稍后再试
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-indigo-600">错题: {item.wrongAnswers}</span>
-                            <Badge
-                              variant="outline"
-                              className={`${
-                                item.wrongAnswers > 3
-                                  ? "bg-red-50 text-red-600"
-                                  : item.wrongAnswers > 1
-                                    ? "bg-amber-50 text-amber-600"
-                                    : "bg-green-50 text-green-600"
-                              }`}
-                            >
-                              {item.wrongAnswers > 3 ? "需要关注" : item.wrongAnswers > 1 ? "一般" : "良好"}
-                            </Badge>
-                          </div>
-                        </div>
-                      ))}
+                        )
+                      }
+                    })()}
                   </div>
                 </div>
 
