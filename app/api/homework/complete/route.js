@@ -359,19 +359,17 @@ export const PUT = withAuth(["parent"], async (request) => {
         // 2. 更新孩子的积分账户
         let addedIntegral = existingHomework.integral;
         
-        // 3. 获取当天的时间范围（上海时区）
-        const today = new Date(
-          new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
-        );
-        const year = today.getFullYear();
-        const month = today.getMonth();
-        const day = today.getDate();
+        // 3. 获取作业所属日期的时间范围（而不是当前日期）
+        const homeworkDate = new Date(existingHomework.homework_date);
+        const year = homeworkDate.getFullYear();
+        const month = homeworkDate.getMonth();
+        const day = homeworkDate.getDate();
         
         const startDate = new Date(Date.UTC(year, month, day, 0, 0, 0));
         const endDate = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
         
-        // 4. 检查当天所有作业是否都已完成并审核通过
-        // 直接获取所有当天作业（包括刚刚更新的）
+        // 4. 检查作业所属日期的所有作业是否都已完成并审核通过
+        // 直接获取作业所属日期的所有作业（包括刚刚更新的）
         const todaysHomeworks = await tx.homework.findMany({
           where: {
             child_id: existingHomework.child_id,
@@ -443,21 +441,36 @@ export const PUT = withAuth(["parent"], async (request) => {
               
               // 如果所有作业都在deadline前完成，添加额外积分
               if (allCompletedBeforeDeadline && family.integral > 0) {
-                // 将family.integral添加到总积分中
-                addedIntegral += family.integral;
-                
-                // 创建额外的积分历史记录
-                await tx.integral_history.create({
-                  data: {
-                    integral_id: 0, // 非特定作业
-                    integral_type: INTEGRAL_TYPE.FAMILY,
+                // 检查是否已经发放过该日期的"完成所有作业"奖励
+                const existingIntegralHistory = await tx.integral_history.findFirst({
+                  where: {
                     child_id: existingHomework.child_id,
-                    family_id: child.family_id,
-                    integral: family.integral,
-                    integral_date: now,
-                    name: "完成所有今日作业",
-                  },
+                    integral_type: INTEGRAL_TYPE.FAMILY,
+                    integral_date: {
+                      gte: startDate,
+                      lte: endDate,
+                    }
+                  }
                 });
+                
+                // 只有在没有发放过奖励的情况下才发放
+                if (!existingIntegralHistory) {
+                  // 将family.integral添加到总积分中
+                  addedIntegral += family.integral;
+                  
+                  // 创建额外的积分历史记录
+                  await tx.integral_history.create({
+                    data: {
+                      integral_id: 0, // 非特定作业
+                      integral_type: INTEGRAL_TYPE.FAMILY,
+                      child_id: existingHomework.child_id,
+                      family_id: child.family_id,
+                      integral: family.integral,
+                      integral_date: now,
+                      name: "完成所有今日作业",
+                    },
+                  });
+                }
               }
             }
           }
