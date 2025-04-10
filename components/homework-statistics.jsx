@@ -129,7 +129,7 @@ export function HomeworkStatistics({ selectedChild }) {
     
     // 处理每条作业记录
     homeworkData.forEach(homework => {
-      const dateKey = new Date(homework.completionDate || homework.homeworkDate).toISOString().split('T')[0]
+      const dateKey = new Date(homework.homeworkDate).toISOString().split('T')[0]
       
       if (dataMap.has(dateKey)) {
         const entry = dataMap.get(dateKey)
@@ -172,8 +172,7 @@ export function HomeworkStatistics({ selectedChild }) {
 
   // 计算平均值
   const avgHomeworkCount =
-    data.length > 0 && data.some(item => item.hasData)
-      ? (data.reduce((sum, item) => sum + item.homeworkCount, 0) / data.filter(item => item.hasData).length).toFixed(1)
+    childHomework.length > 0 ? (childHomework.length / Number(timeRange)).toFixed(2)
       : 0
 
   // 计算平均完成时间点
@@ -449,7 +448,7 @@ export function HomeworkStatistics({ selectedChild }) {
                     <div>
                       <p className="text-sm font-medium text-green-600">总作业数量</p>
                       <h3 className="text-2xl font-bold text-green-700">
-                        {data.reduce((sum, item) => sum + item.homeworkCount, 0)}
+                        {childHomework.length || 0}
                       </h3>
                     </div>
                     <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-full">
@@ -465,7 +464,7 @@ export function HomeworkStatistics({ selectedChild }) {
                     <div>
                       <p className="text-sm font-medium text-amber-600">总错题数量</p>
                       <h3 className="text-2xl font-bold text-amber-700">
-                        {data.reduce((sum, item) => sum + item.wrongAnswersCount, 0)}
+                        {childHomework.reduce((sum, item) => sum + item.wrongAnswers, 0)}
                       </h3>
                     </div>
                     <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-100">
@@ -508,14 +507,14 @@ export function HomeworkStatistics({ selectedChild }) {
                     </div>
                   </RadioGroup>
                 </div>
-                <Button
+                {/* <Button
                   onClick={() => setShowDeepAnalysis(!showDeepAnalysis)}
                   className="text-white bg-gradient-to-r from-indigo-500 to-purple-600"
                   disabled={data.filter(item => item.hasData).length === 0}
                 >
                   <TrendingUp className="w-4 h-4 mr-2" />
                   {showDeepAnalysis ? "隐藏深度分析" : "深度分析"}
-                </Button>
+                </Button> */}
               </div>
             </div>
 
