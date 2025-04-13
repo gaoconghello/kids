@@ -143,3 +143,13 @@ model login_attempt {
 
   @@index([username])
 }
+
+model analysis_cache {
+  id         Int       @id @default(autoincrement())
+  child_id   Int
+  date       DateTime  @db.Date
+  last_days  Int
+  content    String    @db.Text
+  created_at DateTime? @db.Timestamp(6)
+  updated_at DateTime? @db.Timestamp(6)
+}
