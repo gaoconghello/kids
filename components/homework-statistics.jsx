@@ -652,9 +652,6 @@ export function HomeworkStatistics({ selectedChild }) {
             </div>
 
             <div className="p-4 mt-6 border border-blue-100 rounded-lg bg-blue-50">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-medium text-blue-700">统计分析</h4>
-              </div>
               {analysisLoading ? (
                 <div className="flex items-center justify-center py-6">
                   <div className="w-6 h-6 border-2 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
@@ -665,30 +662,36 @@ export function HomeworkStatistics({ selectedChild }) {
                   {/* 科目分析 */}
                   <div className="space-y-2">
                     <h5 className="font-medium text-blue-700">科目分析</h5>
-                    <div className="space-y-3">
+                    <ul className="pl-1 space-y-2">
                       {analysisData.subjectAnalysis.map((subject, index) => (
-                        <div key={index} className="p-3 bg-white border border-blue-100 rounded-lg">
-                          <h6 className="font-medium text-blue-700">{subject.subject}</h6>
-                          <p className="mt-2 text-sm text-gray-600">{subject.comment}</p>
-                        </div>
+                        <li key={index} className="flex items-start gap-2">
+                          <div className="w-2 h-2 mt-1.5 bg-blue-500 rounded-full flex-shrink-0"></div>
+                          <div>
+                            <h6 className="font-medium text-blue-700">{subject.subject}</h6>
+                            <p className="text-sm text-blue-600">{subject.comment}</p>
+                          </div>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   </div>
                   
                   {/* 时间和效率分析 */}
                   <div className="space-y-2">
                     <h5 className="font-medium text-blue-700">时间和效率</h5>
-                    <div className="p-3 bg-white border border-blue-100 rounded-lg">
-                      <p className="text-sm text-gray-600">{analysisData.timeAndEfficiency.comment}</p>
-                    </div>
+                    <p className="pl-3 text-sm text-blue-600">{analysisData.timeAndEfficiency.comment}</p>
                   </div>
                   
                   {/* 建议 */}
                   <div className="space-y-2">
                     <h5 className="font-medium text-blue-700">学习建议</h5>
-                    <div className="p-3 bg-white border border-blue-100 rounded-lg">
-                      <p className="text-sm text-gray-600">{analysisData.suggestions.join(" ")}</p>
-                    </div>
+                    <ul className="pl-1 space-y-2">
+                      {analysisData.suggestions.map((suggestion, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <div className="w-2 h-2 mt-1.5 bg-blue-500 rounded-full flex-shrink-0"></div>
+                          <span className="text-sm text-blue-600">{suggestion}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 </div>
               ) : (
