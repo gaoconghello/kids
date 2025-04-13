@@ -4,6 +4,8 @@ import { withAuth } from "@/lib/auth";
 import { formatDateTime } from "@/lib/utils";
 import invokeLlm from "@/lib/llm_openrouter";
 
+export const maxDuration = 60;
+
 // 获取作业列表
 export const GET = withAuth(["parent"], async (request) => {
   try {
