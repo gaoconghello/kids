@@ -61,7 +61,6 @@ export const GET = withAuth(["parent"], async (request) => {
 
     where.child_id = parseInt(childId);
 
-
     // 查询从当前天到lastDays天前的作业
     const now = new Date(
       new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
@@ -70,7 +69,9 @@ export const GET = withAuth(["parent"], async (request) => {
     const month = now.getMonth();
     const day = now.getDate();
 
-    const startDate = new Date(Date.UTC(year, month, day - parseInt(lastDays), 0, 0, 0));
+    const startDate = new Date(
+      Date.UTC(year, month, day - parseInt(lastDays), 0, 0, 0)
+    );
     const endDate = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
 
     where.homework_date = {
@@ -97,12 +98,12 @@ export const GET = withAuth(["parent"], async (request) => {
       title: homework.name,
       subject: {
         id: homework.subject_id,
-        name: homework.subject?.name
+        name: homework.subject?.name,
       },
       homeworkDate: homework.homework_date
         ? formatDateTime(homework.homework_date, "YYYY-MM-DD")
         : null,
-      completionDate: homework.complete_time 
+      completionDate: homework.complete_time
         ? formatDateTime(homework.complete_time, "YYYY-MM-DD")
         : null,
       completionTime: homework.complete_time
@@ -113,10 +114,10 @@ export const GET = withAuth(["parent"], async (request) => {
       isComplete: homework.is_complete === "1" ? true : false,
       pomodoro: homework.pomodoro,
     }));
-    
+
     // 按照作业日期分组数据
     const homeworkByDate = {};
-    formattedHomeworks.forEach(item => {
+    formattedHomeworks.forEach((item) => {
       const date = item.homeworkDate;
       if (!homeworkByDate[date]) {
         homeworkByDate[date] = [];
@@ -128,13 +129,13 @@ export const GET = withAuth(["parent"], async (request) => {
     const sortedDates = Object.keys(homeworkByDate).sort().reverse();
 
     // 输出格式化文本
-    let formattedHomeworkReport = '';
-    sortedDates.forEach(date => {
+    let formattedHomeworkReport = "";
+    sortedDates.forEach((date) => {
       formattedHomeworkReport += `${date} 作业情况：\n`;
-      
-      homeworkByDate[date].forEach(item => {
+
+      homeworkByDate[date].forEach((item) => {
         let line = `- ${item.subject.name}作业《${item.title}》，预计时长${item.estimatedDuration}分钟，`;
-        
+
         if (item.isComplete) {
           line += `完成于${item.completionDate} ${item.completionTime}，错误${item.wrongAnswers}题，已完成`;
           if (item.pomodoro && item.pomodoro > 0) {
@@ -143,12 +144,12 @@ export const GET = withAuth(["parent"], async (request) => {
         } else {
           line += `未完成`;
         }
-        
-        line += '。\n';
+
+        line += "。\n";
         formattedHomeworkReport += line;
       });
-      
-      formattedHomeworkReport += '\n';
+
+      formattedHomeworkReport += "\n";
     });
 
     // 构建LLM提示词
@@ -186,19 +187,36 @@ export const GET = withAuth(["parent"], async (request) => {
 ${formattedHomeworkReport}
 `;
 
+    console.log("LLM提示词:", prompt);
+
     // 调用LLM获取分析结果
     const analysisResult = await invokeLlm({
       content: prompt,
-      systemPrompt: '你是一个教育分析助手，请根据以下格式化的作业数据，对小学生的作业情况进行智能分析。',
-      modelName: 'google/gemini-2.5-pro-exp-03-25:free',
+      systemPrompt:
+        "你是一个教育分析助手，请根据以下格式化的作业数据，对小学生的作业情况进行智能分析。",
+      modelName: "google/gemini-2.5-pro-exp-03-25:free",
       stream: false,
-      temperature: 0.1
+      temperature: 0.1,
     });
+
+    console.log("LLM返回的结果:", analysisResult);
 
     // 解析LLM返回的JSON结果
     let analysisJson;
     try {
-      analysisJson = JSON.parse(analysisResult);
+      // 移除可能存在的Markdown代码块标记
+      let cleanResult = analysisResult;
+      if (cleanResult.startsWith("```json")) {
+        cleanResult = cleanResult
+          .replace(/^```json\n/, "")
+          .replace(/\n```$/, "");
+      } else if (cleanResult.startsWith("```")) {
+        cleanResult = cleanResult.replace(/^```\n/, "").replace(/\n```$/, "");
+      }
+
+      console.log("LLM返回的JSON结果:", cleanResult);
+
+      analysisJson = JSON.parse(cleanResult);
     } catch (error) {
       console.error("解析LLM返回的JSON失败:", error);
       // 如果解析失败，返回原始结果
@@ -209,8 +227,7 @@ ${formattedHomeworkReport}
       code: 200,
       message: "获取作业分析成功",
       data: {
-        homeworks: formattedHomeworks,
-        analysis: analysisJson
+        analysis: analysisJson,
       },
     });
   } catch (error) {

@@ -48,6 +48,10 @@ export function HomeworkStatistics({ selectedChild }) {
 
   // 从API获取的作业数据
   const [childHomework, setChildHomework] = useState([])
+  // 新增: 存储分析数据
+  const [analysisData, setAnalysisData] = useState(null)
+  // 新增: 分析数据加载状态
+  const [analysisLoading, setAnalysisLoading] = useState(false)
   
   // 从API获取数据
   useEffect(() => {
@@ -61,6 +65,7 @@ export function HomeworkStatistics({ selectedChild }) {
         console.log("没有childId");
         setChildHomework([])
         setData([])
+        setAnalysisData(null)
         return
       }
       
@@ -68,6 +73,7 @@ export function HomeworkStatistics({ selectedChild }) {
       setError(null)
       
       try {
+        // 调用基础统计API
         const response = await get(`/api/homework/statistics?childId=${childId}&lastDays=${timeRange}`)
         
         if (!response.ok) {
@@ -80,6 +86,10 @@ export function HomeworkStatistics({ selectedChild }) {
         if (result.code === 200 && result.data) {
           setChildHomework(result.data)
           processHomeworkData(result.data)
+          setLoading(false) // 先停止加载状态，让基础统计数据展示出来
+          
+          // 异步获取分析数据，不阻塞基础统计数据的显示
+          fetchAnalysisData(childId);
         } else {
           throw new Error(result.message || '获取作业统计数据失败')
         }
@@ -88,8 +98,33 @@ export function HomeworkStatistics({ selectedChild }) {
         setError(err.message)
         setData([])
         setChildHomework([])
-      } finally {
+        setAnalysisData(null)
         setLoading(false)
+      }
+    }
+    
+    // 单独的函数用于获取分析数据
+    const fetchAnalysisData = async (childId) => {
+      try {
+        // 设置分析数据加载状态为true
+        setAnalysisLoading(true)
+        
+        // 调用分析API
+        const analysisResponse = await get(`/api/homework/statistics/analysis?childId=${childId}&lastDays=${timeRange}`)
+        
+        if (!analysisResponse.ok) {
+          console.warn("获取作业分析数据失败，但基础统计正常")
+        } else {
+          const analysisResult = await analysisResponse.json()
+          if (analysisResult.code === 200 && analysisResult.data && analysisResult.data.analysis) {
+            setAnalysisData(analysisResult.data.analysis)
+          }
+        }
+      } catch (error) {
+        console.warn("获取分析数据时出错:", error)
+      } finally {
+        // 无论成功失败，都设置加载状态为false
+        setAnalysisLoading(false)
       }
     }
     
@@ -620,468 +655,442 @@ export function HomeworkStatistics({ selectedChild }) {
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-medium text-blue-700">统计分析</h4>
               </div>
-              {data.filter(item => item.hasData).length > 0 ? (
-                <p className="text-sm text-blue-600">
-                  在过去的{timeRange}天里，
-                  {typeof selectedChild === 'object' 
-                    ? (selectedChild?.name || selectedChild?.label || '孩子') 
-                    : '孩子'}
-                  平均每天完成{avgHomeworkCount}个作业，平均错题数量为
-                  {(data.reduce((sum, item) => sum + item.wrongAnswersCount, 0) / Math.max(1, data.filter(item => item.hasData).length)).toFixed(1)}个， 平均完成时间为
-                  {avgTimePoint}。最近7天共完成
-                  {data.slice(Math.max(0, data.length - 7), data.length).reduce((sum, item) => sum + item.homeworkCount, 0)}个作业，
-                  出现错题{data.slice(Math.max(0, data.length - 7), data.length).reduce((sum, item) => sum + item.wrongAnswersCount, 0)}个。
-                  {Number(avgHomeworkCount) > 3 ? "作业量较大，请注意合理安排时间。" : "作业量适中，继续保持。"}
-                  {avgTimePoint.includes("次日") ? "完成作业时间较晚，建议提前开始作业。" : "作业完成时间合理，很好！"}
-                </p>
+              {analysisLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <div className="w-6 h-6 border-2 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
+                  <span className="ml-3 text-blue-600">分析数据生成中...</span>
+                </div>
+              ) : analysisData ? (
+                <div className="space-y-4">
+                  {/* 科目分析 */}
+                  <div className="space-y-2">
+                    <h5 className="font-medium text-blue-700">科目分析</h5>
+                    <div className="space-y-3">
+                      {analysisData.subjectAnalysis.map((subject, index) => (
+                        <div key={index} className="p-3 bg-white border border-blue-100 rounded-lg">
+                          <h6 className="font-medium text-blue-700">{subject.subject}</h6>
+                          <p className="mt-2 text-sm text-gray-600">{subject.comment}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* 时间和效率分析 */}
+                  <div className="space-y-2">
+                    <h5 className="font-medium text-blue-700">时间和效率</h5>
+                    <div className="p-3 bg-white border border-blue-100 rounded-lg">
+                      <p className="text-sm text-gray-600">{analysisData.timeAndEfficiency.comment}</p>
+                    </div>
+                  </div>
+                  
+                  {/* 建议 */}
+                  <div className="space-y-2">
+                    <h5 className="font-medium text-blue-700">学习建议</h5>
+                    <div className="p-3 bg-white border border-blue-100 rounded-lg">
+                      <p className="text-sm text-gray-600">{analysisData.suggestions.join(" ")}</p>
+                    </div>
+                  </div>
+                </div>
               ) : (
-                <p className="text-sm text-blue-600">暂无足够数据进行分析，请继续收集数据。</p>
+                <p className="text-sm text-blue-600">暂无分析数据，请稍后重试。</p>
               )}
             </div>
-          </>
-        )}
 
-        {/* 深度分析部分 - 仅在有数据且不在加载状态时显示 */}
-        {!loading && !error && showDeepAnalysis && deepAnalysis && (
-          <div className="p-4 mt-6 border border-indigo-100 rounded-lg bg-indigo-50">
-            <h4 className="flex items-center mb-4 text-lg font-semibold text-indigo-700">
-              <TrendingUp className="w-5 h-5 mr-2" />
-              深度分析结果
-            </h4>
+            {/* 深度分析部分 - 仅在有数据且不在加载状态时显示 */}
+            {!loading && !error && showDeepAnalysis && deepAnalysis && (
+              <div className="p-4 mt-6 border border-indigo-100 rounded-lg bg-indigo-50">
+                <h4 className="flex items-center mb-4 text-lg font-semibold text-indigo-700">
+                  <TrendingUp className="w-5 h-5 mr-2" />
+                  深度分析结果
+                </h4>
 
-            {/* 趋势分析 */}
-            <div className="mb-6">
-              <h5 className="mb-2 font-medium text-indigo-600">趋势分析</h5>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="p-3 bg-white border border-indigo-100 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-700">作业数量趋势：</span>
-                    <div className="flex items-center">
-                      {deepAnalysis.countTrend > 0.2 ? (
-                        <Badge className="flex items-center text-red-700 bg-red-100">
-                          <ChevronUp className="w-3 h-3 mr-1" />
-                          增加 {deepAnalysis.countTrend.toFixed(1)}
-                        </Badge>
-                      ) : deepAnalysis.countTrend < -0.2 ? (
-                        <Badge className="flex items-center text-green-700 bg-green-100">
-                          <ChevronDown className="w-3 h-3 mr-1" />
-                          减少 {Math.abs(deepAnalysis.countTrend).toFixed(1)}
-                        </Badge>
-                      ) : (
-                        <Badge className="text-gray-700 bg-gray-100">保持稳定</Badge>
-                      )}
+                {/* 趋势分析 */}
+                <div className="mb-6">
+                  <h5 className="mb-2 font-medium text-indigo-600">趋势分析</h5>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="p-3 bg-white border border-indigo-100 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700">作业数量趋势：</span>
+                        <div className="flex items-center">
+                          {deepAnalysis.countTrend > 0.2 ? (
+                            <Badge className="flex items-center text-red-700 bg-red-100">
+                              <ChevronUp className="w-3 h-3 mr-1" />
+                              增加 {deepAnalysis.countTrend.toFixed(1)}
+                            </Badge>
+                          ) : deepAnalysis.countTrend < -0.2 ? (
+                            <Badge className="flex items-center text-green-700 bg-green-100">
+                              <ChevronDown className="w-3 h-3 mr-1" />
+                              减少 {Math.abs(deepAnalysis.countTrend).toFixed(1)}
+                            </Badge>
+                          ) : (
+                            <Badge className="text-gray-700 bg-gray-100">保持稳定</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-white border border-indigo-100 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700">完成时间趋势：</span>
+                        <div className="flex items-center">
+                          {deepAnalysis.timeTrend > 0.5 ? (
+                            <Badge className="flex items-center text-red-700 bg-red-100">
+                              <ChevronUp className="w-3 h-3 mr-1" />
+                              变晚 {(deepAnalysis.timeTrend * 60).toFixed(0)}分钟
+                            </Badge>
+                          ) : deepAnalysis.timeTrend < -0.5 ? (
+                            <Badge className="flex items-center text-green-700 bg-green-100">
+                              <ChevronDown className="w-3 h-3 mr-1" />
+                              变早 {Math.abs(deepAnalysis.timeTrend * 60).toFixed(0)}分钟
+                            </Badge>
+                          ) : (
+                            <Badge className="text-gray-700 bg-gray-100">保持稳定</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-white border border-indigo-100 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700">错题数量趋势：</span>
+                        <div className="flex items-center">
+                          {deepAnalysis.wrongTrend > 0.2 ? (
+                            <Badge className="flex items-center text-red-700 bg-red-100">
+                              <ChevronUp className="w-3 h-3 mr-1" />
+                              增加 {deepAnalysis.wrongTrend.toFixed(1)}
+                            </Badge>
+                          ) : deepAnalysis.wrongTrend < -0.2 ? (
+                            <Badge className="flex items-center text-green-700 bg-green-100">
+                              <ChevronDown className="w-3 h-3 mr-1" />
+                              减少 {Math.abs(deepAnalysis.wrongTrend).toFixed(1)}
+                            </Badge>
+                          ) : (
+                            <Badge className="text-gray-700 bg-gray-100">保持稳定</Badge>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-3 bg-white border border-indigo-100 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-700">完成时间趋势：</span>
-                    <div className="flex items-center">
-                      {deepAnalysis.timeTrend > 0.5 ? (
-                        <Badge className="flex items-center text-red-700 bg-red-100">
-                          <ChevronUp className="w-3 h-3 mr-1" />
-                          变晚 {(deepAnalysis.timeTrend * 60).toFixed(0)}分钟
-                        </Badge>
-                      ) : deepAnalysis.timeTrend < -0.5 ? (
-                        <Badge className="flex items-center text-green-700 bg-green-100">
-                          <ChevronDown className="w-3 h-3 mr-1" />
-                          变早 {Math.abs(deepAnalysis.timeTrend * 60).toFixed(0)}分钟
-                        </Badge>
-                      ) : (
-                        <Badge className="text-gray-700 bg-gray-100">保持稳定</Badge>
-                      )}
+                {/* 周期性分析 */}
+                <div className="mb-6">
+                  <h5 className="mb-2 font-medium text-indigo-600">工作日与周末对比</h5>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="p-3 bg-white border border-indigo-100 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-gray-700">工作日平均作业：</span>
+                        <span className="font-medium">{deepAnalysis.weekdayAvgCount.toFixed(1)}个</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700">周末平均作业：</span>
+                        <span className="font-medium">{deepAnalysis.weekendAvgCount.toFixed(1)}个</span>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-white border border-indigo-100 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-gray-700">工作日平均完成时间：</span>
+                        <span className="font-medium">{formatTimeValueToString(deepAnalysis.weekdayAvgTime)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700">周末平均完成时间：</span>
+                        <span className="font-medium">{formatTimeValueToString(deepAnalysis.weekendAvgTime)}</span>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-white border border-indigo-100 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-gray-700">工作日平均错题：</span>
+                        <span className="font-medium">{deepAnalysis.weekdayAvgWrong.toFixed(1)}个</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700">周末平均错题：</span>
+                        <span className="font-medium">{deepAnalysis.weekendAvgWrong.toFixed(1)}个</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="p-3 bg-white border border-indigo-100 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-700">错题数量趋势：</span>
-                    <div className="flex items-center">
-                      {deepAnalysis.wrongTrend > 0.2 ? (
-                        <Badge className="flex items-center text-red-700 bg-red-100">
-                          <ChevronUp className="w-3 h-3 mr-1" />
-                          增加 {deepAnalysis.wrongTrend.toFixed(1)}
-                        </Badge>
-                      ) : deepAnalysis.wrongTrend < -0.2 ? (
-                        <Badge className="flex items-center text-green-700 bg-green-100">
-                          <ChevronDown className="w-3 h-3 mr-1" />
-                          减少 {Math.abs(deepAnalysis.wrongTrend).toFixed(1)}
-                        </Badge>
-                      ) : (
-                        <Badge className="text-gray-700 bg-gray-100">保持稳定</Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* 周期性分析 */}
-            <div className="mb-6">
-              <h5 className="mb-2 font-medium text-indigo-600">工作日与周末对比</h5>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="p-3 bg-white border border-indigo-100 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-gray-700">工作日平均作业：</span>
-                    <span className="font-medium">{deepAnalysis.weekdayAvgCount.toFixed(1)}个</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-700">周末平均作业：</span>
-                    <span className="font-medium">{deepAnalysis.weekendAvgCount.toFixed(1)}个</span>
-                  </div>
-                </div>
-
-                <div className="p-3 bg-white border border-indigo-100 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-gray-700">工作日平均完成时间：</span>
-                    <span className="font-medium">{formatTimeValueToString(deepAnalysis.weekdayAvgTime)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-700">周末平均完成时间：</span>
-                    <span className="font-medium">{formatTimeValueToString(deepAnalysis.weekendAvgTime)}</span>
-                  </div>
-                </div>
-                <div className="p-3 bg-white border border-indigo-100 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-gray-700">工作日平均错题：</span>
-                    <span className="font-medium">{deepAnalysis.weekdayAvgWrong.toFixed(1)}个</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-700">周末平均错题：</span>
-                    <span className="font-medium">{deepAnalysis.weekendAvgWrong.toFixed(1)}个</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 按星期分析 */}
-            <div className="mb-6">
-              <h5 className="mb-2 font-medium text-indigo-600">按星期分析</h5>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {deepAnalysis.dayOfWeekData.map((day) => (
-                  <div key={day.day} className="p-3 bg-white border border-indigo-100 rounded-lg">
-                    <div className="text-center">
-                      <div className="mb-1 font-medium text-indigo-700">{day.day}</div>
-                      <div className="text-sm text-gray-600">作业: {day.avgCount}个</div>
-                      <div className="text-sm text-gray-600">时间: {day.avgTime}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 相关性分析 */}
-            <div className="mb-6">
-              <h5 className="mb-2 font-medium text-indigo-600">相关性分析</h5>
-              <div className="p-3 bg-white border border-indigo-100 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-700">作业数量与完成时间的相关性：</span>
-                  <div className="flex items-center">
-                    {deepAnalysis.correlation > 0.3 ? (
-                      <Badge className="bg-amber-100 text-amber-700">
-                        强正相关 ({deepAnalysis.correlation.toFixed(2)})
-                      </Badge>
-                    ) : deepAnalysis.correlation < -0.3 ? (
-                      <Badge className="text-green-700 bg-green-100">
-                        强负相关 ({deepAnalysis.correlation.toFixed(2)})
-                      </Badge>
-                    ) : deepAnalysis.correlation > 0.1 ? (
-                      <Badge className="bg-amber-50 text-amber-600">
-                        弱正相关 ({deepAnalysis.correlation.toFixed(2)})
-                      </Badge>
-                    ) : deepAnalysis.correlation < -0.1 ? (
-                      <Badge className="text-green-600 bg-green-50">
-                        弱负相关 ({deepAnalysis.correlation.toFixed(2)})
-                      </Badge>
-                    ) : (
-                      <Badge className="text-gray-700 bg-gray-100">
-                        无明显相关 ({deepAnalysis.correlation.toFixed(2)})
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <p className="mt-2 text-sm text-gray-600">
-                  {deepAnalysis.correlation > 0.3
-                    ? "作业数量越多，完成时间越晚，建议合理分配作业时间。"
-                    : deepAnalysis.correlation < -0.3
-                      ? "作业数量越多，完成时间反而越早，说明时间安排很合理。"
-                      : "作业数量与完成时间没有明显关系。"}
-                </p>
-              </div>
-              <div className="p-3 mt-2 bg-white border border-indigo-100 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-700">作业数量与错题数量的相关性：</span>
-                  <div className="flex items-center">
-                    {deepAnalysis.wrongCorrelation > 0.3 ? (
-                      <Badge className="bg-amber-100 text-amber-700">
-                        强正相关 ({deepAnalysis.wrongCorrelation.toFixed(2)})
-                      </Badge>
-                    ) : deepAnalysis.wrongCorrelation < -0.3 ? (
-                      <Badge className="text-green-700 bg-green-100">
-                        强负相关 ({deepAnalysis.wrongCorrelation.toFixed(2)})
-                      </Badge>
-                    ) : deepAnalysis.wrongCorrelation > 0.1 ? (
-                      <Badge className="bg-amber-50 text-amber-600">
-                        弱正相关 ({deepAnalysis.wrongCorrelation.toFixed(2)})
-                      </Badge>
-                    ) : deepAnalysis.wrongCorrelation < -0.1 ? (
-                      <Badge className="text-green-600 bg-green-50">
-                        弱负相关 ({deepAnalysis.wrongCorrelation.toFixed(2)})
-                      </Badge>
-                    ) : (
-                      <Badge className="text-gray-700 bg-gray-100">
-                        无明显相关 ({deepAnalysis.wrongCorrelation.toFixed(2)})
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <p className="mt-2 text-sm text-gray-600">
-                  {deepAnalysis.wrongCorrelation > 0.3
-                    ? "作业数量越多，错题数量越多，可能需要更多的复习和巩固。"
-                    : deepAnalysis.wrongCorrelation < -0.3
-                      ? "作业数量越多，错题数量反而越少，说明学习效果很好。"
-                      : "作业数量与错题数量没有明显关系。"}
-                </p>
-              </div>
-            </div>
-
-            {/* 异常值检测 */}
-            {deepAnalysis.lateNights.length > 0 && (
-              <div className="mb-6">
-                <h5 className="mb-2 font-medium text-indigo-600">异常值检测</h5>
-                <div className="p-3 bg-white border border-indigo-100 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle className="w-5 h-5 text-amber-500" />
-                    <span className="text-gray-700">发现完成时间异常晚的日期：</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {deepAnalysis.lateNights.map((date, index) => (
-                      <Badge key={index} className="bg-amber-100 text-amber-700">
-                        {date}
-                      </Badge>
+                {/* 按星期分析 */}
+                <div className="mb-6">
+                  <h5 className="mb-2 font-medium text-indigo-600">按星期分析</h5>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {deepAnalysis.dayOfWeekData.map((day) => (
+                      <div key={day.day} className="p-3 bg-white border border-indigo-100 rounded-lg">
+                        <div className="text-center">
+                          <div className="mb-1 font-medium text-indigo-700">{day.day}</div>
+                          <div className="text-sm text-gray-600">作业: {day.avgCount}个</div>
+                          <div className="text-sm text-gray-600">时间: {day.avgTime}</div>
+                        </div>
+                      </div>
                     ))}
                   </div>
-                  <p className="mt-2 text-sm text-amber-600">
-                    这些日期的作业完成时间明显晚于平均水平，建议关注孩子的作息情况。
-                  </p>
+                </div>
+
+                {/* 相关性分析 */}
+                <div className="mb-6">
+                  <h5 className="mb-2 font-medium text-indigo-600">相关性分析</h5>
+                  <div className="p-3 bg-white border border-indigo-100 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-700">作业数量与完成时间的相关性：</span>
+                      <div className="flex items-center">
+                        {deepAnalysis.correlation > 0.3 ? (
+                          <Badge className="bg-amber-100 text-amber-700">
+                            强正相关 ({deepAnalysis.correlation.toFixed(2)})
+                          </Badge>
+                        ) : deepAnalysis.correlation < -0.3 ? (
+                          <Badge className="text-green-700 bg-green-100">
+                            强负相关 ({deepAnalysis.correlation.toFixed(2)})
+                          </Badge>
+                        ) : deepAnalysis.correlation > 0.1 ? (
+                          <Badge className="bg-amber-50 text-amber-600">
+                            弱正相关 ({deepAnalysis.correlation.toFixed(2)})
+                          </Badge>
+                        ) : deepAnalysis.correlation < -0.1 ? (
+                          <Badge className="text-green-600 bg-green-50">
+                            弱负相关 ({deepAnalysis.correlation.toFixed(2)})
+                          </Badge>
+                        ) : (
+                          <Badge className="text-gray-700 bg-gray-100">
+                            无明显相关 ({deepAnalysis.correlation.toFixed(2)})
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <p className="mt-2 text-sm text-gray-600">
+                      {deepAnalysis.correlation > 0.3
+                        ? "作业数量越多，完成时间越晚，建议合理分配作业时间。"
+                        : deepAnalysis.correlation < -0.3
+                          ? "作业数量越多，完成时间反而越早，说明时间安排很合理。"
+                          : "作业数量与完成时间没有明显关系。"}
+                    </p>
+                  </div>
+                  <div className="p-3 mt-2 bg-white border border-indigo-100 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-700">作业数量与错题数量的相关性：</span>
+                      <div className="flex items-center">
+                        {deepAnalysis.wrongCorrelation > 0.3 ? (
+                          <Badge className="bg-amber-100 text-amber-700">
+                            强正相关 ({deepAnalysis.wrongCorrelation.toFixed(2)})
+                          </Badge>
+                        ) : deepAnalysis.wrongCorrelation < -0.3 ? (
+                          <Badge className="text-green-700 bg-green-100">
+                            强负相关 ({deepAnalysis.wrongCorrelation.toFixed(2)})
+                          </Badge>
+                        ) : deepAnalysis.wrongCorrelation > 0.1 ? (
+                          <Badge className="bg-amber-50 text-amber-600">
+                            弱正相关 ({deepAnalysis.wrongCorrelation.toFixed(2)})
+                          </Badge>
+                        ) : deepAnalysis.wrongCorrelation < -0.1 ? (
+                          <Badge className="text-green-600 bg-green-50">
+                            弱负相关 ({deepAnalysis.wrongCorrelation.toFixed(2)})
+                          </Badge>
+                        ) : (
+                          <Badge className="text-gray-700 bg-gray-100">
+                            无明显相关 ({deepAnalysis.wrongCorrelation.toFixed(2)})
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <p className="mt-2 text-sm text-gray-600">
+                      {deepAnalysis.wrongCorrelation > 0.3
+                        ? "作业数量越多，错题数量越多，可能需要更多的复习和巩固。"
+                        : deepAnalysis.wrongCorrelation < -0.3
+                          ? "作业数量越多，错题数量反而越少，说明学习效果很好。"
+                          : "作业数量与错题数量没有明显关系。"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 异常值检测 */}
+                {deepAnalysis.lateNights.length > 0 && (
+                  <div className="mb-6">
+                    <h5 className="mb-2 font-medium text-indigo-600">异常值检测</h5>
+                    <div className="p-3 bg-white border border-indigo-100 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className="w-5 h-5 text-amber-500" />
+                        <span className="text-gray-700">发现完成时间异常晚的日期：</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {deepAnalysis.lateNights.map((date, index) => (
+                          <Badge key={index} className="bg-amber-100 text-amber-700">
+                            {date}
+                          </Badge>
+                        ))}
+                      </div>
+                      <p className="mt-2 text-sm text-amber-600">
+                        这些日期的作业完成时间明显晚于平均水平，建议关注孩子的作息情况。
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* 错题分析部分 */}
+                <div className="mb-6">
+                  <h5 className="mb-2 font-medium text-indigo-600">错题分析</h5>
+                  <div className="space-y-4">
+                    {/* 科目错题分布 */}
+                    <div className="p-4 bg-white border border-indigo-100 rounded-lg">
+                      <h4 className="mb-3 font-medium text-indigo-700">科目错题分布</h4>
+                      <div className="grid grid-cols-3 gap-3">
+                        {/* 根据API数据计算各科目错题统计 */}
+                        {(() => {
+                          // 按科目分组数据
+                          const subjectMap = new Map()
+                          
+                          childHomework.forEach(homework => {
+                            const subject = homework.subject || { id: 0, name: "未分类" }
+                            
+                            if (!subjectMap.has(subject.id)) {
+                              subjectMap.set(subject.id, {
+                                id: subject.id,
+                                name: subject.name || "未分类",
+                                totalTasks: 0,
+                                wrongAnswers: 0
+                              })
+                            }
+                            
+                            const subjectData = subjectMap.get(subject.id)
+                            subjectData.totalTasks++
+                            if (homework.wrongAnswers) {
+                              subjectData.wrongAnswers += homework.wrongAnswers
+                            }
+                            
+                            subjectMap.set(subject.id, subjectData)
+                          })
+                          
+                          // 转换为数组并渲染
+                          const subjects = Array.from(subjectMap.values())
+                          
+                          if (subjects.length === 0) {
+                            return (
+                              <div className="col-span-3 py-4 text-center text-gray-500">
+                                暂无科目数据
+                              </div>
+                            )
+                          }
+                          
+                          return subjects.map(subject => {
+                            const wrongRate = subject.totalTasks > 0 ? subject.wrongAnswers / subject.totalTasks : 0
+                            
+                            return (
+                              <div key={subject.id} className="p-3 border border-indigo-100 rounded-lg">
+                                <div className="text-center">
+                                  <div className="mb-1 font-medium text-indigo-700">{subject.name}</div>
+                                  <div className="text-sm text-indigo-600">错题: {subject.wrongAnswers}个</div>
+                                  <div className="text-sm text-indigo-600">错题率: {Math.round(wrongRate * 100)}%</div>
+                                </div>
+                              </div>
+                            )
+                          })
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* 错题趋势 */}
+                    <div className="p-4 bg-white border border-indigo-100 rounded-lg">
+                      <h4 className="mb-3 font-medium text-indigo-700">错题趋势分析</h4>
+                      <div className="space-y-2">
+                        {/* 查找最近有错题的作业 */}
+                        {(() => {
+                          try {
+                            // 按日期排序并筛选有错题的作业
+                            const recentHomeworkWithWrongs = [...childHomework]
+                              .filter(homework => homework.wrongAnswers && homework.wrongAnswers > 0)
+                              .sort((a, b) => {
+                                const dateA = new Date(a.date || a.completionDate || 0)
+                                const dateB = new Date(b.date || b.completionDate || 0)
+                                return dateB - dateA
+                              })
+                              .slice(0, 5) // 最多显示5条
+                            
+                            if (recentHomeworkWithWrongs.length === 0) {
+                              return (
+                                <div className="py-3 text-center text-gray-500">
+                                  暂无错题数据
+                                </div>
+                              )
+                            }
+                            
+                            return recentHomeworkWithWrongs.map((homework, index) => {
+                              const title = homework.title || 
+                                          (homework.subject && homework.subject.name ? homework.subject.name + "作业" : "未命名作业")
+                              
+                              return (
+                                <div key={index} className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                                    <span className="text-sm">{title}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm text-indigo-600">错题: {homework.wrongAnswers}</span>
+                                    <Badge
+                                      variant="outline"
+                                      className={`${
+                                        homework.wrongAnswers > 3
+                                          ? "bg-red-50 text-red-600"
+                                          : homework.wrongAnswers > 1
+                                            ? "bg-amber-50 text-amber-600"
+                                            : "bg-green-50 text-green-600"
+                                      }`}
+                                    >
+                                      {homework.wrongAnswers > 3 ? "需要关注" : homework.wrongAnswers > 1 ? "一般" : "良好"}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              )
+                            })
+                          } catch (err) {
+                            console.error("渲染错题趋势时出错:", err)
+                            return (
+                              <div className="py-3 text-center text-gray-500">
+                                数据处理异常，请稍后再试
+                              </div>
+                            )
+                          }
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* 学习建议 */}
+                    <div className="p-4 bg-white border border-indigo-100 rounded-lg">
+                      <h4 className="mb-3 font-medium text-indigo-700">错题学习建议</h4>
+                      <ul className="space-y-2 text-sm text-indigo-700">
+                        <li className="flex items-start gap-2">
+                          <div className="w-2 h-2 mt-1 bg-indigo-500 rounded-full"></div>
+                          <span>定期检查错题本，帮助孩子复习薄弱知识点</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <div className="w-2 h-2 mt-1 bg-indigo-500 rounded-full"></div>
+                          <span>分析错题类型，针对性地提供辅导</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <div className="w-2 h-2 mt-1 bg-indigo-500 rounded-full"></div>
+                          <span>鼓励孩子总结错题规律，提高解题能力</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <div className="w-2 h-2 mt-1 bg-indigo-500 rounded-full"></div>
+                          <span>对于高频错题，可以设计专项练习进行巩固</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 建议 */}
+                <div>
+                  <h5 className="mb-2 font-medium text-indigo-600">综合建议</h5>
+                  <div className="p-3 bg-white border border-indigo-100 rounded-lg">
+                    <ul className="space-y-2 text-sm text-gray-700">
+                      <li className="flex items-start gap-2">
+                        <div className="w-2 h-2 mt-1 rounded-full bg-amber-500"></div>
+                        <span>建议每天固定时间开始做作业，养成良好习惯。</span>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             )}
-
-            {/* 错题分析部分 */}
-            <div className="mb-6">
-              <h5 className="mb-2 font-medium text-indigo-600">错题分析</h5>
-              <div className="space-y-4">
-                {/* 科目错题分布 */}
-                <div className="p-4 bg-white border border-indigo-100 rounded-lg">
-                  <h4 className="mb-3 font-medium text-indigo-700">科目错题分布</h4>
-                  <div className="grid grid-cols-3 gap-3">
-                    {/* 根据API数据计算各科目错题统计 */}
-                    {(() => {
-                      // 按科目分组数据
-                      const subjectMap = new Map()
-                      
-                      childHomework.forEach(homework => {
-                        const subject = homework.subject || { id: 0, name: "未分类" }
-                        
-                        if (!subjectMap.has(subject.id)) {
-                          subjectMap.set(subject.id, {
-                            id: subject.id,
-                            name: subject.name || "未分类",
-                            totalTasks: 0,
-                            wrongAnswers: 0
-                          })
-                        }
-                        
-                        const subjectData = subjectMap.get(subject.id)
-                        subjectData.totalTasks++
-                        if (homework.wrongAnswers) {
-                          subjectData.wrongAnswers += homework.wrongAnswers
-                        }
-                        
-                        subjectMap.set(subject.id, subjectData)
-                      })
-                      
-                      // 转换为数组并渲染
-                      const subjects = Array.from(subjectMap.values())
-                      
-                      if (subjects.length === 0) {
-                        return (
-                          <div className="col-span-3 py-4 text-center text-gray-500">
-                            暂无科目数据
-                          </div>
-                        )
-                      }
-                      
-                      return subjects.map(subject => {
-                        const wrongRate = subject.totalTasks > 0 ? subject.wrongAnswers / subject.totalTasks : 0
-                        
-                        return (
-                          <div key={subject.id} className="p-3 border border-indigo-100 rounded-lg">
-                            <div className="text-center">
-                              <div className="mb-1 font-medium text-indigo-700">{subject.name}</div>
-                              <div className="text-sm text-indigo-600">错题: {subject.wrongAnswers}个</div>
-                              <div className="text-sm text-indigo-600">错题率: {Math.round(wrongRate * 100)}%</div>
-                            </div>
-                          </div>
-                        )
-                      })
-                    })()}
-                  </div>
-                </div>
-
-                {/* 错题趋势 */}
-                <div className="p-4 bg-white border border-indigo-100 rounded-lg">
-                  <h4 className="mb-3 font-medium text-indigo-700">错题趋势分析</h4>
-                  <div className="space-y-2">
-                    {/* 查找最近有错题的作业 */}
-                    {(() => {
-                      try {
-                        // 按日期排序并筛选有错题的作业
-                        const recentHomeworkWithWrongs = [...childHomework]
-                          .filter(homework => homework.wrongAnswers && homework.wrongAnswers > 0)
-                          .sort((a, b) => {
-                            const dateA = new Date(a.date || a.completionDate || 0)
-                            const dateB = new Date(b.date || b.completionDate || 0)
-                            return dateB - dateA
-                          })
-                          .slice(0, 5) // 最多显示5条
-                        
-                        if (recentHomeworkWithWrongs.length === 0) {
-                          return (
-                            <div className="py-3 text-center text-gray-500">
-                              暂无错题数据
-                            </div>
-                          )
-                        }
-                        
-                        return recentHomeworkWithWrongs.map((homework, index) => {
-                          const title = homework.title || 
-                                      (homework.subject && homework.subject.name ? homework.subject.name + "作业" : "未命名作业")
-                          
-                          return (
-                            <div key={index} className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                                <span className="text-sm">{title}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm text-indigo-600">错题: {homework.wrongAnswers}</span>
-                                <Badge
-                                  variant="outline"
-                                  className={`${
-                                    homework.wrongAnswers > 3
-                                      ? "bg-red-50 text-red-600"
-                                      : homework.wrongAnswers > 1
-                                        ? "bg-amber-50 text-amber-600"
-                                        : "bg-green-50 text-green-600"
-                                  }`}
-                                >
-                                  {homework.wrongAnswers > 3 ? "需要关注" : homework.wrongAnswers > 1 ? "一般" : "良好"}
-                                </Badge>
-                              </div>
-                            </div>
-                          )
-                        })
-                      } catch (err) {
-                        console.error("渲染错题趋势时出错:", err)
-                        return (
-                          <div className="py-3 text-center text-gray-500">
-                            数据处理异常，请稍后再试
-                          </div>
-                        )
-                      }
-                    })()}
-                  </div>
-                </div>
-
-                {/* 学习建议 */}
-                <div className="p-4 bg-white border border-indigo-100 rounded-lg">
-                  <h4 className="mb-3 font-medium text-indigo-700">错题学习建议</h4>
-                  <ul className="space-y-2 text-sm text-indigo-700">
-                    <li className="flex items-start gap-2">
-                      <div className="w-2 h-2 mt-1 bg-indigo-500 rounded-full"></div>
-                      <span>定期检查错题本，帮助孩子复习薄弱知识点</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <div className="w-2 h-2 mt-1 bg-indigo-500 rounded-full"></div>
-                      <span>分析错题类型，针对性地提供辅导</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <div className="w-2 h-2 mt-1 bg-indigo-500 rounded-full"></div>
-                      <span>鼓励孩子总结错题规律，提高解题能力</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <div className="w-2 h-2 mt-1 bg-indigo-500 rounded-full"></div>
-                      <span>对于高频错题，可以设计专项练习进行巩固</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* 建议 */}
-            <div>
-              <h5 className="mb-2 font-medium text-indigo-600">综合建议</h5>
-              <div className="p-3 bg-white border border-indigo-100 rounded-lg">
-                <ul className="space-y-2 text-sm text-gray-700">
-                  {deepAnalysis.weekdayAvgTime > 23 && (
-                    <li className="flex items-start gap-2">
-                      <div className="w-2 h-2 mt-1 rounded-full bg-amber-500"></div>
-                      <span>工作日完成作业时间较晚，建议提前开始作业，避免影响睡眠。</span>
-                    </li>
-                  )}
-                  {Math.abs(deepAnalysis.weekdayAvgCount - deepAnalysis.weekendAvgCount) > 2 && (
-                    <li className="flex items-start gap-2">
-                      <div className="w-2 h-2 mt-1 rounded-full bg-amber-500"></div>
-                      <span>工作日与周末作业量差异较大，建议更均衡地分配作业。</span>
-                    </li>
-                  )}
-                  {deepAnalysis.countTrend > 0.5 && (
-                    <li className="flex items-start gap-2">
-                      <div className="w-2 h-2 mt-1 rounded-full bg-amber-500"></div>
-                      <span>近期作业量有明显增加趋势，注意避免孩子过度疲劳。</span>
-                    </li>
-                  )}
-                  {deepAnalysis.timeTrend > 0.5 && (
-                    <li className="flex items-start gap-2">
-                      <div className="w-2 h-2 mt-1 rounded-full bg-amber-500"></div>
-                      <span>近期完成作业时间有变晚的趋势，建议关注孩子的学习效率。</span>
-                    </li>
-                  )}
-                  {deepAnalysis.correlation > 0.3 && (
-                    <li className="flex items-start gap-2">
-                      <div className="w-2 h-2 mt-1 rounded-full bg-amber-500"></div>
-                      <span>作业量与完成时间呈正相关，可能需要提高学习效率。</span>
-                    </li>
-                  )}
-                  {deepAnalysis.lateNights.length > 0 && (
-                    <li className="flex items-start gap-2">
-                      <div className="w-2 h-2 mt-1 rounded-full bg-amber-500"></div>
-                      <span>存在明显的晚睡情况，建议调整作息时间，保证充足睡眠。</span>
-                    </li>
-                  )}
-                  {deepAnalysis.wrongTrend > 0.2 && (
-                    <li className="flex items-start gap-2">
-                      <div className="w-2 h-2 mt-1 rounded-full bg-amber-500"></div>
-                      <span>近期错题数量有增加趋势，建议加强薄弱知识点的复习。</span>
-                    </li>
-                  )}
-                  {deepAnalysis.wrongCorrelation > 0.5 && (
-                    <li className="flex items-start gap-2">
-                      <div className="w-2 h-2 mt-1 rounded-full bg-amber-500"></div>
-                      <span>错题与作业量高度相关，可能是作业量过大导致注意力不集中。</span>
-                    </li>
-                  )}
-                  <li className="flex items-start gap-2">
-                    <div className="w-2 h-2 mt-1 bg-green-500 rounded-full"></div>
-                    <span>建议每天固定时间开始做作业，养成良好习惯。</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
+          </>
         )}
       </CardContent>
     </Card>
