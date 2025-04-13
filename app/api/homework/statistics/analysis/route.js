@@ -61,6 +61,25 @@ export const GET = withAuth(["parent"], async (request) => {
       );
     }
 
+    // 检查是否存在缓存
+    const cache = await prisma.analysis_cache.findFirst({
+      where: {
+        child_id: parseInt(childId),
+        date: new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })),
+        last_days: parseInt(lastDays),
+      },
+    });
+
+    if (cache) {
+      return NextResponse.json({
+        code: 200,
+        message: "获取作业分析成功",
+        data: {
+          analysis: JSON.parse(cache.content),
+        },
+      });
+    }
+
     where.child_id = parseInt(childId);
 
     // 查询从当前天到lastDays天前的作业
@@ -224,6 +243,18 @@ ${formattedHomeworkReport}
       // 如果解析失败，返回原始结果
       analysisJson = { rawResult: analysisResult };
     }
+
+    // 缓存分析结果
+    await prisma.analysis_cache.create({
+      data: {
+        child_id: parseInt(childId),
+        date: new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })),
+        last_days: parseInt(lastDays),
+        content: JSON.stringify(analysisJson),
+        created_at: new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })),
+        updated_at: new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })),
+      },
+    });
 
     return NextResponse.json({
       code: 200,
