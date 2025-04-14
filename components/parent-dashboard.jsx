@@ -161,7 +161,7 @@ export default function ParentDashboard() {
   const [selectedTaskDate, setSelectedTaskDate] = useState(new Date());
   const [showTaskCalendar, setShowTaskCalendar] = useState(false);
   const [childrenList, setChildrenList] = useState([]);
-  const [selectedChildId, setSelectedChildId] = useState(null); // 添加一个变量跟踪当前选中的孩子ID
+  const [selectedChildId, setSelectedChildId] = useState(null); // 跟踪当前选中的孩子ID
   const [selectedChild, setSelectedChild] = useState(null); // 保存当前选中孩子的完整信息
 
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
@@ -218,8 +218,6 @@ export default function ParentDashboard() {
       console.error("获取科目数据出错:", error);
     }
   };
-
-
 
   // 获取待新增作业
   const fetchPendingHomeworks = async () => {
@@ -295,6 +293,7 @@ export default function ParentDashboard() {
     }
   };
 
+  // 获取孩子作业
   const fetchChildHomeworks = async () => {
     try {
       setIsLoading(true);
