@@ -587,7 +587,7 @@ export default function Dashboard() {
       // 如果是编辑模式
       if (editingHomework) {
         console.log("修改作业:", newHomework);
-        
+
         // 准备API请求数据
         const homeworkData = {
           id: editingHomework.id,
@@ -613,13 +613,15 @@ export default function Dashboard() {
         }
       } else {
         // 准备API请求数据
-        const subjectId = newHomework.subject_id; 
+        const subjectId = newHomework.subject_id;
         const homeworkData = {
           name: newHomework.name,
           subject_id: subjectId,
           estimated_duration: parseInt(newHomework.duration) || null,
           deadline: newHomework.deadline
-            ? `${new Date().toISOString().split("T")[0]} ${newHomework.deadline}`
+            ? `${new Date().toISOString().split("T")[0]} ${
+                newHomework.deadline
+              }`
             : null,
           integral: parseInt(newHomework.points) || 0,
           homework_date: new Date().toISOString().split("T")[0],
@@ -651,7 +653,7 @@ export default function Dashboard() {
 
       // 调用API删除作业
       const response = await del(`/api/homework`, {
-        body: JSON.stringify({ id: taskId })
+        body: JSON.stringify({ id: taskId }),
       });
 
       const result = await response.json();
@@ -686,7 +688,7 @@ export default function Dashboard() {
   // 添加处理编辑作业的函数
   const handleEditHomework = (subject, task) => {
     console.log("编辑作业:", subject, task);
-    
+
     // 设置要编辑的作业数据
     setEditingHomework({
       id: task.id,
@@ -694,38 +696,13 @@ export default function Dashboard() {
       subject: subject.subject,
       name: task.name,
       title: task.name,
-      duration: task.duration.replace(/分钟$/, ''),
+      duration: task.duration.replace(/分钟$/, ""),
       deadline: task.deadline !== "未设置" ? task.deadline : "",
-      points: task.points
+      points: task.points,
     });
-    
+
     // 打开添加作业对话框
     setIsAddHomeworkOpen(true);
-  };
-
-  // 添加处理添加任务的函数
-  const handleAddTask = async (newTask) => {
-    try {
-      // 准备API请求数据
-      const taskData = {
-        name: newTask.title,
-        integral: parseInt(newTask.points) || 0,
-      };
-
-      // 使用封装的post方法向API发送请求
-      const response = await post("/api/task", taskData);
-      const result = await response.json();
-
-      if (result.code === 200 && result.data) {
-        // 添加成功后刷新任务列表
-        fetchTasks();
-        console.log("任务添加成功:", result.data);
-      } else {
-        console.error("添加任务失败:", result.message);
-      }
-    } catch (error) {
-      console.error("添加任务出错:", error);
-    }
   };
 
   // 添加开始番茄计时的函数
@@ -749,6 +726,7 @@ export default function Dashboard() {
     }
   };
 
+  // 完成番茄钟的函数
   const completePomodoro = async () => {
     if (activePomodoro) {
       const { subjectId, taskId } = activePomodoro;
@@ -819,9 +797,38 @@ export default function Dashboard() {
       }
     }
   };
+
+  // 取消番茄钟的函数
   const cancelPomodoro = () => {
     setActivePomodoro(null);
+  };  
+
+  // 添加处理添加任务的函数
+  const handleAddTask = async (newTask) => {
+    try {
+      // 准备API请求数据
+      const taskData = {
+        name: newTask.title,
+        integral: parseInt(newTask.points) || 0,
+      };
+
+      // 使用封装的post方法向API发送请求
+      const response = await post("/api/task", taskData);
+      const result = await response.json();
+
+      if (result.code === 200 && result.data) {
+        // 添加成功后刷新任务列表
+        fetchTasks();
+        console.log("任务添加成功:", result.data);
+      } else {
+        console.error("添加任务失败:", result.message);
+      }
+    } catch (error) {
+      console.error("添加任务出错:", error);
+    }
   };
+
+
 
   // 计算未完成的作业数量
   const unfinishedHomeworkCount = homeworks.reduce((acc, subject) => {
@@ -963,7 +970,7 @@ export default function Dashboard() {
     }
   };
 
-  // 3. Add the confirmation dialog component
+  // 添加确认兑换的对话框组件
   const RewardConfirmationDialog = () => {
     if (!confirmingReward) return null;
 
@@ -1092,9 +1099,8 @@ export default function Dashboard() {
               <p className="text-gray-600">今天也要加油哦！</p>
             </div>
           </div>
-          {/* 4. 在 header 部分添加设置按钮
-          // 找到 <div className="flex items-center justify-between w-full gap-2 sm:gap-4 sm:w-auto sm:justify-start"> 部分，
-          // 修改为： */}
+          
+          {/* 添加设置按钮 */}
           <div className="flex items-center justify-between w-full gap-2 sm:gap-4 sm:w-auto sm:justify-start">
             <div className="flex items-center gap-2 px-4 py-2 border rounded-full bg-gradient-to-r from-yellow-400/10 to-purple-400/10 border-yellow-400/20">
               <Star className="w-6 h-6 text-yellow-500 fill-yellow-400" />
@@ -1126,7 +1132,7 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {/* Main Content */}
+        {/* 主内容 */}
         <Tabs defaultValue="homework" className="space-y-4">
           <TabsList className="grid w-full grid-cols-4 p-1 text-xs shadow-xl rounded-xl bg-white/80 sm:text-sm md:text-lg">
             <TabsTrigger
@@ -1198,7 +1204,11 @@ export default function Dashboard() {
                       className="text-primary hover:bg-primary/10"
                       disabled={isLoadingHomework}
                     >
-                      <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingHomework ? 'animate-spin' : ''}`} />
+                      <RefreshCw
+                        className={`w-4 h-4 mr-2 ${
+                          isLoadingHomework ? "animate-spin" : ""
+                        }`}
+                      />
                       刷新
                     </Button>
                     <Button
@@ -1353,7 +1363,9 @@ export default function Dashboard() {
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    onClick={() => handleEditHomework(subject, task)}
+                                    onClick={() =>
+                                      handleEditHomework(subject, task)
+                                    }
                                     className="text-blue-600 hover:bg-blue-50 hover:text-blue-700"
                                   >
                                     <Edit className="w-4 h-4" />
@@ -1370,7 +1382,7 @@ export default function Dashboard() {
                                     </span>
                                   </Badge>
                                 )}
-                                
+
                                 <Badge
                                   variant="outline"
                                   className="flex gap-1 border-yellow-300 bg-yellow-50"
@@ -1411,7 +1423,6 @@ export default function Dashboard() {
                                   >
                                     {task.completed ? "已完成" : "完成"}
                                   </Button>
-
                                 </div>
                               </div>
                             </div>
@@ -1740,7 +1751,11 @@ export default function Dashboard() {
                       className="text-primary hover:bg-primary/10"
                       disabled={isLoadingTasks}
                     >
-                      <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingTasks ? 'animate-spin' : ''}`} />
+                      <RefreshCw
+                        className={`w-4 h-4 mr-2 ${
+                          isLoadingTasks ? "animate-spin" : ""
+                        }`}
+                      />
                       刷新
                     </Button>
                     <Button
@@ -1903,7 +1918,11 @@ export default function Dashboard() {
                       className="mr-2 text-primary hover:bg-primary/10"
                       disabled={isLoadingRewards}
                     >
-                      <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingRewards ? 'animate-spin' : ''}`} />
+                      <RefreshCw
+                        className={`w-4 h-4 mr-2 ${
+                          isLoadingRewards ? "animate-spin" : ""
+                        }`}
+                      />
                       刷新
                     </Button>
                     <Star className="w-5 h-5 text-yellow-500 fill-yellow-400" />
@@ -2008,10 +2027,16 @@ export default function Dashboard() {
                       className="text-primary hover:bg-primary/10"
                       disabled={isLoadingHistory}
                     >
-                      <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingHistory ? 'animate-spin' : ''}`} />
+                      <RefreshCw
+                        className={`w-4 h-4 mr-2 ${
+                          isLoadingHistory ? "animate-spin" : ""
+                        }`}
+                      />
                       刷新
                     </Button>
-                    <CardDescription>查看你的积分获取和使用历史</CardDescription>
+                    <CardDescription>
+                      查看你的积分获取和使用历史
+                    </CardDescription>
                   </div>
                 </div>
               </CardHeader>
